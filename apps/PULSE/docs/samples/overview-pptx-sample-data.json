@@ -1,0 +1,241 @@
+{
+  "myOverview": {
+    "schemaVersion": "1.0",
+    "viewType": "myOverview",
+    "title": "My Work Overview — Jordan Lee",
+    "subtitle": "Personal work snapshot — July 25, 2026",
+    "generatedAt": "2026-07-25T12:30:00-07:00",
+    "generatedBy": "Jordan Lee",
+    "reportingAsOf": "2026-07-25",
+    "summaryNarrative": [
+      "Three priority tasks are due within the next fourteen days.",
+      "One task is blocked pending an external decision.",
+      "All assigned projects remain on track."
+    ],
+    "metrics": {
+      "totalProjects": 3,
+      "totalTasks": 14,
+      "activeTasks": 8,
+      "overdueTasks": 1,
+      "completedTasks": 6,
+      "documentsReviewed": 4,
+      "documentsSigned": 2,
+      "meetingsAttended": 7,
+      "travelRequests": 1
+    },
+    "projects": [
+      {
+        "projectId": "PRJ-104",
+        "projectName": "Integrated Readiness Upgrade",
+        "team": "Operations",
+        "role": "Project Lead",
+        "status": "Active",
+        "myActiveTaskCount": 4,
+        "dueDate": "2026-10-30"
+      },
+      {
+        "projectId": "PRJ-118",
+        "projectName": "Data Quality Improvement",
+        "team": "Analytics",
+        "role": "Contributor",
+        "status": "Needs Attention",
+        "myActiveTaskCount": 3,
+        "dueDate": "2026-09-15"
+      },
+      {
+        "projectId": "PRJ-126",
+        "projectName": "Facilities Planning",
+        "team": "Support",
+        "role": "Reviewer",
+        "status": "Active",
+        "myActiveTaskCount": 1,
+        "dueDate": "2026-12-18"
+      }
+    ],
+    "tasks": [
+      {
+        "taskId": "TSK-104-07",
+        "title": "Confirm deployment sequencing",
+        "projectId": "PRJ-104",
+        "projectName": "Integrated Readiness Upgrade",
+        "owner": "Jordan Lee",
+        "status": "In Progress",
+        "health": "On Track",
+        "startDate": "2026-07-18",
+        "dueDate": "2026-07-29",
+        "percentComplete": 65,
+        "blockedReason": "",
+        "nextAction": "Validate the sequencing plan with the operations leads."
+      },
+      {
+        "taskId": "TSK-118-03",
+        "title": "Resolve source-data gap",
+        "projectId": "PRJ-118",
+        "projectName": "Data Quality Improvement",
+        "owner": "Jordan Lee",
+        "status": "Blocked",
+        "health": "Blocked",
+        "startDate": "2026-07-10",
+        "dueDate": "2026-07-23",
+        "percentComplete": 40,
+        "blockedReason": "Awaiting source-system owner decision.",
+        "nextAction": "Escalate the open decision at the next team review."
+      }
+    ]
+  },
+  "teamOverview": {
+    "schemaVersion": "1.0",
+    "viewType": "teamOverview",
+    "title": "PULSE Portfolio Overview",
+    "subtitle": "Team operations snapshot — July 25, 2026",
+    "generatedAt": "2026-07-25T12:30:00-07:00",
+    "generatedBy": "Jordan Lee",
+    "reportingAsOf": "2026-07-25",
+    "summaryNarrative": [
+      "Eight of ten projects have active work.",
+      "Two blocked tasks require leadership attention.",
+      "The portfolio has three open risks, one rated high impact."
+    ],
+    "metrics": {
+      "totalProjects": 10,
+      "activeProjects": 8,
+      "activeTasks": 42,
+      "overdueTasks": 5,
+      "blockedTasks": 2,
+      "openRisks": 3,
+      "teamSize": 16,
+      "documentsInReview": 6,
+      "pendingTravel": 2
+    },
+    "statusGroups": {
+      "Active": 7,
+      "Needs Attention": 1,
+      "Completed": 1,
+      "No Active Work": 1
+    },
+    "endItems": [
+      {
+        "name": "Mission Systems",
+        "projectCount": 4,
+        "activeTaskCount": 19,
+        "openRiskCount": 2,
+        "teams": ["Operations", "Engineering"]
+      },
+      {
+        "name": "Enterprise Support",
+        "projectCount": 6,
+        "activeTaskCount": 23,
+        "openRiskCount": 1,
+        "teams": ["Analytics", "Support"]
+      }
+    ],
+    "projects": [
+      {
+        "projectId": "PRJ-104",
+        "projectName": "Integrated Readiness Upgrade",
+        "endItem": "Mission Systems",
+        "projectManager": "Morgan Rivera",
+        "team": "Operations",
+        "fundingType": "Operations",
+        "fiscalYear": "FY26",
+        "taskOrder": "TO-104",
+        "lifecycleStatus": "Execution",
+        "dueDate": "2026-10-30",
+        "derivedStatus": "Active",
+        "activeTaskCount": 12,
+        "overdueTaskCount": 1,
+        "openRiskCount": 1,
+        "tasks": [
+          {
+            "taskId": "TSK-104-07",
+            "title": "Confirm deployment sequencing",
+            "projectId": "PRJ-104",
+            "projectName": "Integrated Readiness Upgrade",
+            "owner": "Jordan Lee",
+            "status": "In Progress",
+            "health": "On Track",
+            "startDate": "2026-07-18",
+            "dueDate": "2026-07-29",
+            "percentComplete": 65,
+            "blockedReason": "",
+            "nextAction": "Validate the sequencing plan with the operations leads."
+          }
+        ],
+        "risks": [
+          {
+            "riskId": "RSK-104-02",
+            "title": "Compressed integration window",
+            "description": "Late component delivery may reduce integration time.",
+            "owner": "Morgan Rivera",
+            "likelihood": "Medium",
+            "impact": "High",
+            "status": "Mitigating",
+            "mitigation": "Run parallel readiness checks and reserve a contingency window.",
+            "dueDate": "2026-08-07"
+          }
+        ]
+      },
+      {
+        "projectId": "PRJ-118",
+        "projectName": "Data Quality Improvement",
+        "endItem": "Enterprise Support",
+        "projectManager": "Avery Chen",
+        "team": "Analytics",
+        "fundingType": "Research",
+        "fiscalYear": "FY26",
+        "taskOrder": "TO-118",
+        "lifecycleStatus": "Execution",
+        "dueDate": "2026-09-15",
+        "derivedStatus": "Needs Attention",
+        "activeTaskCount": 7,
+        "overdueTaskCount": 2,
+        "openRiskCount": 1,
+        "tasks": [
+          {
+            "taskId": "TSK-118-03",
+            "title": "Resolve source-data gap",
+            "projectId": "PRJ-118",
+            "projectName": "Data Quality Improvement",
+            "owner": "Jordan Lee",
+            "status": "Blocked",
+            "health": "Blocked",
+            "startDate": "2026-07-10",
+            "dueDate": "2026-07-23",
+            "percentComplete": 40,
+            "blockedReason": "Awaiting source-system owner decision.",
+            "nextAction": "Escalate the open decision at the next team review."
+          }
+        ],
+        "risks": [
+          {
+            "riskId": "RSK-118-01",
+            "title": "Source availability",
+            "description": "A required source may not be available within the planned window.",
+            "owner": "Avery Chen",
+            "likelihood": "Medium",
+            "impact": "Medium",
+            "status": "Monitoring",
+            "mitigation": "Use the approved interim source until the primary source is available.",
+            "dueDate": "2026-08-01"
+          }
+        ]
+      }
+    ],
+    "workload": [
+      {
+        "person": "Jordan Lee",
+        "activeTaskCount": 8,
+        "blockedTaskCount": 1,
+        "projectCount": 3,
+        "nextDueDate": "2026-07-29"
+      },
+      {
+        "person": "Taylor Morgan",
+        "activeTaskCount": 6,
+        "blockedTaskCount": 0,
+        "projectCount": 2,
+        "nextDueDate": "2026-08-02"
+      }
+    ]
+  }
+}

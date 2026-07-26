@@ -1,0 +1,12 @@
+ListName,PULSE Decisions
+Description,Reserved for future use — not yet wired into the app UI.
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+ProjectId,Number,No,,
+DecisionText,Note,No,,
+DecisionDate,DateTime,No,,
+DecidedBy,Text,No,,
+DecidedByEmail,Text,No,,
+Rationale,Note,No,,
+Impact,Note,No,,

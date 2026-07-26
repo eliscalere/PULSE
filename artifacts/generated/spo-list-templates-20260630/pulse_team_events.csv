@@ -1,0 +1,3 @@
+Title,EventCode,EventDate,AllDay,StartTime,EndTime,Location,Description,UpdatedAt
+PULSE Team Events Sample 1,EventCode sample 1,2026-07-01,TRUE,StartTime sample 1,EndTime sample 1,Location sample 1,Description sample text,2026-07-01
+PULSE Team Events Sample 2,EventCode sample 2,2026-07-15,FALSE,StartTime sample 2,EndTime sample 2,Location sample 2,Description sample text,2026-07-15

@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pulse.local/schemas/overview-pptx-data.schema.json",
+  "title": "PULSE Overview PPTX Data",
+  "oneOf": [
+    { "$ref": "#/$defs/myOverview" },
+    { "$ref": "#/$defs/teamOverview" }
+  ],
+  "$defs": {
+    "common": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "viewType",
+        "title",
+        "subtitle",
+        "generatedAt",
+        "generatedBy",
+        "reportingAsOf",
+        "metrics"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "1.0" },
+        "viewType": { "enum": ["myOverview", "teamOverview"] },
+        "title": { "type": "string", "minLength": 1 },
+        "subtitle": { "type": "string", "minLength": 1 },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "generatedBy": { "type": "string", "minLength": 1 },
+        "reportingAsOf": { "type": "string", "format": "date" },
+        "summaryNarrative": {
+          "type": "array",
+          "maxItems": 5,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "myOverview": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["projects", "tasks"],
+          "properties": {
+            "viewType": { "const": "myOverview" },
+            "metrics": { "$ref": "#/$defs/myMetrics" },
+            "projects": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/myProject" }
+            },
+            "tasks": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/task" }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "teamOverview": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["statusGroups", "endItems", "projects", "workload"],
+          "properties": {
+            "viewType": { "const": "teamOverview" },
+            "metrics": { "$ref": "#/$defs/teamMetrics" },
+            "statusGroups": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "endItems": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/endItem" }
+            },
+            "projects": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/teamProject" }
+            },
+            "workload": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/workload" }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "myMetrics": {
+      "type": "object",
+      "required": [
+        "totalProjects",
+        "totalTasks",
+        "activeTasks",
+        "overdueTasks",
+        "completedTasks",
+        "documentsReviewed",
+        "documentsSigned",
+        "meetingsAttended",
+        "travelRequests"
+      ],
+      "properties": {
+        "totalProjects": { "$ref": "#/$defs/count" },
+        "totalTasks": { "$ref": "#/$defs/count" },
+        "activeTasks": { "$ref": "#/$defs/count" },
+        "overdueTasks": { "$ref": "#/$defs/count" },
+        "completedTasks": { "$ref": "#/$defs/count" },
+        "documentsReviewed": { "$ref": "#/$defs/count" },
+        "documentsSigned": { "$ref": "#/$defs/count" },
+        "meetingsAttended": { "$ref": "#/$defs/count" },
+        "travelRequests": { "$ref": "#/$defs/count" }
+      },
+      "additionalProperties": false
+    },
+    "teamMetrics": {
+      "type": "object",
+      "required": [
+        "totalProjects",
+        "activeProjects",
+        "activeTasks",
+        "overdueTasks",
+        "blockedTasks",
+        "openRisks",
+        "teamSize",
+        "documentsInReview",
+        "pendingTravel"
+      ],
+      "properties": {
+        "totalProjects": { "$ref": "#/$defs/count" },
+        "activeProjects": { "$ref": "#/$defs/count" },
+        "activeTasks": { "$ref": "#/$defs/count" },
+        "overdueTasks": { "$ref": "#/$defs/count" },
+        "blockedTasks": { "$ref": "#/$defs/count" },
+        "openRisks": { "$ref": "#/$defs/count" },
+        "teamSize": { "$ref": "#/$defs/count" },
+        "documentsInReview": { "$ref": "#/$defs/count" },
+        "pendingTravel": { "$ref": "#/$defs/count" }
+      },
+      "additionalProperties": false
+    },
+    "myProject": {
+      "type": "object",
+      "required": [
+        "projectId",
+        "projectName",
+        "team",
+        "role",
+        "status",
+        "myActiveTaskCount",
+        "dueDate"
+      ],
+      "properties": {
+        "projectId": { "type": "string", "minLength": 1 },
+        "projectName": { "type": "string", "minLength": 1 },
+        "team": { "type": "string" },
+        "role": { "type": "string" },
+        "status": { "$ref": "#/$defs/status" },
+        "myActiveTaskCount": { "$ref": "#/$defs/count" },
+        "dueDate": { "$ref": "#/$defs/nullableDate" }
+      },
+      "additionalProperties": false
+    },
+    "teamProject": {
+      "type": "object",
+      "required": [
+        "projectId",
+        "projectName",
+        "endItem",
+        "projectManager",
+        "team",
+        "fundingType",
+        "fiscalYear",
+        "taskOrder",
+        "lifecycleStatus",
+        "dueDate",
+        "derivedStatus",
+        "activeTaskCount",
+        "overdueTaskCount",
+        "openRiskCount",
+        "tasks",
+        "risks"
+      ],
+      "properties": {
+        "projectId": { "type": "string", "minLength": 1 },
+        "projectName": { "type": "string", "minLength": 1 },
+        "endItem": { "type": "string" },
+        "projectManager": { "type": "string" },
+        "team": { "type": "string" },
+        "fundingType": { "type": "string" },
+        "fiscalYear": {
+          "oneOf": [
+            { "type": "integer", "minimum": 2000, "maximum": 2200 },
+            { "type": "string", "pattern": "^FY[0-9]{2,4}$" }
+          ]
+        },
+        "taskOrder": { "type": "string" },
+        "lifecycleStatus": { "type": "string" },
+        "dueDate": { "$ref": "#/$defs/nullableDate" },
+        "derivedStatus": { "$ref": "#/$defs/status" },
+        "activeTaskCount": { "$ref": "#/$defs/count" },
+        "overdueTaskCount": { "$ref": "#/$defs/count" },
+        "openRiskCount": { "$ref": "#/$defs/count" },
+        "tasks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/task" }
+        },
+        "risks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/risk" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "task": {
+      "type": "object",
+      "required": [
+        "taskId",
+        "title",
+        "projectId",
+        "projectName",
+        "owner",
+        "status",
+        "health",
+        "startDate",
+        "dueDate",
+        "percentComplete",
+        "blockedReason",
+        "nextAction"
+      ],
+      "properties": {
+        "taskId": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "projectId": { "type": "string", "minLength": 1 },
+        "projectName": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string" },
+        "status": { "$ref": "#/$defs/status" },
+        "health": { "$ref": "#/$defs/health" },
+        "startDate": { "$ref": "#/$defs/nullableDate" },
+        "dueDate": { "$ref": "#/$defs/nullableDate" },
+        "percentComplete": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "blockedReason": { "type": "string" },
+        "nextAction": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "risk": {
+      "type": "object",
+      "required": [
+        "riskId",
+        "title",
+        "description",
+        "owner",
+        "likelihood",
+        "impact",
+        "status",
+        "mitigation",
+        "dueDate"
+      ],
+      "properties": {
+        "riskId": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "owner": { "type": "string" },
+        "likelihood": { "$ref": "#/$defs/rating" },
+        "impact": { "$ref": "#/$defs/rating" },
+        "status": {
+          "enum": ["Open", "Monitoring", "Mitigating", "Accepted", "Resolved", "Closed"]
+        },
+        "mitigation": { "type": "string" },
+        "dueDate": { "$ref": "#/$defs/nullableDate" }
+      },
+      "additionalProperties": false
+    },
+    "endItem": {
+      "type": "object",
+      "required": [
+        "name",
+        "projectCount",
+        "activeTaskCount",
+        "openRiskCount",
+        "teams"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "projectCount": { "$ref": "#/$defs/count" },
+        "activeTaskCount": { "$ref": "#/$defs/count" },
+        "openRiskCount": { "$ref": "#/$defs/count" },
+        "teams": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "workload": {
+      "type": "object",
+      "required": [
+        "person",
+        "activeTaskCount",
+        "blockedTaskCount",
+        "projectCount",
+        "nextDueDate"
+      ],
+      "properties": {
+        "person": { "type": "string", "minLength": 1 },
+        "activeTaskCount": { "$ref": "#/$defs/count" },
+        "blockedTaskCount": { "$ref": "#/$defs/count" },
+        "projectCount": { "$ref": "#/$defs/count" },
+        "nextDueDate": { "$ref": "#/$defs/nullableDate" }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "enum": ["Not Started", "Active", "In Progress", "Needs Attention", "Blocked", "On Hold", "Completed", "Closed", "No Active Work"]
+    },
+    "health": {
+      "enum": ["On Track", "At Risk", "Off Track", "Blocked", "Not Rated"]
+    },
+    "rating": {
+      "enum": ["Low", "Medium", "High"]
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "nullableDate": {
+      "oneOf": [
+        { "type": "string", "format": "date" },
+        { "type": "null" }
+      ]
+    }
+  }
+}

@@ -1,0 +1,67 @@
+[
+    {
+        "key": "projects",
+        "title": "PULSE Projects",
+        "description": "Portfolio of operational projects.",
+        "template": 100,
+        "versioningEnabled": true,
+        "fields": [
+            { "internalName": "ProjectCode", "displayName": "Project Code", "type": "Text", "required": true, "indexed": true },
+            { "internalName": "ProjectHealth", "displayName": "Health", "type": "Choice", "choices": [{ "value": "Green" }, { "value": "Amber" }, { "value": "Red" }, { "value": "Blue" }] },
+            { "internalName": "ProjectStatus", "displayName": "Status", "type": "Choice", "choices": [{ "value": "Not Started" }, { "value": "In Progress" }, { "value": "Blocked" }, { "value": "Complete" }] },
+            { "internalName": "ProjectOwner", "displayName": "Project Owner", "type": "User" },
+            { "internalName": "TargetDate", "displayName": "Target Date", "type": "DateTime" },
+            { "internalName": "TeamName", "displayName": "Team", "type": "Text" }
+        ],
+        "views": [
+            { "key": "allProjects", "title": "All Projects", "fields": ["Title", "ProjectCode", "ProjectHealth", "ProjectStatus", "ProjectOwner", "TargetDate"], "defaultView": true, "rowLimit": 100 }
+        ]
+    },
+    {
+        "key": "tasks",
+        "title": "PULSE Tasks",
+        "description": "Tasks aligned to projects and meetings.",
+        "template": 100,
+        "versioningEnabled": true,
+        "fields": [
+            { "internalName": "RelatedProject", "displayName": "Project", "type": "Lookup", "lookup": { "listKey": "projects", "showField": "Title" }, "indexed": true },
+            { "internalName": "TaskStatus", "displayName": "Status", "type": "Choice", "choices": [{ "value": "To Do" }, { "value": "In Progress" }, { "value": "Blocked" }, { "value": "Done" }] },
+            { "internalName": "PercentComplete", "displayName": "Percent Complete", "type": "Number" },
+            { "internalName": "TaskAssignee", "displayName": "Assignee", "type": "User" },
+            { "internalName": "DueDate", "displayName": "Due Date", "type": "DateTime" }
+        ],
+        "views": [
+            { "key": "activeTasks", "title": "Active Tasks", "fields": ["Title", "RelatedProject", "TaskStatus", "TaskAssignee", "DueDate"], "defaultView": true, "rowLimit": 200 }
+        ]
+    },
+    {
+        "key": "meetings",
+        "title": "PULSE Meetings",
+        "description": "Meeting records and summaries.",
+        "template": 100,
+        "versioningEnabled": true,
+        "fields": [
+            { "internalName": "MeetingDate", "displayName": "Meeting Date", "type": "DateTime", "required": true },
+            { "internalName": "Facilitator", "displayName": "Facilitator", "type": "User" },
+            { "internalName": "Summary", "displayName": "Summary", "type": "Note" }
+        ],
+        "views": [
+            { "key": "recentMeetings", "title": "Recent Meetings", "fields": ["Title", "MeetingDate", "Facilitator"], "defaultView": true, "rowLimit": 100 }
+        ]
+    },
+    {
+        "key": "configuration",
+        "title": "PULSE Configuration",
+        "description": "Application configuration and feature flags.",
+        "template": 100,
+        "versioningEnabled": true,
+        "fields": [
+            { "internalName": "ConfigKey", "displayName": "Key", "type": "Text", "required": true, "enforceUniqueValues": true },
+            { "internalName": "ConfigValue", "displayName": "Value", "type": "Note" },
+            { "internalName": "IsEnabled", "displayName": "Is Enabled", "type": "Boolean" }
+        ],
+        "views": [
+            { "key": "allConfiguration", "title": "All Configuration", "fields": ["Title", "ConfigKey", "IsEnabled"], "defaultView": true, "rowLimit": 200 }
+        ]
+    }
+]

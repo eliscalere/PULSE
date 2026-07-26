@@ -1,0 +1,2323 @@
+<!--WFC-MANIFEST:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0IjoiUFVMU0UtVElDS0VUUyIsImdlbmVyYXRlZCI6IjIwMjYtMDctMjZUMjM6MTM6MzIuNDgxWiIsImluZGV4IjoiaW5kZXguaHRtbCIsImZpbGVzIjpbeyJraW5kIjoiY3NzIiwicGF0aCI6ImFzc2V0cy9jc3MvdGlja2V0cy5jc3M/dj0yMDI2MDcyNmMiLCJleHRlcm5hbCI6ZmFsc2UsImhhc2giOiJhNDc2YzQwNyJ9LHsia2luZCI6ImpzIiwicGF0aCI6Ii4uL1BVTFNFL2Fzc2V0cy9qcy9hcHAtY29uZmlnLmpzIiwiZXh0ZXJuYWwiOmZhbHNlLCJoYXNoIjoiZTFjYjAwM2EifSx7ImtpbmQiOiJqcyIsInBhdGgiOiJhc3NldHMvanMvdGlja2V0cy5qcz92PTIwMjYwNzI2YiIsImV4dGVybmFsIjpmYWxzZSwiaGFzaCI6IjQyYjY0N2QyIn1dfQ==-->
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PULSE Tickets</title>
+<script>
+(function () {
+      try {
+        var savedTheme = String(localStorage.getItem("aewttr_theme") || "").toLowerCase();
+        var resolvedTheme = savedTheme === "dark" || savedTheme === "light"
+          ? savedTheme
+          : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", resolvedTheme);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+      document.documentElement.setAttribute("data-theme-ready", "true");
+    }());
+</script>
+<style>
+/* ── Design tokens ── */
+:root {
+  --aewttr-blue: #2F66FF;
+  --aewttr-blue-dark: #1F4FD0;
+  --aewttr-blue-tint: #E8EEFF;
+  --aewttr-green: #2B7A5E;
+  --aewttr-green-tint: #E7F2ED;
+  --aewttr-amber: #C77800;
+  --aewttr-amber-tint: #FFF2DF;
+  --aewttr-red: #B42318;
+  --aewttr-red-tint: #FDECEA;
+  --aewttr-purple: #6D4CC7;
+  --aewttr-purple-tint: #F0ECFA;
+  --aewttr-bg: #ECEDEF;
+  --aewttr-surface: #FFFFFF;
+  --aewttr-surface-2: #F7F7F8;
+  --aewttr-surface-3: #E4E5E8;
+  --aewttr-text: #070708;
+  --aewttr-muted: #51545A;
+  --aewttr-border: #D9DADD;
+  --aewttr-border-strong: #B9BBC0;
+  --aewttr-overlay: rgba(7, 7, 8, .58);
+  --aewttr-shadow-1: 0 1px 2px rgba(7, 7, 8, .08);
+  --aewttr-shadow-2: 0 3px 8px rgba(7, 7, 8, .12);
+  --aewttr-shadow-3: 0 10px 24px rgba(7, 7, 8, .18);
+  --aewttr-radius-sm: 4px;
+  --aewttr-radius-md: 8px;
+  --aewttr-radius-lg: 14px;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  --aewttr-blue: #6E9CFF;
+  --aewttr-blue-dark: #9BBBFF;
+  --aewttr-blue-tint: #1A2436;
+  --aewttr-green: #4FBE8E;
+  --aewttr-green-tint: #16261F;
+  --aewttr-amber: #D6A24A;
+  --aewttr-amber-tint: #2E2617;
+  --aewttr-red: #E8776A;
+  --aewttr-red-tint: #2E1D1B;
+  --aewttr-purple: #B49AF1;
+  --aewttr-purple-tint: #251F34;
+  --aewttr-bg: #0E1116;
+  --aewttr-surface: #14171D;
+  --aewttr-surface-2: #1A1E25;
+  --aewttr-surface-3: #22262E;
+  --aewttr-text: #DCE1E8;
+  --aewttr-muted: #8891A0;
+  --aewttr-border: #262B33;
+  --aewttr-border-strong: #363C46;
+  color-scheme: dark;
+}
+
+/* ── Reset ── */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html,
+body { min-height: 100%; }
+
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--aewttr-bg);
+  color: var(--aewttr-text);
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea { font: inherit; }
+button, select { touch-action: manipulation; }
+
+::selection {
+  background: var(--aewttr-blue-tint);
+  color: var(--aewttr-text);
+}
+
+/* ══════════════════════════════════════════════
+   BOOT LOADER
+   ══════════════════════════════════════════════ */
+#pulse-boot-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background: var(--aewttr-bg);
+  color: var(--aewttr-text);
+}
+
+.pulse-svgl-wrap { width: min(88vw, 720px); }
+
+.pulse-svgl {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: inherit;
+}
+
+.pulse-svgl-flash {
+  opacity: 0;
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse-svgl-flash 1.2s ease-out forwards;
+}
+
+.pulse-svgl-wordmark {
+  clip-path: inset(0 50% 0 50%);
+  animation: pulse-svgl-reveal 1.2s cubic-bezier(.2, .8, .2, 1) forwards;
+}
+
+.pulse-svgl-letter {
+  fill: currentColor;
+  font-size: 116px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse-svgl-letter 1.2s cubic-bezier(.18, .82, .2, 1) forwards;
+}
+
+.pulse-svgl-letter--p { animation-delay: 0ms; }
+.pulse-svgl-letter--u { animation-delay: 22ms; }
+.pulse-svgl-letter--l { animation-delay: 44ms; }
+.pulse-svgl-letter--s { animation-delay: 66ms; }
+.pulse-svgl-letter--e { animation-delay: 88ms; }
+
+.pulse-svgl-dot {
+  fill: currentColor;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.pulse-svgl-dot--upper {
+  animation: pulse-svgl-dot-upper 1.2s cubic-bezier(.16, .82, .18, 1) forwards;
+}
+
+.pulse-svgl-dot--lower {
+  animation: pulse-svgl-dot-lower 1.2s cubic-bezier(.16, .82, .18, 1) forwards;
+}
+
+@keyframes pulse-svgl-dot-upper {
+  0%, 5%   { opacity: 0; transform: translate(-410px, -150px) scale(.5); }
+  9%       { opacity: 1; }
+  64%      { opacity: 1; transform: translate(180px, 104px) scale(1); }
+  70%      { opacity: 1; transform: translate(180px, 104px) scale(.28); }
+  88%, 100%{ opacity: 1; transform: translate(0, 0) scale(1); }
+}
+
+@keyframes pulse-svgl-dot-lower {
+  0%, 5%   { opacity: 0; transform: translate(410px, 126px) scale(.5); }
+  9%       { opacity: 1; }
+  64%      { opacity: 1; transform: translate(-180px, -78px) scale(1); }
+  70%      { opacity: 1; transform: translate(-180px, -78px) scale(.28); }
+  88%, 100%{ opacity: 1; transform: translate(0, 0) scale(1); }
+}
+
+@keyframes pulse-svgl-flash {
+  0%, 64%{ opacity: 0; transform: scale(.1); }
+  68%    { opacity: .32; transform: scale(.8); }
+  80%    { opacity: 0; transform: scale(2.4); }
+  100%   { opacity: 0; }
+}
+
+@keyframes pulse-svgl-reveal {
+  0%, 66%  { clip-path: inset(0 50% 0 50%); }
+  85%, 100%{ clip-path: inset(0 0 0 0); }
+}
+
+@keyframes pulse-svgl-letter {
+  0%, 66%  { opacity: 0; transform: translateY(5px) scaleX(.9); }
+  83%, 100%{ opacity: 1; transform: none; }
+}
+
+/* ══════════════════════════════════════════════
+   APP SHELL
+   ══════════════════════════════════════════════ */
+.tkt-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 12px;
+}
+
+.tkt-app-header {
+  position: sticky;
+  top: 12px;
+  z-index: 200;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 22px;
+  border-radius: 24px;
+  background: #070708;
+  color: #FFFFFF;
+}
+
+.tkt-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.tkt-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Logo dots */
+.pulse-nav-mark {
+  position: relative;
+  display: block;
+  width: 42px;
+  height: 38px;
+  flex: 0 0 42px;
+}
+
+.pulse-nav-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FFFFFF;
+}
+
+.pulse-nav-dot--one { top: 8px; left: 9px; }
+.pulse-nav-dot--two { right: 9px; bottom: 8px; }
+
+.tkt-page-title {
+  min-width: 0;
+  padding-left: 16px;
+  border-left: 1px solid rgba(255, 255, 255, .2);
+  color: rgba(255, 255, 255, .76);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.tkt-header-btn {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 8px;
+  background: transparent;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.tkt-header-btn:hover {
+  background: rgba(255, 255, 255, .1);
+  border-color: rgba(255, 255, 255, .4);
+}
+
+.tkt-app-main {
+  flex: 1;
+  min-width: 0;
+  margin-top: 12px;
+}
+
+/* ══════════════════════════════════════════════
+   SHARED FORM INPUTS
+   ══════════════════════════════════════════════ */
+.tkt-search,
+.tkt-input,
+.tkt-textarea,
+.select-aewttr {
+  width: 100%;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--aewttr-surface);
+  color: var(--aewttr-text);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.tkt-search {
+  height: 40px;
+  padding: 0 12px 0 38px;
+}
+
+.tkt-input {
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+.tkt-textarea {
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.tkt-search::placeholder,
+.tkt-input::placeholder,
+.tkt-textarea::placeholder { color: #85888E; }
+
+.tkt-search:focus,
+.tkt-input:focus,
+.tkt-textarea:focus,
+.select-aewttr:focus {
+  border-color: var(--aewttr-blue);
+  box-shadow: 0 0 0 3px var(--aewttr-blue-tint);
+}
+
+.select-aewttr {
+  min-height: 40px;
+  max-width: 200px;
+  padding: 7px 32px 7px 11px;
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════════
+   STATUS + TYPE PILLS
+   ══════════════════════════════════════════════ */
+.status-pill,
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 23px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sp--new        { background: var(--aewttr-surface-3); color: var(--aewttr-muted); }
+.sp--triaged    { background: var(--aewttr-amber-tint); color: var(--aewttr-amber); }
+.sp--in-progress{ background: var(--aewttr-blue-tint); color: var(--aewttr-blue); }
+.sp--resolved   { background: var(--aewttr-green-tint); color: var(--aewttr-green); }
+.sp--closed     { background: var(--aewttr-surface-3); color: var(--aewttr-muted); text-decoration: line-through; }
+
+.type-badge {
+  border: 1px solid var(--aewttr-border);
+  border-radius: 5px;
+  background: var(--aewttr-surface-2);
+  color: var(--aewttr-text);
+}
+
+/* ══════════════════════════════════════════════
+   FILTER PILLS
+   ══════════════════════════════════════════════ */
+.filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.filter-pill {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--aewttr-muted);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.filter-pill:hover {
+  border-color: var(--aewttr-border);
+  background: var(--aewttr-surface-2);
+  color: var(--aewttr-text);
+}
+
+.filter-pill.active {
+  border-color: var(--aewttr-text);
+  background: var(--aewttr-text);
+  color: var(--aewttr-surface);
+}
+
+.filter-pill > span {
+  min-width: 19px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--aewttr-surface-3);
+  color: var(--aewttr-muted);
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.filter-pill.active > span {
+  background: rgba(255, 255, 255, .18);
+  color: #FFFFFF;
+}
+
+/* ══════════════════════════════════════════════
+   BUTTONS
+   ══════════════════════════════════════════════ */
+.tkt-btn-primary,
+.tkt-btn-outline,
+.tkt-btn-ghost,
+.tkt-btn-danger {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.tkt-btn-primary {
+  border: 1px solid var(--aewttr-blue);
+  background: var(--aewttr-blue);
+  color: #FFFFFF;
+}
+.tkt-btn-primary:hover:not(:disabled) {
+  border-color: var(--aewttr-blue-dark);
+  background: var(--aewttr-blue-dark);
+}
+
+.tkt-btn-outline {
+  border: 1px solid var(--aewttr-border-strong);
+  background: transparent;
+  color: var(--aewttr-text);
+}
+.tkt-btn-outline:hover:not(:disabled) {
+  border-color: var(--aewttr-blue);
+  background: var(--aewttr-blue-tint);
+  color: var(--aewttr-blue);
+}
+
+.tkt-btn-ghost {
+  border: 1px solid var(--aewttr-border);
+  background: transparent;
+  color: var(--aewttr-muted);
+}
+.tkt-btn-ghost:hover:not(:disabled) {
+  border-color: var(--aewttr-border-strong);
+  background: var(--aewttr-surface-2);
+  color: var(--aewttr-text);
+}
+
+.tkt-btn-danger {
+  border: 1px solid var(--aewttr-border);
+  background: transparent;
+  color: var(--aewttr-muted);
+}
+.tkt-btn-danger:hover:not(:disabled) {
+  border-color: var(--aewttr-red);
+  background: var(--aewttr-red-tint);
+  color: var(--aewttr-red);
+}
+.tkt-btn-danger[data-confirmed="1"] {
+  border-color: var(--aewttr-red);
+  background: var(--aewttr-red-tint);
+  color: var(--aewttr-red);
+}
+
+.tkt-btn-primary:disabled,
+.tkt-btn-outline:disabled,
+.tkt-btn-ghost:disabled,
+.tkt-btn-danger:disabled { opacity: .52; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════════
+   LIST VIEW
+   ══════════════════════════════════════════════ */
+.tkt-list-page {
+  overflow: hidden;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 18px;
+  background: var(--aewttr-surface);
+}
+
+/* Intro header */
+.tkt-list-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 32px 24px;
+  border-bottom: 1px solid var(--aewttr-border);
+}
+
+.tkt-list-copy { min-width: 0; }
+
+.tkt-workspace-label {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--aewttr-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.tkt-list-head h2 {
+  margin: 0 0 6px;
+  color: var(--aewttr-text);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.tkt-list-head p {
+  max-width: 64ch;
+  margin: 0;
+  color: var(--aewttr-muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* Controls row */
+.tkt-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--aewttr-border);
+}
+
+.tkt-search-wrap {
+  position: relative;
+  flex: 0 1 260px;
+  min-width: 180px;
+}
+
+.tkt-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--aewttr-muted);
+  flex-shrink: 0;
+}
+
+/* Table */
+.tkt-table-shell {
+  overflow: hidden;
+}
+
+.tkt-table-meta {
+  padding: 12px 24px 8px;
+  color: var(--aewttr-muted);
+  font-size: 12px;
+}
+
+.tkt-table-meta strong {
+  color: var(--aewttr-text);
+  font-weight: 700;
+}
+
+.tkt-table-scroll {
+  overflow-x: auto;
+}
+
+.tkt-table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tkt-table th {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--aewttr-border);
+  background: var(--aewttr-surface-2);
+  color: var(--aewttr-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tkt-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--aewttr-border);
+  vertical-align: middle;
+}
+
+.tkt-table tbody tr { transition: background .1s ease; }
+.tkt-table tbody tr:hover { background: var(--aewttr-surface-2); }
+.tkt-table tbody tr:last-child td { border-bottom: 0; }
+.tkt-table td strong { font-weight: 650; }
+
+.tkt-id {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--aewttr-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tkt-page-cell,
+.tkt-date-cell {
+  color: var(--aewttr-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tkt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 60px 24px;
+  color: var(--aewttr-muted);
+  text-align: center;
+}
+
+.tkt-empty strong {
+  color: var(--aewttr-text);
+  font-size: 14px;
+}
+
+.tkt-empty span { font-size: 12px; }
+
+/* ══════════════════════════════════════════════
+   DETAIL VIEW
+   ══════════════════════════════════════════════ */
+.tkt-detail-page {
+  padding-bottom: 48px;
+}
+
+.tkt-detail-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tkt-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 8px;
+  background: var(--aewttr-surface);
+  color: var(--aewttr-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+
+.tkt-back-btn:hover {
+  background: var(--aewttr-surface-2);
+  color: var(--aewttr-text);
+}
+
+.tkt-detail-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Two-column layout */
+.tkt-detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  align-items: start;
+}
+
+.tkt-detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 14px;
+  background: var(--aewttr-surface);
+}
+
+.tkt-detail-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--aewttr-border);
+}
+
+.tkt-detail-title {
+  margin: 6px 0 0;
+  color: var(--aewttr-text);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.tkt-detail-section {
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--aewttr-border);
+}
+
+.tkt-detail-section:last-child { border-bottom: 0; }
+
+.tkt-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--aewttr-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.tkt-badge {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--aewttr-surface-3);
+  color: var(--aewttr-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.tkt-detail-text {
+  margin: 0;
+  color: var(--aewttr-text);
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+/* Screenshot */
+.tkt-screenshot-wrap {
+  display: inline-block;
+  position: relative;
+  max-width: 100%;
+  cursor: zoom-in;
+}
+
+.tkt-screenshot-img {
+  display: block;
+  max-width: 100%;
+  max-height: 340px;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 8px;
+  object-fit: contain;
+  transition: opacity .15s ease;
+}
+
+.tkt-screenshot-img:hover { opacity: .9; }
+
+.tkt-screenshot-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--aewttr-muted);
+  font-size: 11px;
+}
+
+/* Error codes */
+.tkt-error-codes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tkt-error-chip {
+  padding: 3px 9px;
+  border: 1px solid var(--aewttr-red-tint);
+  border-radius: 6px;
+  background: var(--aewttr-red-tint);
+  color: var(--aewttr-red);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Log list */
+.tkt-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.tkt-log-list--collapsed {
+  max-height: 240px;
+}
+
+.tkt-log-item {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+
+.tkt-log--error { background: var(--aewttr-red-tint); }
+.tkt-log--warn  { background: var(--aewttr-amber-tint); }
+.tkt-log--info,
+.tkt-log--log,
+.tkt-log--debug { background: var(--aewttr-surface-2); }
+
+.tkt-log-level {
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  flex-shrink: 0;
+}
+
+.tkt-log--error .tkt-log-level { color: var(--aewttr-red); }
+.tkt-log--warn  .tkt-log-level { color: var(--aewttr-amber); }
+.tkt-log--info  .tkt-log-level,
+.tkt-log--log   .tkt-log-level,
+.tkt-log--debug .tkt-log-level { color: var(--aewttr-muted); }
+
+.tkt-log-msg {
+  overflow: hidden;
+  color: var(--aewttr-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tkt-log-ts {
+  color: var(--aewttr-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tkt-log-more {
+  padding: 6px 8px;
+  color: var(--aewttr-muted);
+  font-size: 11px;
+}
+
+.tkt-log-details {
+  cursor: pointer;
+}
+
+.tkt-log-details > summary.tkt-section-label {
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.tkt-log-details > summary.tkt-section-label::-webkit-details-marker { display: none; }
+
+/* Update composer */
+.tkt-update-section { background: var(--aewttr-surface-2); }
+
+.tkt-update-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tkt-form-msg {
+  min-height: 14px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--aewttr-muted);
+}
+
+.tkt-form-msg--error { color: var(--aewttr-red); }
+
+/* ── Aside ── */
+.tkt-detail-aside {
+  position: sticky;
+  top: calc(76px + 12px + 12px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tkt-meta-card {
+  overflow: hidden;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 12px;
+  background: var(--aewttr-surface);
+}
+
+.tkt-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--aewttr-border);
+  font-size: 13px;
+}
+
+.tkt-meta-row:last-child { border-bottom: 0; }
+
+.tkt-meta-label {
+  flex-shrink: 0;
+  color: var(--aewttr-muted);
+  font-size: 11.5px;
+}
+
+.tkt-meta-value {
+  color: var(--aewttr-text);
+  font-size: 12px;
+  font-weight: 550;
+  text-align: right;
+}
+
+.tkt-meta-link {
+  color: var(--aewttr-blue);
+  font-size: 12px;
+  text-align: right;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.tkt-meta-link:hover { text-decoration: underline; }
+
+.tkt-meta-code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--aewttr-text);
+  word-break: break-all;
+}
+
+.tkt-meta-select.select-aewttr {
+  min-height: 32px;
+  max-width: 150px;
+  padding: 4px 28px 4px 8px;
+  font-size: 12px;
+}
+
+/* Diagnostics */
+.tkt-diag-details {
+  border: 1px solid var(--aewttr-border);
+  border-radius: 12px;
+  background: var(--aewttr-surface);
+  overflow: hidden;
+}
+
+.tkt-diag-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  color: var(--aewttr-muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.tkt-diag-summary::-webkit-details-marker { display: none; }
+
+.tkt-diag-summary::after {
+  content: "›";
+  font-size: 14px;
+  font-weight: 400;
+  transition: transform .15s ease;
+}
+
+.tkt-diag-details[open] .tkt-diag-summary::after { transform: rotate(90deg); }
+
+.tkt-diag-body {
+  border-top: 1px solid var(--aewttr-border);
+  padding: 8px 0;
+}
+
+.tkt-diag-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 16px;
+  font-size: 11.5px;
+}
+
+.tkt-diag-row span:first-child {
+  color: var(--aewttr-muted);
+  flex-shrink: 0;
+}
+
+.tkt-diag-row span:last-child {
+  color: var(--aewttr-text);
+  text-align: right;
+  word-break: break-all;
+}
+
+/* Resolution note */
+.tkt-resolution-note {
+  padding: 14px 16px;
+  border: 1px solid var(--aewttr-green-tint);
+  border-radius: 12px;
+  background: var(--aewttr-green-tint);
+}
+
+.tkt-resolution-note .tkt-detail-text { color: var(--aewttr-green); }
+
+/* ══════════════════════════════════════════════
+   MODAL (New Issue)
+   ══════════════════════════════════════════════ */
+.tkt-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--aewttr-overlay);
+  animation: tkt-backdrop-in .15s ease;
+}
+
+@keyframes tkt-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.tkt-modal {
+  width: min(560px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 14px;
+  background: var(--aewttr-surface);
+  box-shadow: var(--aewttr-shadow-3);
+  animation: tkt-modal-in .15s cubic-bezier(.16, 1, .3, 1);
+}
+
+@keyframes tkt-modal-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.tkt-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid var(--aewttr-border);
+}
+
+.tkt-modal-head h3 {
+  margin: 4px 0 0;
+  color: var(--aewttr-text);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+
+.tkt-modal-close {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--aewttr-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tkt-modal-close:hover { background: var(--aewttr-surface-2); color: var(--aewttr-text); }
+
+.tkt-modal-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding: 18px 20px;
+}
+
+.tkt-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--aewttr-border);
+}
+
+.tkt-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tkt-form-row label {
+  color: var(--aewttr-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.tkt-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.tkt-form-grid .select-aewttr { max-width: none; }
+
+.tkt-req  { color: var(--aewttr-red); font-style: normal; }
+.tkt-optional { color: var(--aewttr-muted); font-size: 9px; }
+
+/* ══════════════════════════════════════════════
+   LIGHTBOX
+   ══════════════════════════════════════════════ */
+.tkt-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.tkt-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, .82);
+  animation: tkt-backdrop-in .15s ease;
+}
+
+.tkt-lightbox-content {
+  position: relative;
+  max-width: min(1200px, 96vw);
+  max-height: 92vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tkt-lightbox-content img {
+  max-width: 100%;
+  max-height: 88vh;
+  border-radius: 8px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .6);
+  display: block;
+}
+
+.tkt-lightbox-close {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .18);
+  color: #FFFFFF;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background .15s ease;
+}
+
+.tkt-lightbox-close:hover { background: rgba(255, 255, 255, .3); }
+
+/* ══════════════════════════════════════════════
+   TOAST
+   ══════════════════════════════════════════════ */
+.tkt-toast-stack {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tkt-toast {
+  max-width: 320px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--aewttr-text);
+  color: var(--aewttr-surface);
+  box-shadow: var(--aewttr-shadow-2);
+  font-size: 12px;
+  font-weight: 650;
+  transition: opacity .3s ease;
+  animation: tkt-toast-in .2s ease;
+}
+
+.tkt-toast--success { background: var(--aewttr-green); color: #FFFFFF; }
+.tkt-toast--error   { background: var(--aewttr-red);   color: #FFFFFF; }
+
+@keyframes tkt-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ══════════════════════════════════════════════
+   LOAD ERROR
+   ══════════════════════════════════════════════ */
+.tkt-load-error {
+  padding: 60px 32px;
+  border: 1px dashed var(--aewttr-border-strong);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.tkt-load-error strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.tkt-load-error p {
+  margin: 0;
+  color: var(--aewttr-muted);
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .tkt-detail-layout {
+    grid-template-columns: 1fr 240px;
+  }
+}
+
+@media (max-width: 900px) {
+  .tkt-detail-layout {
+    grid-template-columns: 1fr;
+  }
+  .tkt-detail-aside {
+    position: static;
+  }
+}
+
+@media (max-width: 700px) {
+  .tkt-app { padding: 8px; }
+  .tkt-app-header { top: 8px; min-height: 66px; padding: 0 14px; border-radius: 20px; }
+  .tkt-list-head { padding: 22px 20px 18px; }
+  .tkt-list-head h2 { font-size: 22px; }
+  .tkt-controls { padding: 10px 16px; }
+  .tkt-search-wrap { flex: 1 1 100%; }
+  .filter-pills { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
+  .tkt-detail-header { padding: 18px 20px 14px; }
+  .tkt-detail-section { padding: 16px 20px; }
+  .tkt-form-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 430px) {
+  .tkt-page-title { display: none; }
+  .tkt-detail-title { font-size: 18px; }
+  .tkt-modal-foot { flex-wrap: wrap; }
+}
+
+/* ══════════════════════════════════════════════
+   TABS
+   ══════════════════════════════════════════════ */
+.tkt-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 20px;
+  border-bottom: 1.5px solid var(--aewttr-border);
+  background: var(--aewttr-surface);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tkt-tabs::-webkit-scrollbar { display: none; }
+
+.tkt-tab {
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aewttr-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
+  border-radius: 0;
+  outline-offset: 2px;
+}
+.tkt-tab:hover { color: var(--aewttr-text); }
+.tkt-tab.active {
+  color: var(--aewttr-blue);
+  border-bottom-color: var(--aewttr-blue);
+  font-weight: 600;
+}
+
+.tkt-tab-panel { display: none; }
+.tkt-tab-panel.active { display: block; }
+
+/* ── Tab badges ── */
+.tkt-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 20px;
+  background: var(--aewttr-surface-3);
+  color: var(--aewttr-muted);
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+.tkt-badge--red {
+  background: var(--aewttr-red-tint);
+  color: var(--aewttr-red);
+}
+
+/* ── Screenshot filename ── */
+.tkt-screenshot-filename {
+  font-size: 11px;
+  color: var(--aewttr-muted);
+  margin-top: 8px;
+  padding: 0 2px;
+}
+
+/* ── Sidebar thumbnail card ── */
+.tkt-meta-thumb-card {
+  background: var(--aewttr-surface);
+  border: 1px solid var(--aewttr-border);
+  border-radius: var(--aewttr-radius-md);
+  overflow: hidden;
+  box-shadow: var(--aewttr-shadow-1);
+}
+.tkt-meta-thumb {
+  width: 100%;
+  display: block;
+  cursor: zoom-in;
+  transition: opacity .15s;
+  border-top: 1px solid var(--aewttr-border);
+}
+.tkt-meta-thumb:hover { opacity: .85; }
+
+/* ── Sidebar warning card ── */
+.tkt-meta-card--warn {
+  border-color: var(--aewttr-red);
+  background: var(--aewttr-red-tint);
+}
+.tkt-meta-card--warn .tkt-meta-label { color: var(--aewttr-red); }
+
+/* ── Diagnostics grid (Error Codes tab) ── */
+.tkt-diag-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 16px;
+  font-size: 13px;
+}
+.tkt-diag-kv { display: contents; }
+.tkt-diag-kv span:first-child {
+  color: var(--aewttr-muted);
+  font-weight: 500;
+  padding: 5px 0;
+  white-space: nowrap;
+}
+.tkt-diag-kv span:last-child,
+.tkt-diag-kv code {
+  color: var(--aewttr-text);
+  padding: 5px 0;
+  word-break: break-all;
+}
+.tkt-diag-kv code {
+  font-family: ui-monospace, "Cascadia Mono", "Fira Code", monospace;
+  font-size: 12px;
+}
+
+/* ══════════════════════════════════════════════
+   REDUCED MOTION
+   ══════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .pulse-svgl-dot, .pulse-svgl-flash { animation: none !important; opacity: 1; transform: none; }
+  .pulse-svgl-letter { animation: none !important; opacity: 1; transform: none; }
+  .pulse-svgl-wordmark { animation: none !important; clip-path: none; }
+}
+
+</style>
+</head><body>
+<div id="pulse-boot-loader" role="status" aria-label="Loading PULSE Tickets">
+    <div class="pulse-svgl-wrap">
+      <svg class="pulse-svgl" viewBox="0 0 960 360" aria-hidden="true">
+        <circle class="pulse-svgl-flash" cx="480" cy="180" r="90" />
+        <g class="pulse-svgl-wordmark">
+          <text class="pulse-svgl-letter pulse-svgl-letter--p" x="120" y="180">P</text>
+          <text class="pulse-svgl-letter pulse-svgl-letter--u" x="300" y="180">U</text>
+          <text class="pulse-svgl-letter pulse-svgl-letter--l" x="480" y="180">L</text>
+          <text class="pulse-svgl-letter pulse-svgl-letter--s" x="660" y="180">S</text>
+          <text class="pulse-svgl-letter pulse-svgl-letter--e" x="840" y="180">E</text>
+        </g>
+        <circle class="pulse-svgl-dot pulse-svgl-dot--upper" cx="300" cy="76" r="14" />
+        <circle class="pulse-svgl-dot pulse-svgl-dot--lower" cx="660" cy="258" r="14" />
+      </svg>
+    </div>
+  </div>
+
+  <div class="tkt-app">
+    <header class="tkt-app-header">
+      <div class="tkt-brand">
+        <span class="pulse-nav-mark" aria-hidden="true">
+          <i class="pulse-nav-dot pulse-nav-dot--one"></i>
+          <i class="pulse-nav-dot pulse-nav-dot--two"></i>
+        </span>
+        <span class="tkt-page-title">Tickets</span>
+      </div>
+      <div class="tkt-header-actions">
+        <button class="tkt-header-btn" id="btn-new-issue">+ New Issue</button>
+      </div>
+    </header>
+
+    <main class="tkt-app-main" id="tkt-view"></main>
+  </div>
+
+  <div id="tkt-modal-root"></div>
+  <div class="tkt-toast-stack" id="tkt-toast-stack"></div>
+<script>
+/**
+ * PULSE IPT Dashboard — v1.0.0
+ * AEWTTR IPT DB46200
+ *
+ * Developer:  Eli Scalere (Contractor)
+ * Primary:    elijah.t.scalere.ctr@us.navy.mil
+ * Secondary:  eli.scalere@scaleredesign.com  |  (516) 265-2636
+ *
+ * Built for NAVAIR AEWTTR IPT. Single-file SharePoint SPA.
+ * All source under apps/PULSE/. Release builds in releases/.
+ */
+
+/* AEWTTR-PULSE — single source of app-level configuration.
+   Do not duplicate these values anywhere else in the codebase. */
+
+const APP_VERSION = "1.0.0";
+
+/* ---------- boot diagnostic (remove once Firepit loading is confirmed stable) ---------- */
+(function () {
+  function showBootError(msg) {
+    var root = document.getElementById("aewttr-root");
+    if (!root) return;
+    root.innerHTML = '<div style="padding:28px;font-family:sans-serif;max-width:640px;">'
+      + '<h2 style="color:#b00;margin:0 0 10px;font-size:18px;">PULSE boot error</h2>'
+      + '<pre style="background:#f5f5f5;padding:12px;border-radius:4px;font-size:12px;'
+      + 'white-space:pre-wrap;word-break:break-all;">' + String(msg).replace(/</g, "&lt;") + '</pre>'
+      + '<p style="font-size:12px;color:#666;margin:8px 0 0;">Report this to your app admin.</p></div>';
+  }
+
+  window.addEventListener("error", function (e) {
+    if (window.AEWTTR && window.AEWTTR.bootComplete) {
+      console.error("PULSE runtime error:", e.message, e.filename, e.lineno, e.error);
+      if (typeof toast === "function") toast("Something went wrong on this page. Try again or refresh.", "error");
+      return;
+    }
+    showBootError((e.filename ? e.filename.split("/").pop() : "?") + ":" + e.lineno + " — " + e.message);
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    if (window.AEWTTR && window.AEWTTR.bootComplete) {
+      // Background failures (polls, prefetches) already surface their own
+      // targeted toasts where it matters — a generic toast here just spams
+      // "a background action failed" on every transient network blip.
+      console.error("PULSE unhandled rejection:", e.reason);
+      return;
+    }
+    showBootError("Unhandled promise rejection: " + (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+  });
+
+  // If boot never renders, show a diagnostic.  Firepit can inject a flat FS
+  // package after the host page has already fired DOMContentLoaded, so start
+  // this watchdog immediately in that environment rather than attaching a
+  // listener that will never run.
+  function scheduleBootWatchdog() {
+    setTimeout(function () {
+      if (window.AEWTTR && (window.AEWTTR.bootComplete || window.AEWTTR.db)) return; // app initialized OK
+      if (window.AEWTTR && window.AEWTTR.bootStarted && !window.AEWTTR.bootFailed) return; // boot still in progress
+      var missing = [];
+      if (typeof normalizeStoreShape === "undefined") missing.push("data.js");
+      if (typeof sharePointAdapter === "undefined") missing.push("sharepoint-adapter.js");
+      if (typeof aewttrLoadStore === "undefined") missing.push("data.js/aewttrLoadStore");
+      if (typeof renderShell === "undefined") missing.push("app.js/renderShell");
+      showBootError("App did not initialize within 15 s.\n"
+        + "Scripts that appear missing: " + (missing.length ? missing.join(", ") : "(all present — check app.js DOMContentLoaded)")
+        + "\nAEWTTR global: " + JSON.stringify(window.AEWTTR));
+    }, 15000);
+  }
+
+  if (document.readyState === "loading") {
+    window.addEventListener("DOMContentLoaded", scheduleBootWatchdog, { once: true });
+  } else {
+    scheduleBootWatchdog();
+  }
+}());
+
+const APP_CONFIG = {
+  // Leave blank to auto-detect the SharePoint site URL from _spPageContextInfo
+  // or the current page location. Only set this if auto-detection fails in
+  // your environment (e.g. the app is hosted in a Firepit web part on a
+  // page whose URL doesn't directly expose the host site).
+  manualSharePointSiteUrl: "",
+
+  // SharePoint list display names start with this prefix.
+  listPrefix: "PULSE",
+
+  // Legacy file-store settings kept only for backward compatibility with
+  // older diagnostics. The active backend is SharePoint Lists.
+  dataLibraryTitle: "PULSE App Data",
+  dataFolderName: "AEWTTR-PULSE",
+  dataFiles: {
+    db: "db.json",
+    roles: "roles.json",
+    peopleDirectory: "people-directory.json"
+  },
+
+  // SharePoint Site Page that hosts the PULSE app (Teams notification links).
+  pulseAppPageFileName: "AEWTTR-PULSE.aspx",
+  // Used only when site URL auto-detection is unavailable (local dev).
+  pulseAppPagePath: "/sites/AEWTTRTst/SitePages/AEWTTR-PULSE.aspx",
+
+  // Role assigned when an admin assigns someone to PULSE (creates App Roles).
+  defaultUserRole: "Member",
+
+  // SharePoint AssociatedMemberGroup (+ Owners) still feed the bulk directory
+  // pull when permission expansion is empty. These exact group Title fallbacks
+  // are tried only if AssociatedMemberGroup lookup fails.
+  siteMemberGroupNames: [
+    "AEWTTRTest Members",
+    "AEWTTR IPT Members",
+    "AEWTTR Members",
+    "PULSE IPT Members"
+  ],
+
+  // Microsoft Graph base URL — MUST match your tenant's actual cloud, or
+  // every Graph call (tenant-wide people search, M365 group expansion)
+  // fails silently with an auth/network error while SharePoint's own REST
+  // API keeps working fine (it's a different hostname entirely, on your
+  // own tenant's SharePoint domain, so a wrong Graph endpoint doesn't break
+  // it — this is why "site users" can load while "search the whole
+  // tenant" doesn't). A *.sharepoint-mil.us site collection is the DoD
+  // (IL4/IL5) cloud, not GCC High — set to the DoD Graph endpoint.
+  //   Commercial / GCC : https://graph.microsoft.com
+  //   GCC High (Flank Speed/NMCI, *.sharepoint.us) : https://graph.microsoft.us
+  //   DoD (IL4/IL5, *.sharepoint-mil.us) : https://dod-graph.microsoft.us
+  graphApiBase: "https://dod-graph.microsoft.us",
+
+  // ---------- AI grammar review (Document Review page) ----------
+  // Talks to CapraGPT's OpenAI-compatible chat completions endpoint.
+  // >>> PUT YOUR CAPRAGPT API KEY IN apiKey BELOW. <<<
+  // If CapraGPT's actual endpoint URL differs from the placeholder, update
+  // `endpoint` to match what CapraGPT's own docs specify — everything else
+  // (request/response shape, Bearer auth) follows the standard OpenAI
+  // chat-completions contract and shouldn't need to change.
+  aiReview: {
+    enabled: true,
+    endpoint: "https://api.capragpt.mil/v1/chat/completions", // CONFIRM against CapraGPT's docs
+    apiKey: "", // <-- put your CapraGPT API key here, as a plain string
+    model: "gpt-4.1"
+  }
+};
+
+</script>
+<script>
+/**
+ * PULSE Tickets — v1.0.0
+ * Standalone issue-tracker companion to PULSE.
+ * Reads from the "PULSE Issues" SharePoint list.
+ */
+(function () {
+  "use strict";
+
+  const LIST_TITLE  = "PULSE Issues";
+  const STATUSES    = ["New", "Triaged", "In Progress", "Resolved", "Closed"];
+  const STATUS_TABS = ["All", ...STATUSES];
+  const ISSUE_TYPES = [
+    "Bug / error", "Data / saving", "Access / permissions",
+    "Display / usability", "Feature Request", "Other"
+  ];
+
+  let tickets = [];
+  const state = { status: "All", type: "All", search: "" };
+  const bootStartedAt = performance.now();
+
+  /* ── Helpers ── */
+  function escHtml(v) {
+    const n = document.createElement("div");
+    n.textContent = v == null ? "" : String(v);
+    return n.innerHTML;
+  }
+  function fmtDate(v) {
+    if (!v) return "—";
+    try { return new Date(v).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" }); }
+    catch (_) { return String(v).slice(0, 10); }
+  }
+  function fmtDateTime(v) {
+    if (!v) return "—";
+    try { return new Date(v).toLocaleString([], { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
+    catch (_) { return String(v); }
+  }
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $all(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
+
+  function safeJson(v) {
+    if (!v) return null;
+    if (typeof v === "object") return v;
+    try { return JSON.parse(v); } catch (_) { return null; }
+  }
+
+  /* ── Normalise SP item ── */
+  function normalise(item) {
+    const logs      = safeJson(item.LogsJson)        || [];
+    const diag      = safeJson(item.DiagnosticsJson) || {};
+    const errCodes  = safeJson(item.ErrorCodesJson)  || [];
+    const ssUrl     = item.ScreenshotFileUrl || item.ScreenshotServerRelativeUrl || item.ScreenshotDataUrl || "";
+    return Object.assign({}, item, {
+      Status:        item.IssueStatus    || item.Status      || "New",
+      ReportedBy:    item.ReportedByName || item.ReportedBy  || "Unknown",
+      Type:          item.IssueType      || item.Type        || "Other",
+      Description:   item.Description   || item.Summary      || "",
+      logs,
+      diag,
+      errCodes,
+      screenshotSrc: ssUrl
+    });
+  }
+
+  /* ── Status / type display ── */
+  function statusPill(s) {
+    const cls = "sp--" + String(s || "New").toLowerCase().replace(/[\s/]+/g, "-");
+    return `<span class="status-pill ${cls}">${escHtml(s || "New")}</span>`;
+  }
+  function typeBadge(t) {
+    return `<span class="type-badge">${escHtml(t || "Other")}</span>`;
+  }
+
+  /* ── Filtering ── */
+  function filtered() {
+    const q = state.search.toLowerCase();
+    return tickets.filter(t => {
+      if (state.status !== "All" && t.Status !== state.status) return false;
+      if (state.type   !== "All" && t.Type   !== state.type)   return false;
+      if (q && !String(t.Title      || "").toLowerCase().includes(q) &&
+               !String(t.IssueCode  || "").toLowerCase().includes(q) &&
+               !String(t.ReportedBy || "").toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }
+
+  /* ── SP helpers ── */
+  function getSiteUrl() {
+    if (window._spPageContextInfo && window._spPageContextInfo.webAbsoluteUrl)
+      return window._spPageContextInfo.webAbsoluteUrl.replace(/\/$/, "");
+    // APP_CONFIG is a const in app-config.js — access it without window.
+    try {
+      if (typeof APP_CONFIG !== "undefined" && APP_CONFIG.manualSharePointSiteUrl)
+        return APP_CONFIG.manualSharePointSiteUrl.replace(/\/$/, "");
+    } catch (_) {}
+    // Fallback: reconstruct from _spPageContextInfo.webServerRelativeUrl (same
+    // chain the main PULSE app uses when webAbsoluteUrl is missing).
+    if (window._spPageContextInfo && window._spPageContextInfo.webServerRelativeUrl)
+      return (window.location.origin + window._spPageContextInfo.webServerRelativeUrl).replace(/\/$/, "");
+    return window.location.origin;
+  }
+  function odata(v) { return String(v).replace(/'/g, "''"); }
+  function spFetch(url, opts) {
+    return fetch(url, Object.assign({ credentials: "same-origin" }, opts, {
+      headers: Object.assign({ Accept: "application/json;odata=nometadata", "Cache-Control": "no-cache" }, opts && opts.headers)
+    }));
+  }
+  async function getDigest() {
+    const r = await spFetch(`${getSiteUrl()}/_api/contextinfo`, { method: "POST" });
+    if (!r.ok) throw new Error(`Digest error (${r.status})`);
+    return (await r.json()).FormDigestValue;
+  }
+  async function spPatch(id, body) {
+    const digest = await getDigest();
+    const r = await fetch(`${getSiteUrl()}/_api/web/lists/getbytitle('${odata(LIST_TITLE)}')/items(${id})`, {
+      method: "POST", credentials: "same-origin",
+      headers: { Accept: "application/json;odata=nometadata", "Content-Type": "application/json;odata=nometadata", "X-RequestDigest": digest, "IF-MATCH": "*", "X-HTTP-Method": "MERGE" },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(`Update failed (${r.status})`);
+  }
+  async function spDel(id) {
+    const digest = await getDigest();
+    const r = await fetch(`${getSiteUrl()}/_api/web/lists/getbytitle('${odata(LIST_TITLE)}')/items(${id})`, {
+      method: "POST", credentials: "same-origin",
+      headers: { "X-RequestDigest": digest, "IF-MATCH": "*", "X-HTTP-Method": "DELETE" }
+    });
+    if (!r.ok && r.status !== 404) throw new Error(`Delete failed (${r.status})`);
+  }
+  async function spCreate(body) {
+    const digest = await getDigest();
+    const r = await fetch(`${getSiteUrl()}/_api/web/lists/getbytitle('${odata(LIST_TITLE)}')/items`, {
+      method: "POST", credentials: "same-origin",
+      headers: { Accept: "application/json;odata=nometadata", "Content-Type": "application/json;odata=nometadata", "X-RequestDigest": digest },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) { const txt = await r.text().catch(() => ""); throw new Error(`Create failed (${r.status}): ${txt.slice(0, 200)}`); }
+    return r.json();
+  }
+
+  /* ── Toast ── */
+  function toast(msg, type) {
+    const stack = $("#tkt-toast-stack") || document.body;
+    const el = document.createElement("div");
+    el.className = `tkt-toast${type ? " tkt-toast--" + type : ""}`;
+    el.textContent = msg;
+    stack.appendChild(el);
+    setTimeout(() => { el.style.opacity = "0"; setTimeout(() => el.remove(), 300); }, 3000);
+  }
+
+  /* ── Loader ── */
+  function dismissLoader() {
+    const el = document.getElementById("pulse-boot-loader");
+    if (!el) return;
+    const wait = Math.max(0, 1000 - (performance.now() - bootStartedAt));
+    setTimeout(() => {
+      el.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(.985)" }],
+        { duration: 360, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" })
+        .onfinish = () => el.remove();
+    }, wait);
+  }
+
+  /* ── Hash routing ── */
+  function currentIssueId() {
+    const hash = location.hash.replace(/^#\/?/, "");
+    return hash && /^ISS-/i.test(hash) ? hash.toUpperCase() : null;
+  }
+  function navigateTo(id) {
+    location.hash = id ? "#/" + id : "#/";
+  }
+
+  /* ── Render dispatcher ── */
+  function render() {
+    const id = currentIssueId();
+    if (id) {
+      const t = tickets.find(x => String(x.IssueCode || "").toUpperCase() === id);
+      if (t) { renderDetail(t); return; }
+    }
+    renderList();
+  }
+
+  /* ══════════════════════════════════════════════
+     LIST VIEW — matches PULSE app tickets page
+     ══════════════════════════════════════════════ */
+  function renderList() {
+    const rows = filtered();
+    const counts = STATUS_TABS.reduce((acc, s) => {
+      acc[s] = s === "All" ? tickets.length : tickets.filter(t => t.Status === s).length;
+      return acc;
+    }, {});
+
+    const view = $("#tkt-view");
+    view.innerHTML = `
+      <div class="tkt-list-page">
+        <header class="tkt-list-head">
+          <div class="tkt-list-copy">
+            <div class="tkt-workspace-label">Support workspace</div>
+            <h2>Keep work moving</h2>
+            <p>Track blockers, bugs, access needs, platform issues, and questions from intake through resolution.</p>
+          </div>
+        </header>
+
+        <section class="tkt-controls">
+          <div class="tkt-search-wrap">
+            <svg class="tkt-search-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.75" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <input type="search" class="tkt-search" id="tkt-search" placeholder="Search by ID or title" value="${escHtml(state.search)}" autocomplete="off">
+          </div>
+          <div class="filter-pills" id="tkt-status-tabs">
+            ${STATUS_TABS.map(s => `<button class="filter-pill${state.status === s ? " active" : ""}" data-status="${escHtml(s)}">${escHtml(s)}<span>${counts[s]}</span></button>`).join("")}
+          </div>
+          <select class="tkt-type-filter select-aewttr" id="tkt-type-filter">
+            <option value="All">All Types</option>
+            ${ISSUE_TYPES.map(t => `<option value="${escHtml(t)}"${state.type === t ? " selected" : ""}>${escHtml(t)}</option>`).join("")}
+          </select>
+        </section>
+
+        <section class="tkt-table-shell">
+          <div class="tkt-table-meta"><strong>${rows.length}</strong> of ${tickets.length} issue${tickets.length === 1 ? "" : "s"}</div>
+          <div class="tkt-table-scroll">
+            <table class="tkt-table">
+              <thead><tr><th>Issue</th><th>Title</th><th>Type</th><th>Status</th><th>Page</th><th>Reported By</th><th>Date</th></tr></thead>
+              <tbody>
+                ${rows.length ? rows.map(t => `
+                  <tr data-code="${escHtml(t.IssueCode || "")}" style="cursor:pointer;">
+                    <td><span class="tkt-id">${escHtml(t.IssueCode || "ISSUE-" + t.Id)}</span></td>
+                    <td><strong>${escHtml(t.Title || "Untitled")}</strong></td>
+                    <td>${typeBadge(t.Type)}</td>
+                    <td>${statusPill(t.Status)}</td>
+                    <td class="tkt-page-cell">${escHtml(t.PageTitle || "—")}</td>
+                    <td>${escHtml(t.ReportedBy || "—")}</td>
+                    <td class="tkt-date-cell">${fmtDate(t.OccurredAt || t.Created)}</td>
+                  </tr>`).join("") : `
+                  <tr><td colspan="7"><div class="tkt-empty"><strong>No issues found</strong><span>Adjust filters or create a new issue.</span></div></td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>`;
+
+    $all("tr[data-code]", view).forEach(r => r.addEventListener("click", () => navigateTo(r.dataset.code)));
+    $all(".filter-pill", view).forEach(b => b.addEventListener("click", () => { state.status = b.dataset.status; render(); }));
+    $("#tkt-type-filter", view).addEventListener("change", e => { state.type = e.target.value; render(); });
+    $("#tkt-search", view).addEventListener("input", e => { state.search = e.target.value; render(); });
+  }
+
+  /* ══════════════════════════════════════════════
+     DETAIL VIEW — tabbed full-page view
+     ══════════════════════════════════════════════ */
+  function renderDetail(t) {
+    const view = $("#tkt-view");
+    const ssrc = t.screenshotSrc || "";
+    const logs  = Array.isArray(t.logs) ? t.logs : [];
+    const diag  = t.diag || {};
+    const errs  = Array.isArray(t.errCodes) ? t.errCodes : [];
+    const appLogs = Array.isArray(diag.sharePointDebug) ? diag.sharePointDebug : [];
+
+    const errorLogs = logs.filter(l => l.level === "error" || l.level === "warn");
+    const infoLogs  = logs.filter(l => l.level !== "error" && l.level !== "warn");
+
+    function logRow(l) {
+      return `<div class="tkt-log-item tkt-log--${escHtml(l.level || "info")}">
+        <span class="tkt-log-level">${escHtml(l.level || "log")}</span>
+        <span class="tkt-log-msg">${escHtml(l.message || "")}</span>
+        <span class="tkt-log-ts">${l.ts ? fmtDateTime(l.ts) : ""}</span>
+      </div>`;
+    }
+    function appLogRow(l) {
+      return `<div class="tkt-log-item tkt-log--${escHtml(l.level || "info")}">
+        <span class="tkt-log-level">${escHtml(l.level || "log")}</span>
+        <span class="tkt-log-msg">${escHtml((l.category ? "[" + l.category + "] " : "") + (l.message || ""))}</span>
+        <span class="tkt-log-ts">${l.ts ? fmtDateTime(l.ts) : ""}</span>
+      </div>`;
+    }
+
+    // Tab definitions — only show tabs that have content
+    const TABS = [
+      { id: "overview",   label: "Overview" },
+      { id: "screenshot", label: "Screenshot", hide: !ssrc },
+      { id: "browser-logs", label: `Browser Logs${logs.length ? " (" + logs.length + ")" : ""}`, hide: !logs.length },
+      { id: "app-logs",   label: `App Logs${appLogs.length ? " (" + appLogs.length + ")" : ""}`, hide: !appLogs.length },
+      { id: "error-codes", label: `Error Codes${errs.length ? " (" + errs.length + ")" : ""}`, hide: !errs.length && !diag.browser },
+    ].filter(t => !t.hide);
+
+    const activeTab = TABS[0].id;
+
+    view.innerHTML = `
+      <div class="tkt-detail-page">
+        <div class="tkt-detail-topbar">
+          <button class="tkt-back-btn" id="tktd-back">&#8592; All issues</button>
+          <div class="tkt-detail-topbar-actions">
+            ${t.Status !== "Resolved" && t.Status !== "Closed" ? `<button class="tkt-btn-outline" id="tktd-resolve">Resolve</button>` : ""}
+            <button class="tkt-btn-danger" id="tktd-delete">Delete</button>
+          </div>
+        </div>
+
+        <div class="tkt-detail-layout">
+          <!-- Main: tabs + panels -->
+          <div class="tkt-detail-main">
+            <div class="tkt-detail-header">
+              <span class="tkt-id">${escHtml(t.IssueCode || "ISSUE-" + t.Id)}</span>
+              <h1 class="tkt-detail-title">${escHtml(t.Title || "Untitled")}</h1>
+            </div>
+
+            <div class="tkt-tabs" id="tktd-tabs">
+              ${TABS.map(tab => `<button class="tkt-tab${tab.id === activeTab ? " active" : ""}" data-tab="${tab.id}">${escHtml(tab.label)}</button>`).join("")}
+            </div>
+
+            <!-- Overview -->
+            <div class="tkt-tab-panel${activeTab === "overview" ? " active" : ""}" data-panel="overview">
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">Description</div>
+                <p class="tkt-detail-text">${escHtml(t.Description || "No description provided.")}</p>
+              </div>
+              ${t.ExpectedBehavior ? `
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">Expected result</div>
+                <p class="tkt-detail-text">${escHtml(t.ExpectedBehavior)}</p>
+              </div>` : ""}
+              ${t.AdditionalContext ? `
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">Additional context / updates</div>
+                <p class="tkt-detail-text">${escHtml(t.AdditionalContext)}</p>
+              </div>` : ""}
+              ${t.ResolutionNote ? `
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">Resolution note</div>
+                <p class="tkt-detail-text" style="color:var(--aewttr-green)">${escHtml(t.ResolutionNote)}</p>
+              </div>` : ""}
+              <div class="tkt-detail-section tkt-update-section">
+                <div class="tkt-section-label">Add update</div>
+                <textarea class="tkt-textarea" id="tktd-update-text" rows="3" placeholder="Add a note, resolution step, or follow-up…"></textarea>
+                <div class="tkt-update-actions">
+                  <button class="tkt-btn-primary" id="tktd-post-btn">Post update</button>
+                </div>
+                <div class="tkt-form-msg" id="tktd-msg"></div>
+              </div>
+            </div>
+
+            <!-- Screenshot -->
+            ${ssrc ? `
+            <div class="tkt-tab-panel" data-panel="screenshot">
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">Captured screenshot</div>
+                <div class="tkt-screenshot-wrap">
+                  <img src="${escHtml(ssrc)}" alt="Captured screenshot" class="tkt-screenshot-img" id="tktd-screenshot">
+                  <span class="tkt-screenshot-hint">Click to enlarge</span>
+                </div>
+                ${t.ScreenshotFileName ? `<p class="tkt-screenshot-filename">${escHtml(t.ScreenshotFileName)}</p>` : ""}
+              </div>
+            </div>` : ""}
+
+            <!-- Browser Logs -->
+            ${logs.length ? `
+            <div class="tkt-tab-panel" data-panel="browser-logs">
+              ${errorLogs.length ? `
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">Errors &amp; warnings <span class="tkt-badge tkt-badge--red">${errorLogs.length}</span></div>
+                <div class="tkt-log-list">${errorLogs.map(logRow).join("")}</div>
+              </div>` : ""}
+              ${infoLogs.length ? `
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">Info / debug <span class="tkt-badge">${infoLogs.length}</span></div>
+                <div class="tkt-log-list">${infoLogs.map(logRow).join("")}</div>
+              </div>` : ""}
+            </div>` : ""}
+
+            <!-- App Logs -->
+            ${appLogs.length ? `
+            <div class="tkt-tab-panel" data-panel="app-logs">
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">PULSE app debug log <span class="tkt-badge">${appLogs.length}</span></div>
+                <div class="tkt-log-list">${appLogs.map(appLogRow).join("")}</div>
+              </div>
+            </div>` : ""}
+
+            <!-- Error Codes + Diagnostics -->
+            <div class="tkt-tab-panel" data-panel="error-codes">
+              ${errs.length ? `
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">Error codes <span class="tkt-badge tkt-badge--red">${errs.length}</span></div>
+                <div class="tkt-error-codes">${errs.map(e => `<span class="tkt-error-chip">${escHtml(e)}</span>`).join("")}</div>
+              </div>` : `<div class="tkt-detail-section"><p class="tkt-detail-text" style="color:var(--aewttr-muted)">No error codes captured.</p></div>`}
+              ${diag.browser || diag.viewport || diag.capturedAt ? `
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">Client diagnostics</div>
+                <div class="tkt-diag-grid">
+                  ${diag.browser       ? `<div class="tkt-diag-kv"><span>Browser</span><span>${escHtml(String(diag.browser).slice(0, 120))}</span></div>` : ""}
+                  ${diag.viewport      ? `<div class="tkt-diag-kv"><span>Viewport</span><span>${escHtml(diag.viewport.width + "×" + diag.viewport.height + " @" + (diag.viewport.devicePixelRatio || 1) + "x")}</span></div>` : ""}
+                  ${diag.mode         ? `<div class="tkt-diag-kv"><span>App mode</span><span>${escHtml(diag.mode)}</span></div>` : ""}
+                  ${diag.capturedAt   ? `<div class="tkt-diag-kv"><span>Captured</span><span>${escHtml(fmtDateTime(diag.capturedAt))}</span></div>` : ""}
+                  ${diag.detectedSiteUrl ? `<div class="tkt-diag-kv"><span>Site URL</span><span>${escHtml(diag.detectedSiteUrl)}</span></div>` : ""}
+                  ${diag.hasPageContext != null ? `<div class="tkt-diag-kv"><span>SP context</span><span>${diag.hasPageContext ? "Present" : "Missing"}</span></div>` : ""}
+                </div>
+              </div>` : ""}
+              ${diag.page ? `
+              <div class="tkt-detail-section">
+                <div class="tkt-section-label">Page context</div>
+                <div class="tkt-diag-grid">
+                  ${diag.page.title  ? `<div class="tkt-diag-kv"><span>Title</span><span>${escHtml(diag.page.title)}</span></div>` : ""}
+                  ${diag.page.route  ? `<div class="tkt-diag-kv"><span>Route</span><code>${escHtml(diag.page.route)}</code></div>` : ""}
+                  ${diag.page.url    ? `<div class="tkt-diag-kv"><span>URL</span><span style="word-break:break-all">${escHtml(String(diag.page.url).slice(0, 200))}</span></div>` : ""}
+                </div>
+              </div>` : ""}
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <aside class="tkt-detail-aside">
+            <div class="tkt-meta-card">
+              <div class="tkt-meta-row">
+                <span class="tkt-meta-label">Status</span>
+                <select class="tkt-meta-select select-aewttr" id="tktd-status">
+                  ${STATUSES.map(s => `<option${t.Status === s ? " selected" : ""}>${escHtml(s)}</option>`).join("")}
+                </select>
+              </div>
+              <div class="tkt-meta-row">
+                <span class="tkt-meta-label">Type</span>
+                <span>${typeBadge(t.Type)}</span>
+              </div>
+              <div class="tkt-meta-row">
+                <span class="tkt-meta-label">Reporter</span>
+                <span class="tkt-meta-value">${escHtml(t.ReportedBy || "—")}</span>
+              </div>
+              ${t.ReporterEmail ? `
+              <div class="tkt-meta-row">
+                <span class="tkt-meta-label">Email</span>
+                <a href="mailto:${escHtml(t.ReporterEmail)}" class="tkt-meta-link">${escHtml(t.ReporterEmail)}</a>
+              </div>` : ""}
+              <div class="tkt-meta-row">
+                <span class="tkt-meta-label">Reported</span>
+                <span class="tkt-meta-value">${fmtDateTime(t.OccurredAt || t.Created)}</span>
+              </div>
+              ${t.PageTitle ? `
+              <div class="tkt-meta-row">
+                <span class="tkt-meta-label">Page</span>
+                <span class="tkt-meta-value">${escHtml(t.PageTitle)}</span>
+              </div>` : ""}
+              ${t.Route ? `
+              <div class="tkt-meta-row">
+                <span class="tkt-meta-label">Route</span>
+                <code class="tkt-meta-code">${escHtml(t.Route)}</code>
+              </div>` : ""}
+              ${t.PageUrl ? `
+              <div class="tkt-meta-row">
+                <span class="tkt-meta-label">URL</span>
+                <a href="${escHtml(t.PageUrl)}" target="_blank" rel="noopener" class="tkt-meta-link" style="font-size:11px;word-break:break-all;">${escHtml(String(t.PageUrl).replace(/^https?:\/\/[^/]+/, "").slice(0, 60))}…</a>
+              </div>` : ""}
+            </div>
+
+            ${ssrc ? `
+            <div class="tkt-meta-thumb-card" id="tktd-thumb-card">
+              <div class="tkt-section-label" style="padding:12px 14px 8px;margin:0;">Screenshot</div>
+              <img src="${escHtml(ssrc)}" alt="Screenshot thumbnail" class="tkt-meta-thumb" id="tktd-thumb">
+            </div>` : ""}
+
+            ${errs.length || logs.filter(l => l.level === "error").length ? `
+            <div class="tkt-meta-card tkt-meta-card--warn">
+              <div class="tkt-meta-row" style="border:0;padding:10px 14px;">
+                <span class="tkt-meta-label">Errors captured</span>
+                <span class="tkt-meta-value" style="color:var(--aewttr-red)">${errs.length} code${errs.length !== 1 ? "s" : ""}, ${errorLogs.length} log${errorLogs.length !== 1 ? "s" : ""}</span>
+              </div>
+            </div>` : ""}
+          </aside>
+        </div>
+      </div>`;
+
+    /* ── Tab switching ── */
+    $all(".tkt-tab", view).forEach(btn => btn.addEventListener("click", () => {
+      $all(".tkt-tab", view).forEach(b => b.classList.remove("active"));
+      $all(".tkt-tab-panel", view).forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      const panel = $(`[data-panel="${btn.dataset.tab}"]`, view);
+      if (panel) panel.classList.add("active");
+    }));
+
+    /* ── Back ── */
+    $("#tktd-back", view).addEventListener("click", () => navigateTo(null));
+
+    /* ── Status change ── */
+    $("#tktd-status", view).addEventListener("change", async (e) => {
+      const newStatus = e.target.value;
+      if (newStatus === t.Status) return;
+      try {
+        await spPatch(t.Id, { IssueStatus: newStatus });
+        t.IssueStatus = newStatus; t.Status = newStatus;
+        toast(`Status updated to ${newStatus}`, "success");
+        renderDetail(t);
+      } catch (err) { toast(err.message, "error"); e.target.value = t.Status; }
+    });
+
+    /* ── Resolve ── */
+    const resolveBtn = $("#tktd-resolve", view);
+    if (resolveBtn) resolveBtn.addEventListener("click", async () => {
+      resolveBtn.disabled = true; resolveBtn.textContent = "Resolving…";
+      try {
+        await spPatch(t.Id, { IssueStatus: "Resolved" });
+        t.IssueStatus = "Resolved"; t.Status = "Resolved";
+        toast(`${t.IssueCode || "Issue"} resolved`, "success");
+        renderDetail(t);
+      } catch (err) { resolveBtn.disabled = false; resolveBtn.textContent = "Resolve"; toast(err.message, "error"); }
+    });
+
+    /* ── Post update ── */
+    const postBtn = $("#tktd-post-btn", view);
+    if (postBtn) postBtn.addEventListener("click", async () => {
+      const text = ($("#tktd-update-text", view) || {}).value && $("#tktd-update-text", view).value.trim();
+      if (!text) return;
+      const btn = postBtn;
+      const msg = $("#tktd-msg", view);
+      btn.disabled = true; btn.textContent = "Posting…"; if (msg) msg.textContent = "";
+      const stamp = new Date().toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+      const who = (window._spPageContextInfo && window._spPageContextInfo.userDisplayName) || "Admin";
+      const appended = (t.AdditionalContext ? t.AdditionalContext + "\n\n" : "") + `[${stamp} — ${who}] ${text}`;
+      try {
+        await spPatch(t.Id, { AdditionalContext: appended });
+        t.AdditionalContext = appended;
+        toast("Update posted", "success");
+        renderDetail(t);
+      } catch (err) {
+        btn.disabled = false; btn.textContent = "Post update";
+        if (msg) { msg.className = "tkt-form-msg tkt-form-msg--error"; msg.textContent = err.message; }
+      }
+    });
+
+    /* ── Delete ── */
+    const deleteBtn = $("#tktd-delete", view);
+    deleteBtn.addEventListener("click", async () => {
+      if (deleteBtn.dataset.confirmed !== "1") {
+        deleteBtn.dataset.confirmed = "1"; deleteBtn.textContent = "Confirm delete";
+        setTimeout(() => { if (deleteBtn.dataset.confirmed === "1") { deleteBtn.dataset.confirmed = ""; deleteBtn.textContent = "Delete"; } }, 3000);
+        return;
+      }
+      deleteBtn.disabled = true; deleteBtn.textContent = "Deleting…";
+      try {
+        await spDel(t.Id);
+        tickets = tickets.filter(x => x.Id !== t.Id);
+        toast(`${t.IssueCode || "Issue"} deleted`, "success");
+        navigateTo(null);
+      } catch (err) { deleteBtn.disabled = false; deleteBtn.textContent = "Delete"; deleteBtn.dataset.confirmed = ""; toast(err.message, "error"); }
+    });
+
+    /* ── Screenshot lightbox (main panel + sidebar thumb) ── */
+    function openLightbox() {
+      const lb = document.createElement("div");
+      lb.className = "tkt-lightbox";
+      lb.innerHTML = `<div class="tkt-lightbox-backdrop"></div><div class="tkt-lightbox-content"><img src="${escHtml(ssrc)}" alt="Screenshot"><button class="tkt-lightbox-close" aria-label="Close">&times;</button></div>`;
+      document.body.appendChild(lb);
+      const close = () => lb.remove();
+      lb.querySelector(".tkt-lightbox-backdrop").addEventListener("click", close);
+      lb.querySelector(".tkt-lightbox-close").addEventListener("click", close);
+      const esc = e => { if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); } };
+      document.addEventListener("keydown", esc);
+    }
+    const ssImg = $("#tktd-screenshot", view);
+    if (ssImg) ssImg.addEventListener("click", openLightbox);
+    const thumb = $("#tktd-thumb", view);
+    if (thumb) thumb.addEventListener("click", openLightbox);
+  }
+
+  /* ── New issue modal ── */
+  function openNewIssueModal() {
+    const root = $("#tkt-modal-root");
+    root.innerHTML = `
+      <div class="tkt-modal-backdrop">
+        <div class="tkt-modal">
+          <div class="tkt-modal-head">
+            <div><span class="tkt-workspace-label">Support request</span><h3>New Issue</h3></div>
+            <button class="tkt-modal-close" id="nim-close">&times;</button>
+          </div>
+          <div class="tkt-modal-body">
+            <div class="tkt-form-row"><label>Title <span class="tkt-req">*</span></label><input class="tkt-input" id="nim-title" placeholder="Brief description of the issue"></div>
+            <div class="tkt-form-grid">
+              <div class="tkt-form-row"><label>Type</label><select class="select-aewttr" id="nim-type">${ISSUE_TYPES.map(t => `<option>${escHtml(t)}</option>`).join("")}</select></div>
+              <div class="tkt-form-row"><label>Status</label><select class="select-aewttr" id="nim-status">${STATUSES.map(s => `<option${s === "New" ? " selected" : ""}>${escHtml(s)}</option>`).join("")}</select></div>
+            </div>
+            <div class="tkt-form-row"><label>Description <span class="tkt-req">*</span></label><textarea class="tkt-textarea" id="nim-desc" rows="4" placeholder="What happened? What were you trying to do?"></textarea></div>
+            <div class="tkt-form-row"><label>Expected result <span class="tkt-optional">optional</span></label><textarea class="tkt-textarea" id="nim-expected" rows="2"></textarea></div>
+            <div class="tkt-form-row"><label>Additional context <span class="tkt-optional">optional</span></label><textarea class="tkt-textarea" id="nim-context" rows="2"></textarea></div>
+            <div class="tkt-form-msg" id="nim-msg"></div>
+          </div>
+          <div class="tkt-modal-foot">
+            <button class="tkt-btn-ghost" id="nim-cancel">Cancel</button>
+            <button class="tkt-btn-primary" id="nim-submit">Submit Issue</button>
+          </div>
+        </div>
+      </div>`;
+
+    const close = () => { root.innerHTML = ""; };
+    $("#nim-close",  root).addEventListener("click", close);
+    $("#nim-cancel", root).addEventListener("click", close);
+    root.querySelector(".tkt-modal-backdrop").addEventListener("pointerdown", e => { if (e.target.classList.contains("tkt-modal-backdrop")) close(); });
+
+    $("#nim-submit", root).addEventListener("click", async () => {
+      const title = ($("#nim-title", root).value || "").trim();
+      const desc  = ($("#nim-desc",  root).value || "").trim();
+      const msg   = $("#nim-msg", root);
+      if (!title) { msg.className = "tkt-form-msg tkt-form-msg--error"; msg.textContent = "Title is required."; return; }
+      if (!desc)  { msg.className = "tkt-form-msg tkt-form-msg--error"; msg.textContent = "Description is required."; return; }
+      const btn = $("#nim-submit", root);
+      btn.disabled = true; btn.textContent = "Submitting…"; msg.textContent = "";
+      const now = new Date().toISOString();
+      const issueCode = "ISS-" + now.slice(0, 10).replace(/-/g, "") + "-" + Math.random().toString(36).slice(2, 7).toUpperCase();
+      try {
+        const ctx = window._spPageContextInfo || {};
+        await spCreate({
+          Title:            title.slice(0, 255),
+          IssueCode:        issueCode,
+          IssueType:        $("#nim-type",     root).value,
+          IssueStatus:      $("#nim-status",   root).value,
+          Description:      desc.slice(0, 18000),
+          ExpectedBehavior: ($("#nim-expected", root).value || "").trim().slice(0, 12000),
+          AdditionalContext:($("#nim-context",  root).value || "").trim().slice(0, 12000),
+          OccurredAt:       now,
+          ReportedByName:   (ctx.userDisplayName || "").slice(0, 255) || "Reporter",
+          ReporterEmail:    (ctx.userEmail || "").slice(0, 255),
+          LogsJson:         "[]",
+          ErrorCodesJson:   "[]",
+          DiagnosticsJson:  "{}"
+        });
+        close();
+        toast(`${issueCode} submitted`, "success");
+        await load();
+      } catch (err) {
+        btn.disabled = false; btn.textContent = "Submit Issue";
+        msg.className = "tkt-form-msg tkt-form-msg--error"; msg.textContent = err.message;
+      }
+    });
+  }
+
+  /* ── Load from SharePoint ── */
+  async function load() {
+    const select = [
+      "Id", "Title", "Created",
+      "IssueCode", "IssueStatus", "IssueType",
+      "ReportedByName", "ReporterEmail",
+      "OccurredAt", "Description", "ExpectedBehavior", "AdditionalContext",
+      "PageTitle", "Route", "PageUrl",
+      "ErrorCodesJson", "LogsJson", "DiagnosticsJson",
+      "ScreenshotDataUrl", "ScreenshotFileUrl", "ScreenshotServerRelativeUrl", "ScreenshotFileName",
+      "ResolutionNote"
+    ].join(",");
+
+    try {
+      const url = `${getSiteUrl()}/_api/web/lists/getbytitle('${odata(LIST_TITLE)}')/items?$top=500&$select=${select}&$orderby=Created desc`;
+      const r = await spFetch(url);
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        let detail = txt.slice(0, 300);
+        try { const p = JSON.parse(txt); detail = (p.error && p.error.message && p.error.message.value) || detail; } catch (_) {}
+        throw new Error(`SharePoint ${r.status}${detail ? ": " + detail : ""}`);
+      }
+      const payload = await r.json();
+      tickets = (payload.value || []).map(normalise);
+      render();
+    } catch (err) {
+      const view = $("#tkt-view");
+      view.innerHTML = `<div class="tkt-load-error"><strong>Could not load issues</strong><p>${escHtml(err.message)}</p></div>`;
+      console.error("[PULSE Tickets]", err);
+    } finally {
+      dismissLoader();
+    }
+  }
+
+  /* ── Boot ── */
+  function boot() {
+    const newBtn = $("#btn-new-issue");
+    if (newBtn) newBtn.addEventListener("click", openNewIssueModal);
+    window.addEventListener("hashchange", render);
+    load();
+    setInterval(load, 60000);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+}());
+
+</script>
+</body></html>

@@ -1,0 +1,3 @@
+Title,ActionTime,ActorEmail,ActorName,ActorRole,Action,Area,Summary,DetailJson,Route,RecordId
+PULSE Audit Log Sample 1,2026-07-01,ActorEmail sample 1,ActorName sample 1,ActorRole sample 1,Create,Travel,Summary sample 1,DetailJson sample text,Route sample 1,RecordId sample 1
+PULSE Audit Log Sample 2,2026-07-15,ActorEmail sample 2,ActorName sample 2,ActorRole sample 2,Create,Travel,Summary sample 2,DetailJson sample text,Route sample 2,RecordId sample 2

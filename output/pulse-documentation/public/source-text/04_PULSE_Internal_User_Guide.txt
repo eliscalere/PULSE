@@ -1,0 +1,755 @@
+INTERNAL OPERATING REFERENCE
+
+
+
+
+Internal User Guide
+Screen-by-screen guidance for using PULSE in day-to-day project and operational work.
+
+
+
+ USE THIS GUIDE TO                                                             DOCUMENT STATUS
+
+
+ Find a module, understand the screen, and complete the next action with the   Internal reference. Screenshots show locally captured routes; live
+ correct record and role.                                                      SharePoint permissions and persistence still require site
+                                                                               verification.
+
+
+
+
+ONE SHARED VIEW. CLEAR ACTION.
+                                                                                                                                  INTERNAL USER GUIDE
+
+
+
+
+ 00 / GUIDE MAP
+
+
+
+ How to use this reference
+ This guide follows the current PULSE navigation and then moves into the tools inside a project workspace. Use the screen name,
+ navigation path, and role notes to locate the right record before making a change.
+
+
+    01     Start a session                                                    02   Overview
+           Access, identity, Dashboard, and notifications                          Personal work, portfolio context, workload, resources, and
+                                                                                   operations
+
+
+
+    03     Projects                                                           04   Project workspace
+           Projects, portfolios, programs, end-item configurations, and            Home, People, Documents, Tracker, Gantt, Boards, Reporting,
+           creation                                                                Meeting, Notes, Tickets, Settings
+
+
+
+    05     Weekly Meeting                                                     06   Travel
+           Shared cadence, attendance, notes, decisions, Rocks, and history        Requests, approvals, finance, calendar, and debriefs
+
+
+
+    07     Document Review                                                    08   Support and notifications
+           Formal review, revision, concurrence, final pack, and signing           Tickets, notification settings, and operational follow-up
+
+
+
+    09     Administration                                                     10   Reference
+           Setup, users, roles, locations, diagnostics, and activity logs          Glossary, role boundaries, and verification notes
+
+
+
+
+     OPERATING RULE Overview cards summarize work. The linked project, tracker, review, travel, meeting, or ticket record remains the
+     authoritative place to make and verify a change.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                                      JULY 2026 | 02
+                                                                                                                       INTERNAL USER GUIDE
+
+
+
+
+ 01 / START A SESSION
+
+
+
+ Confirm identity, review attention items, and
+ enter through the correct module
+ Access: Open PULSE from the approved SharePoint page. PULSE uses the active SharePoint session and does not present a
+ separate PULSE password screen.
+
+ Before acting: Confirm the name and role shown in the upper-right account area. Review Dashboard, My Work, meeting actions,
+ and notification items before opening a record.
+
+
+      LOCAL FALLBACK The local browser fallback is intended for interface development only. It is not an official record and does not
+      confirm SharePoint identity, permissions, or persistence.
+
+
+
+
+                                          Dashboard - quick access, personal work, meeting actions, and navigation
+
+
+
+ Dashboard controls
+  ●
+      PULSE mark: returns to Dashboard from another module.
+  ●
+      Primary navigation: opens Overview, Projects, Weekly Meeting, Travel, Document Review, and available administrative routes.
+  ●
+      Quick-access cards: open a module or a focused secondary action.
+  ●
+      My Work: shows work associated with the current user and available source records.
+  ●
+      Report issue: starts a support ticket when the route is available.
+  ●
+      Bell and account control: open notifications and Notification Settings.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                          JULY 2026 | 03
+                                                                                                                                   INTERNAL USER GUIDE
+
+
+
+
+ 02 / OVERVIEW
+
+
+
+ Use personal and team views to decide where
+ action is required
+ Reach it: Select Overview. The available views organize personal work, portfolio context, operations queues, resources, and
+ workload.
+
+ Use view and filter controls to narrow information, then open the linked project or record to make the change. Team-wide views
+ and information outside the user's project access may be role-restricted.
+
+
+
+
+                                                 Overview - personal and shared operational awareness
+
+   View or area                 Use it to                                               Where to act
+
+
+   Personal work                Review assignments, current workload, and linked        Open the linked project, task, review, travel request, meeting, or
+                                records associated with you.                            ticket.
+
+
+   Portfolio context            Understand project condition, lifecycle, ownership,     Open the project workspace and update the source record.
+                                dates, and shared priorities.
+
+
+   Operations queue             Identify pending travel, review, support, or approval   Open the relevant workflow record.
+                                activity.
+
+
+   Resources and workload       Understand distribution of work and team                Update assignments inside the project or tracker.
+                                participation.
+
+
+
+     REMEMBER Overview is a decision surface, not a substitute for the underlying operational record.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                                        JULY 2026 | 04
+                                                                                                                                       INTERNAL USER GUIDE
+
+
+
+
+ 03 / PROJECTS AND GROUPINGS
+
+
+
+ Find workspaces, organize related work, and
+ maintain current project context
+ Reach it: Select Projects. Use the Projects, Portfolios, Programs, and End Item Configuration views to locate work at the correct
+ level.
+
+ Authorized users can create a project and set its name, team, ownership, dates, purpose, and related organizational
+ configuration.
+
+
+
+
+                                                Projects - project workspaces and organizational groupings
+
+
+
+ Project condition uses two different concepts
+   Field                    Current values                                                Use
+
+
+   Lifecycle                Planned; Awaiting Funding; Active; Paused; Complete           Describes where the project is in its overall lifecycle.
+
+
+   Technical health         On Track; At Risk; Off Track                                  Describes the current technical condition and need for recovery
+                                                                                          attention.
+
+
+
+     KEEP SEPARATE Do not use lifecycle as a substitute for technical health. Keep both fields, owners, dates, and recovery context
+     current.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                                            JULY 2026 | 05
+                                                                                                                            INTERNAL USER GUIDE
+
+
+
+
+ 04 / PROJECT WORKSPACE
+
+
+
+ The project is the front door to its people,
+ files, work, meetings, reporting, and support
+ Open a project from Projects. Available tabs and controls can vary by project access and role. Confirm the project identity
+ before editing.
+
+
+
+     01      Home                                                      02      People
+
+
+
+
+     Project summary, condition, ownership, dates, and direct links.   Roster, roles, contractors, and key contacts.
+
+
+
+
+     03      Documents                                                 04      Tracker and Gantt
+
+
+
+     Project-associated files and links. Not the formal review         Tasks, subtasks, owners, dates, health, notes, links, and schedule
+     workflow.                                                         placement.
+
+
+
+
+     05      Boards                                                    06      Reporting
+
+
+
+                                                                       Milestones, technical bullets, risks, timelines, photos, and
+     Configurable table or Kanban project work.                        PowerPoint output.
+
+
+
+
+     07      Meeting and Notes                                         08      Tickets and Settings
+
+
+
+
+     Project-scoped meeting work and contextual notes.                 Project-linked support and authorized metadata maintenance.
+
+
+
+
+     RECORD OWNERSHIP Use the summary views to understand the project, but update the tracker, risk, review, travel, meeting, ticket,
+     or configuration record that owns the information.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                                  JULY 2026 | 06
+                                                                                                                     INTERNAL USER GUIDE
+
+
+
+
+ 04.1 / TRACKER, GANTT, AND BOARDS
+
+
+
+ Maintain work with explicit owners, dates,
+ condition, notes, and completion rules
+ Tracker
+ Use Tracker to create and maintain dividers, tasks, subtasks, owners, start dates, due dates, health, notes, and linked documents.
+
+   Task field                        Current guidance
+
+
+   Workflow status                   Not Started; In Progress; On Hold; Blocked; Complete
+
+
+   Timing                            A past due date is a calculated timing condition, not another task status.
+
+
+   Blocked or on hold                Explain the dependency, reason, and next action before relying on the state.
+
+
+   Subtasks                          Maintain their own assignee, dates, and related records when needed.
+
+
+
+ Gantt
+ Use the Gantt view to inspect or maintain schedule placement and dependencies. A bar reflects tracker dates. Confirm the
+ underlying start and due dates whenever timing changes.
+
+
+ Boards
+ Boards can use table or Kanban presentation. A new board begins with To Do, In Progress, and Complete columns; authorized
+ owners may configure its columns and fields. Board completion is defined by the final configured column.
+
+
+     CAUTION Do not move a visual bar or card without verifying the underlying work record and its dates, owner, and completion rule.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                        JULY 2026 | 07
+                                                                                                                      INTERNAL USER GUIDE
+
+
+
+
+ 04.2 / REPORTING, MEETINGS, NOTES, TICKETS, AND SETTINGS
+
+
+
+ Convert project records into coordinated
+ action without losing the source context
+ Reporting
+ Prepare milestones, technical bullets, risks, timelines, photos, and PowerPoint output. Check all source records before
+ generating. A browser-generated file can download locally; when SharePoint mode is available, PULSE attempts project-file
+ upload.
+
+
+     DRAFT OUTPUT Treat every generated presentation as a draft until its content, filename, and destination have been verified.
+
+
+
+ Meeting and Notes
+ Use Meeting for project-scoped facilitation and Notes for contextual project notes. Record a decision separately from general
+ notes. Create a tracked action whenever a follow-up has an owner or timing expectation.
+
+
+ Tickets
+ Use project Tickets to create or review project-linked support items. Include the route, record identifier, expected result, actual
+ result, and an approved screenshot when reporting an issue.
+
+
+ Settings
+ Maintain authorized project metadata, lifecycle, technical health, dates, reporting configuration, and related fields. A change
+ becomes an official record only when SharePoint persistence succeeds.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                         JULY 2026 | 08
+                                                                                                                   INTERNAL USER GUIDE
+
+
+
+
+ 05 / WEEKLY MEETING
+
+
+
+ Run the shared cadence and turn discussion
+ into named records and actions
+ Reach it: Select Weekly Meeting. Use the available views to maintain the roster, agenda, Rocks, attendance, notes, decisions,
+ project updates, action items, carry-forward work, and meeting history.
+
+
+
+
+                                                 Weekly Meeting - shared cadence and meeting entry state
+
+
+
+ Operating sequence
+  ●
+      Start or join the correct shared or project-specific session.
+  ●
+      Confirm the roster, attendance, guests, and agenda before working through updates.
+  ●
+      Capture decisions as they occur and keep explanatory notes concise.
+  ●
+      Convert each actionable follow-up into a named tracker item with an owner and timing expectation.
+  ●
+      Review carry-forward work and meeting history before ending the session.
+
+
+      MEETING DISCIPLINE A note records context. A tracker item records accountable follow-up. Use both when an action results from
+      the discussion.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                      JULY 2026 | 09
+                                                                                                                                    INTERNAL USER GUIDE
+
+
+
+
+ 06 / TRAVEL AND DEBRIEFS
+
+
+
+ Submit, monitor, approve, finance, and close
+ travel through the related records
+ Reach it: Select Travel. Use New Request to enter the request type, trip title, travelers, destination, dates and times, purpose,
+ impact, project, travel type, estimate, alternatives, and notes.
+
+
+
+
+                                               Travel - request entry, tracking, and role-aware workflow
+
+   Area                             Guidance
+
+
+   Request status                   Pending; Pending Finance; Approved; Denied; Revoked; Cancelled
+
+
+   Requester                        Monitor your own record and respond to returned or updated requirements.
+
+
+   Approver or finance user         Use only the role-restricted action and record the required rationale or funding information.
+
+
+   Engineering travel               Complete additional fields when the selected request type exposes them.
+
+
+   Debrief                          Each traveler records a separate debrief after travel.
+
+
+
+     POLICY BOUNDARY Application fields and routing do not replace organizational travel policy. Follow the approved policy source for
+     submission timing, approvers, funding documentation, and debrief deadlines.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                                      JULY 2026 | 10
+                                                                                                                  INTERNAL USER GUIDE
+
+
+
+
+ 07 / DOCUMENT REVIEW
+
+
+
+ Maintain formal review, revision, concurrence,
+ final-pack, and signing history
+ Reach it: Select Document Review. Create a review with its related project, document type, title, due date, revision label, current
+ file, and reviewers or reviewer groups. Add signers only where sequential signing is required.
+
+
+
+
+                                              Document Review - formal review and approval workflow
+
+   Review value                   Meaning in the current workflow
+
+
+   Not Started                    The review record exists but review activity has not begun.
+
+
+   In Review                      Assigned reviewers are evaluating the current revision.
+
+
+   Changes Requested              The current revision requires changes before review can continue.
+
+
+   Review Complete                The review stage is complete.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                    JULY 2026 | 11
+                                                                                                                        INTERNAL USER GUIDE
+
+
+
+
+ 07.1 / REVIEW PROGRESSION
+
+
+
+ Complete revisions without losing the review
+ and signature history
+      Review value                    Meaning in the current workflow
+
+
+      Awaiting Final Pack             A final package must be prepared or uploaded.
+
+
+      Signing in Progress             Sequential or required signature activity is underway.
+
+
+      Signed                          The configured signing process is complete.
+
+
+      Archived                        The record is retained outside the active workflow.
+
+
+
+
+ Working sequence
+  ●
+       Confirm that the project, title, document type, due date, and current revision are correct.
+  ●
+       Assign the required reviewers or approved reviewer group.
+  ●
+       Record each decision against the current revision.
+  ●
+       When changes are requested, upload a new revision and repeat the required review.
+  ●
+       Prepare the final package before starting any configured signing sequence.
+  ●
+       Verify the signed or archived record and its retained revision history.
+
+
+        REVISION CONTROL When changes are requested, upload a new revision and repeat the required review. Do not overwrite the
+        reviewed revision.
+
+
+        DISTINCT WORKFLOWS A file is not formally reviewed merely because it is stored in the project Documents area.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                          JULY 2026 | 12
+                                                                                                                       INTERNAL USER GUIDE
+
+
+
+
+ 08 / SUPPORT AND NOTIFICATIONS
+
+
+
+ Create durable support records and configure
+ how attention items reach you
+ Support Tickets
+ Reach it: Use Report issue, project Tickets, or an available ticket route. Record a clear title, description, affected project, priority,
+ reporter, and status.
+
+   Ticket value                    Use
+
+
+   Open                            The issue has been recorded and still requires action.
+
+
+   In Progress                     An assigned person is actively working the issue.
+
+
+   Resolved                        The recorded issue has been addressed and the result can be verified.
+
+
+
+ Notifications
+ Use the bell to review items requiring attention. Notification Settings controls subscribed areas, delivery channels, and message
+ tone where enabled. Adjust preferences for your own account only.
+
+
+
+
+                                              Notification Settings - personal delivery, area, and tone controls
+
+     VERIFY THE RECORD A notification is a routing aid. Always open the related record to confirm its current state and required action.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                          JULY 2026 | 13
+                                                                                                                                  INTERNAL USER GUIDE
+
+
+
+
+ 09 / ADMINISTRATION
+
+
+
+ Maintain the approved schema, users, roles,
+ configuration, and traceability controls
+ Reach it: Select Admin. Administrative routes and actions are intended for PULSE administrators and may not appear for other
+ users.
+
+
+
+
+                                               Admin - access-aware entry state and maintenance routes
+
+   Administrative area                Operational guidance
+
+
+   Diagnostics                        Use current diagnostics to identify environment, schema, or routing problems before changing configuration.
+
+
+   SharePoint Setup                   Validate or provision the defined schema. Do not create ad hoc lists or columns.
+
+
+   Users and roles                    Associate approved people, assign the least-privileged appropriate role, and preserve audit context when access
+                                      changes.
+
+
+   Locations and configuration        Maintain approved reference values and related system settings.
+
+
+   Activity Log                       Inspect recorded actions for operational tracing and investigations.
+
+
+
+     LEAST PRIVILEGE Project membership does not by itself grant PULSE administrative privileges. Assign only the access required for
+     the user's current responsibilities.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                                      JULY 2026 | 14
+                                                                                                                                           INTERNAL USER GUIDE
+
+
+
+
+ 10 / REFERENCE
+
+
+
+ Key terms, boundaries, and verification status
+   Term                                Meaning
+
+
+   Portfolio                           Named grouping of related projects.
+
+
+   Program                             Higher-level initiative that can span portfolios.
+
+
+   End Item Configuration              Delivered hardware or software configuration used for grouping and reporting.
+
+
+   Tracker                             Project work items, owners, dates, health, notes, and subtasks.
+
+
+   Board                               Configurable project work presentation, separate from the tracker.
+
+
+   Project Documents                   Project-associated files and references.
+
+
+   Document Review                     Formal review and signature workflow with its own lifecycle.
+
+
+   PULSE role                          Active role record that determines administrative and feature access.
+
+
+   Activity Log                        Record of application activity used for operational traceability.
+
+
+
+
+ Verification status
+ The screenshots in this guide were captured from a clean local browser workspace using a neutral display identity and no
+ seeded personal records. They verify visible routes and labels only.
+
+
+     LIVE VERIFICATION REQUIRED SharePoint identity, directory resolution, permissions, list and library operations, workflow
+     persistence, exports, notifications, and administrator actions require validation on the approved live SharePoint site.
+
+
+
+   Area                                      Current evidence                                              Live site status
+
+
+   Shell, Dashboard, settings                Repository source and local route capture                     Verify identity, data, and permissions
+
+
+   Overview and project groupings            Repository source and local route capture                     Verify filters, create/edit, and access
+
+
+   Project workspace tools                   Repository source                                             Verify populated records and persistence
+
+
+   Reporting and PowerPoint                  Repository source and bundled export library                  Verify generated file and SharePoint upload
+
+
+   Meetings, Travel, Review, Tickets         Repository source and route capture where                     Verify end-to-end workflow and notifications
+                                             available
+
+
+   Admin and SharePoint integration          Repository source and restricted route capture                Verify administrator actions on approved site
+
+
+
+
+PULSE | INTERNAL USE                                                                                                                                 JULY 2026 | 15
+                                                                                                                                INTERNAL USER GUIDE
+
+
+
+
+ 11 / OPERATING RULES
+
+
+
+ The shortest path to a clean, traceable PULSE
+ record
+     01      Confirm context                                               02      Use the source record
+
+
+
+     Verify the user, role, project, record, revision, and current state   Update the project, tracker, review, travel, meeting, ticket, or
+     before acting.                                                        configuration record that owns the information.
+
+
+
+
+     03      Name the owner                                                04      Preserve history
+
+
+
+     Every actionable follow-up needs a named owner and a timing           Create a new revision, status update, or audit-backed change
+     expectation.                                                          rather than overwriting prior context.
+
+
+
+
+     05      Verify persistence                                            06      Escalate with evidence
+
+
+
+     A change is official only after the approved SharePoint record        Use a support ticket with route, record ID, expected result, actual
+     reflects it.                                                          result, and an approved screenshot.
+
+
+
+
+     FINAL CHECK Before leaving a workflow, confirm the record state, owner, next action, notification or routing result, and any required
+     audit or retained file.
+
+
+
+
+      PULSE
+
+
+      One shared view. Clear action.
+                                                                                                           Use the record that owns the work.
+
+
+
+
+PULSE | INTERNAL USE                                                                                                                    JULY 2026 | 16
+

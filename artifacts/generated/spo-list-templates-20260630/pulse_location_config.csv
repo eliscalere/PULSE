@@ -1,0 +1,3 @@
+Title,LocationsJson,PortfolioCatalogJson,ContractorCatalogJson,ConfigEndItemCatalogJson,HideUnaffiliatedPeople
+PULSE Location Config Sample 1,LocationsJson sample text,PortfolioCatalogJson sample text,ContractorCatalogJson sample text,ConfigEndItemCatalogJson sample text,TRUE
+PULSE Location Config Sample 2,LocationsJson sample text,PortfolioCatalogJson sample text,ContractorCatalogJson sample text,ConfigEndItemCatalogJson sample text,FALSE

@@ -1,0 +1,15 @@
+ListName,PULSE Audit Log
+Description,Append-only record of user actions across AEWTTR-PULSE. Admin access only.
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+ActionTime,DateTime,No,,
+ActorEmail,Text,No,,
+ActorName,Text,No,,
+ActorRole,Text,No,,
+Action,Choice,No,Create | Update | Delete | View | Navigate | Approve | Deny | Submit | Export | Login | Other,
+Area,Choice,No,Travel | Documents | Projects | Weekly | Tickets | Users | Admin | Navigation | System,
+Summary,Text,No,,
+DetailJson,Note,No,,Suggested lines: 8
+Route,Text,No,,
+RecordId,Text,No,,

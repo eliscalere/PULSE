@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/serve.schema.json",
+  "port": 4321,
+  "https": false,
+  "serveConfigurations": {
+    "default": {
+      "pageUrl": "https://contoso.sharepoint.com/sites/aewttr/SitePages/aewttr-workspace.aspx",
+      "customActions": {
+        "db71fb31-c4d4-46ea-bd19-f67af87f0f92": {
+          "location": "ClientSideExtension.ApplicationCustomizer",
+          "properties": {
+            "testMessage": "PULSE"
+          }
+        }
+      }
+    }
+  }
+}

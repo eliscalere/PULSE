@@ -1,0 +1,167 @@
+SHAREPOINT-NATIVE OPERATIONS WORKSPACE
+
+
+
+
+One shared view.
+Clear action.
+PULSE connects project execution, meetings, approvals, reporting, and leadership
+visibility in one secure operating workspace.
+
+
+
+
+     LEADERSHIP OVERVIEW
+
+
+
+
+PROJECTS       MEETINGS    TRAVEL    REVIEWS   REPORTING
+
+
+
+
+PULSE PRODUCT BRIEF                                                                JULY 2026 | 01
+THE OPERATIONAL SHIFT
+
+
+
+
+Replace fragmented work with one operating picture.
+PULSE removes the gap between where work happens and where status is reported. The project becomes the
+front door, so tasks, people, files, meetings, approvals, and reporting stay connected in context.
+
+
+
+
+    WITHOUT PULSE                                           WITH PULSE
+
+
+
+    Status has to be assembled.                             Theoperating
+                                                            The  operatingpicture
+                                                                            picture stays curren
+                                                            stays current.
+        Email threads become the approval system.               Task data drives project health and completion.
+        Spreadsheets and lists drift out of sync.               Everydata
+                                                                Task  module
+                                                                          drivesresolves
+                                                                                  project to the and
+                                                                                          health same people  and
+                                                                                                     completion.
+        Meetings rely on manually prepared slides.              projects.
+                                                                Every module resolves to the same people and
+        Leadership sees lagging, self-reported status.          Approvals, notes, and actions remain traceable.
+                                                                projects.
+                                                                Leadership reporting is generated from live
+                                                                work.
+                                                                Approvals, notes, and actions remain traceable.
+
+                                                                Leadership reporting is generated from live work.
+
+
+
+
+WHAT CHANGES FOR THE TEAM
+
+
+
+
+    01       Lead with current data                         02       Run work in context
+
+    Executive rollups surface project health, completion,   Each project connects its home page, roster, documents,
+    blockers, workload, and pending operations.             tracker, boards, meeting, and reporting.
+
+
+
+
+    03       Move approvals end-to-end                      04       Report without rebuilding
+
+    Travel and document-review workflows keep decisions,    Project and group reporting turn current status into
+    revisions, notifications, and history together.         editable PowerPoint outputs from the browser.
+
+
+
+
+PULSE PRODUCT BRIEF                                                                                          JULY 2026 | 02
+ONE WORKSPACE, CONNECTED CAPABILITIES
+
+
+
+
+A complete operating system for the project team.
+PULSE combines the functions teams use every day without turning them into isolated apps. The result is a faster
+path from work to decision.
+
+
+
+
+   PROJECT WORKSPACE                                                 WEEKLY MEETING
+
+
+
+
+   DOCUMENT REVIEW                                                   PORTFOLIO STATUS
+
+
+
+
+        Portfolio                   Projects                        Workflows                  Reporting
+
+        Live health, completion,    Tracker, Gantt, boards, files   Travel, reviews, tickets   Project and group
+        blockers                                                                               PowerPoint
+
+
+
+
+PULSE PRODUCT BRIEF                                                                                            JULY 2026 | 03
+BUILT TO FIT THE ENVIRONMENT
+
+
+
+
+Powerful enough to run the work.
+Lightweight enough to deploy.
+PULSE runs inside the team's existing SharePoint environment. Users open it with their current
+SharePoint/CAC session, and the application uses SharePoint Lists and document libraries as its data layer.
+
+
+
+
+           NO NEW LOGIN                                                                          NO APP SERVER
+
+     Uses the user's existing SharePoint/CAC session.                                       Browser-only application; compute runs in the user's
+                                                                                            session.
+
+
+
+
+           NO DATABASE SERVER                                                                    SECURITY FIT
+
+     Structured data lives in SharePoint Lists; files stay in                               Works inside the existing SharePoint access model and
+     SharePoint.                                                                            security boundary.
+
+
+
+
+THE RESULT
+
+
+
+
+Fewer handoffs. Faster status.
+Clear ownership. Better decisions.
+
+
+                                                                   Give the team one place to run the work - and leadership one trusted
+                                                                   view of what needs attention next.
+
+     From status to execution.
+
+
+Product claims and interface examples are based on the PULSE-IPT General Overview, User Guide, and Technical Reference, July 2026.
+
+
+
+PULSE PRODUCT BRIEF                                                                                                                                JULY 2026 | 04
+

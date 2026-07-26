@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AEWTTR Workspace Preview</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: #eef0f8;
+        color: #1a1f36;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 18px;
+        background: #ffffff;
+        border-bottom: 1px solid #ecedf4;
+      }
+
+      .topbar h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .topbar p {
+        margin: 4px 0 0;
+        font-size: 12px;
+        color: #8a8fa3;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .actions a {
+        text-decoration: none;
+        color: #2f5fe0;
+        background: #eef4ff;
+        border: 1px solid #cdddff;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      iframe {
+        display: block;
+        width: 100%;
+        height: calc(100vh - 73px);
+        border: 0;
+        background: #eef0f8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div>
+        <h1>AEWTTR Workspace Legacy UI Preview</h1>
+        <p>This is the actual `PULSE-IPT` experience served through the SPFx local dev server for visual comparison.</p>
+      </div>
+      <div class="actions">
+        <a href="/pulse-ipt/index.html" target="_blank" rel="noreferrer">Open Legacy UI</a>
+        <a href="/dist/aewttr-workspace-web-part.js" target="_blank" rel="noreferrer">Open SPFx Bundle</a>
+      </div>
+    </div>
+    <iframe src="/pulse-ipt/index.html" title="PULSE-IPT Legacy Preview"></iframe>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+flowchart LR
+  U[SharePoint user session] --> A[PULSE browser application]
+  A --> S[Application shell and feature modules]
+  S --> R[REST adapter and repository]
+  R --> L[PULSE Lists]
+  R --> D[Project document libraries]
+  S --> E[Browser-side PowerPoint and PDF output]

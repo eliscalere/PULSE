@@ -1,0 +1,10 @@
+sequenceDiagram
+  participant B as Browser
+  participant A as PULSE app
+  participant S as SharePoint
+  B->>A: Load index and bundled modules
+  A->>S: Detect site and current user
+  S-->>A: Session identity and role record
+  A->>S: Validate setup and load records
+  S-->>A: Lists and library data
+  A-->>B: Render shell and current route

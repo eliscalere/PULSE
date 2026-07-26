@@ -1,0 +1,970 @@
+MAINTAINER REFERENCE
+
+
+
+
+Technical Reference
+Architecture, SharePoint integration, packaging, deployment, verification, and maintainer handoff for the
+PULSE operating workspace.
+
+
+
+
+AUDIENCE                                      SCOPE                                         USE
+
+Developers and maintainers                    Current source package                        Internal reference
+PULSE                                                                                                                                  INTERNAL TECHNICAL REFERENCE
+
+
+
+
+00 / DOCUMENT AUTHORITY
+
+
+
+Built for the next maintainer.
+This reference organizes the verified architecture and operating constraints of PULSE so a new maintainer can trace a
+change from the user interface to SharePoint, build an approved artifact, validate it safely, and recover when acceptance
+fails.
+
+
+
+     SOURCE HIERARCHY                                                                KNOWN UNCERTAINTY
+
+
+     Current implementation first.                                                   Production delivery surface
+     Use the current repository, build scripts, schema, and hosted behavior          The repository contains both a self-contained browser package and
+     as the authority. Historical Firepit and Forge notes remain useful where        an SPFx host that embeds the browser implementation. Confirm which
+     they describe active paths, but do not assume the production host               path is approved and deployed before changing release procedures.
+     without verification.
+
+
+
+
+01        System architecture                                                   02        Hosting and boundaries
+          Execution, identity, storage, output                                            Supported delivery paths and constraints
+
+
+
+
+03        Repository map                                                        04        Configuration
+          Files, modules, and ownership                                                   Runtime settings and security boundaries
+
+
+
+
+05        Build and packaging                                                   06        Deployment and rollback
+          Approved commands and artifacts                                                 Acceptance and recovery
+
+
+
+
+07        Boot and routing                                                      08        SharePoint integration
+          Startup, roles, and page dispatch                                               REST, schema, and document libraries
+
+
+
+
+09        Data and repository pattern                                           10        Roles and audit
+          Mappings, cache, and normalization                                              Authorization, notifications, traceability
+
+
+
+
+11        Reporting                                                             12        Testing and troubleshooting
+          Client-side PowerPoint and PDF output                                           Validation, failure modes, handoff
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                      VERSION 1.0 | JULY 2026 | 02
+PULSE                                                                                                                                         01 / SYSTEM ARCHITECTURE
+
+
+
+
+01 / SYSTEM ARCHITECTURE
+
+
+
+Browser-first by design.
+PULSE runs in the user's browser, relies on the existing SharePoint session, and uses SharePoint Lists and document
+libraries as its persistence layer. There is no separate PULSE application server, database server, or sign-in system.
+
+
+                                                                                                                                                           PULSE Lists
+
+                                                                                                                             REST adapter +
+                                                                                                                               repository
+
+   SharePoint user                      Approved host                     PULSE browser             Shell + feature                                         Document
+      session                         SPFx or hosted page                   application               modules                                                libraries
+
+                                                                                                                             Browser-side
+                                                                                                                              PPTX / PDF
+
+
+
+
+  Compute                                        Identity                                 Storage                                 Output
+  Feature logic executes in the browser.         Current SharePoint session and role      PULSE Lists and project document        Browser-side PowerPoint and PDF
+                                                 record.                                  libraries.                              generation.
+
+
+
+
+     CORE INTERPRETATION
+
+
+
+     Same session. Same boundary. No parallel platform.
+     The architecture deliberately minimizes infrastructure outside what the SharePoint site and the user's browser already provide.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                        VERSION 1.0 | JULY 2026 | 03
+PULSE                                                                                                                                                02 / HOSTING AND BOUNDARIES
+
+
+
+
+02 / HOSTING AND SECURITY BOUNDARIES
+
+
+
+Two repository paths. One decision to verify.
+The current repository contains a self-contained browser package and an SPFx host solution. The SPFx web part embeds
+the browser implementation through LegacyWorkspaceFrame.tsx ; the typed SPFx page modules are not the active delivered
+feature surface.
+
+
+
+    BROWSER PACKAGE                                                                               SPFX HOST
+
+
+    Self-contained HTML                                                                           Embedded legacy workspace
+    Built from apps/PULSE . Local CSS, JavaScript, images, and approved                           The host solution in apps/spfx-pulse-workspace renders the
+    browser libraries are packaged into one artifact for SharePoint or a                          browser application. Treat it as a delivery shell, not a parallel full
+    compatible host.                                                                              implementation.
+
+
+
+
+Security and operating constraints
+
+  Boundary                          Maintainer implication
+
+
+  Existing SharePoint session       Do not add a separate login or duplicate identity model.
+
+
+  Same-site REST                    Write operations use the current session and request digest. Validate in a real SharePoint context.
+
+
+  No secret material in source      Runtime configuration may contain non-secret settings only. Never place tokens, credentials, or private addresses in the package.
+
+
+  Self-contained delivery           The approved browser artifact must not depend on external runtime styles or scripts.
+
+
+  Production host [VERIFY]          Confirm the approved deployed path before updating release or rollback instructions.
+
+
+
+
+    Maintainer rule: do not resolve the hosting uncertainty by inference. Verify the real deployed surface and release authority with the system owner.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                                     VERSION 1.0 | JULY 2026 | 04
+PULSE                                                                                                                                03 / REPOSITORY MAP
+
+
+
+
+03 / REPOSITORY MAP
+
+
+
+Know where the behavior lives.
+The active feature surface remains the browser implementation under apps/PULSE . The SPFx solution provides the current
+repository's SharePoint Framework integration path.
+
+
+  Path                                                  Responsibility
+
+
+  apps/PULSE/index.html                                 Browser entry point and dependency order.
+
+
+  apps/PULSE/assets/js/app.js                           Boot, shell, hash routing, shared UI helpers, and diagnostics.
+
+
+  apps/PULSE/assets/js/data.js                          Canonical browser store, normalization, and local fallback.
+
+
+  apps/PULSE/assets/js/pages/                           Module-specific pages and workflows.
+
+
+  apps/PULSE/assets/js/sharepoint-adapter.js            Same-site REST transport, site detection, identity, and role operations.
+
+
+  apps/PULSE/assets/js/sharepoint-repo.js               Object-to-list mapping, persistence, and removal.
+
+
+  apps/PULSE/assets/js/sharepoint-schema.js             List definitions, validation, provisioning, and field repair.
+
+
+  apps/PULSE/assets/js/*pptx-export.js                  Client-side project and overview PowerPoint output.
+
+
+  apps/PULSE/scripts/build-sharepoint-package.js        Preferred self-contained browser-package builder.
+
+
+  apps/spfx-pulse-workspace/                            SPFx host solution and browser-app integration.
+
+
+
+
+    EDIT PRIORITY                                                             AVOID DUPLICATION
+
+    1. Keep SharePoint transport working.                                     Route SharePoint operations through the adapter and repository. Do
+    2. Keep identity and role resolution working.                             not scatter raw REST calls or create a second mapping layer inside a
+    3. Keep setup and schema validation working.                              page module.
+    4. Keep diagnostics usable.
+    5. Then change feature UI.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                          VERSION 1.0 | JULY 2026 | 05
+PULSE                                                                                                                                               04 / CONFIGURATION
+
+
+
+
+04 / CONFIGURATION
+
+
+
+Configuration is not a secret store.
+                                holds non-secret runtime settings such as list prefix, site-detection fallback, host-page
+apps/PULSE/assets/js/app-config.js
+
+naming, group fallbacks, diagnostics, and the government Graph base URL.
+
+
+
+    ALLOWED                                                                               NOT ALLOWED
+
+
+    Environment behavior                                                                  Credentials or private data
+      • List naming and prefixes                                                             • API keys or access tokens
+      • Non-secret site-detection fallback                                                   • Cookies or request digests
+      • Host-page route names                                                                • Personal accounts
+      • Government Graph base URL                                                            • Private production URLs in distributable docs
+      • Diagnostics and feature flags                                                        • Classified or controlled operational records
+
+
+
+
+Site and identity resolution
+
+
+    01                                                       02                                                        03
+    Page context                                             Configured fallback                                       Local fallback
+    Prefer SharePoint's injected page context                Use only an approved non-secret manual                    When no site is detected, load non-
+    when available.                                          site value.                                               persistent local state for UI work only.
+
+
+
+
+    AI review [VERIFY]: the source package does not establish an approved endpoint, key-management path, or authorization to operate. Do not enable or document it as
+    an operational capability until those controls are confirmed.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                        VERSION 1.0 | JULY 2026 | 06
+PULSE                                                                                                                                           05 / BUILD AND PACKAGING
+
+
+
+
+05 / BUILD AND PACKAGING
+
+
+
+Build the artifact the host expects.
+The preferred browser-package builder reads the unbundled entry point, inlines approved local dependencies, rewrites
+local asset references, removes development cache strings, and rejects external runtime styles or scripts.
+
+PREFERRED BROWSER PACKAGE
+
+
+
+   cd apps/PULSE
+   node scripts/build-sharepoint-package.js "releases/PULSE-v1.0.0.html"
+
+
+
+
+    What the builder should preserve                                                        What the builder should reject
+      • Dependency order from index.html                                                       • External runtime script URLs
+
+      • Local styles and scripts                                                               • External runtime stylesheets
+
+      • Embedded approved images                                                               • Unresolved local assets
+
+      • Browser-global library registration                                                    • Development-only cache query strings
+
+      • Build provenance metadata                                                              • Output without a deliberate destination
+
+
+
+
+SPFX HOST VALIDATION
+
+
+
+   cd apps/spfx-pulse-workspace
+   ./use-node22.sh npm install
+   ./use-node22.sh gulp serve
+   ./use-node22.sh npm run typecheck
+   ./use-node22.sh npm run lint
+   ./use-node22.sh npm run build
+
+
+
+
+    Do not substitute build paths casually. The browser artifact and SPFx package serve different roles. Confirm the approved release path before shipping either one.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                           VERSION 1.0 | JULY 2026 | 07
+PULSE                                                                                                                                    06 / DEPLOYMENT AND ROLLBACK
+
+
+
+
+06 / DEPLOYMENT AND ROLLBACK
+
+
+
+Acceptance happens in SharePoint.
+A local browser proves layout and client logic. It does not prove identity, role association, list access, persistence,
+document-library behavior, or hosted-page restrictions.
+
+
+                                                                                                                                                 Retain evidence +
+                                                                                                                                                  rollback artifact
+   Source                 Local UI                   Build approved            Safe SharePoint                Hosted-page
+   change                validation                      artifact                 validation                  acceptance
+
+                                                                                                                                       failure      Restore prior
+                                                                                                                                                    known-good
+
+
+
+
+    BEFORE UPLOAD                                                                        AFTER UPLOAD
+
+       • Retain the prior known-good artifact.                                              • Open the real hosted page.
+       • Record the source revision and build time.                                         • Validate identity and role resolution.
+       • Complete local UI checks.                                                          • Check navigation and diagnostics.
+       • Confirm the target and release authority.                                          • Perform a controlled read and write for changed record types.
+
+
+
+
+Rollback decision
+If acceptance fails, restore the prior known-good artifact first. Preserve the failed artifact, browser console evidence, REST response, affected route, user role,
+and reproduction steps. Investigate from source after service is restored.
+
+
+
+     DEFINITION OF DONE
+
+
+     Built. Hosted. Read. Written. Recoverable.
+     A release is not complete until the real hosted environment accepts the artifact and a rollback path remains available.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                        VERSION 1.0 | JULY 2026 | 08
+PULSE                                                                                                                                               07 / BOOT AND ROUTING
+
+
+
+
+07 / BOOT SEQUENCE AND ROUTING
+
+
+
+Fail visibly, not silently.
+The browser entry point loads vendor libraries, configuration, SharePoint integration, store normalization, reporting
+exports, support subsystems, the shell, and page modules before resolving the current route.
+
+
+
+                                                              1 Load bundled modules + configuration
+
+
+
+
+                                                                 2 Detect SharePoint site and session
+
+
+
+
+                                                                                                     No site detected -> local fallback
+                              3 Resolve current user and PULSE role
+                                                                                                      not an official system of record
+
+
+
+
+                            4 Validate setup and load repository data
+
+
+
+
+                            5 Normalize store shape and render shell
+
+
+
+
+                            6 Route to current hash and begin refresh
+
+
+
+
+    ROUTING                                                                                     FAILURE BEHAVIOR
+
+    Navigation is hash-based. The shell parses the route, selects the                           A top-level startup failure should show a plain diagnostic state rather
+    matching page renderer, and gates restricted routes before rendering                        than a blank page. Page-level rendering errors should remain
+    into the page-content mount point.                                                          contained to the affected route.
+
+
+
+
+    Local fallback: useful for UI development, but it is empty or browser-local and is not the official system of record.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                            VERSION 1.0 | JULY 2026 | 09
+PULSE                                                                                                                                                 08 / SHAREPOINT INTEGRATION
+
+
+
+
+08 / SHAREPOINT INTEGRATION
+
+
+
+One data boundary, handled deliberately.
+All core reads and writes use the SharePoint REST API through the adapter and repository. Authentication comes from the
+current page session; write requests obtain a request digest.
+
+
+
+    READ PATH                                                                                   WRITE PATH
+
+
+    REST -> mapper -> normalized store                                                          UI -> validation -> mapper -> REST
+    List items are hydrated into browser objects, normalized, and cached                        A visible save must not be treated as complete until the repository
+    in the in-memory store used by page modules.                                                write resolves and the returned SharePoint identity is applied to the
+                                                                                                browser object.
+
+
+
+
+Maintainer invariants
+
+  Invariant                                             Reason
+
+
+  Keep raw REST in the adapter                          Centralizes digest handling, diagnostics, people resolution, and transport behavior.
+
+
+  Keep schema and mappers synchronized                  A UI field without a real SharePoint column can appear to save while the value is silently omitted.
+
+
+  Use raw bytes for binary upload                       Text encoding corrupts Office documents and images.
+
+
+  Test the live site                                    Local mode cannot prove permissions, list readiness, or persistence.
+
+
+  Do not infer app roles from site admin                SharePoint administration is not the PULSE authorization model.
+
+
+
+
+    Schema changes are cross-cutting: update the schema definition, write mapper, read mapper, normalization, UI validation, setup/provisioning, and live read/write test
+    as one change.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                                     VERSION 1.0 | JULY 2026 | 10
+PULSE                                                                                                                                             09 / SHAREPOINT SCHEMA
+
+
+
+
+09 / CURRENT SHAREPOINT SCHEMA
+
+
+
+Lists form the application record.
+The current source package identifies the following list titles. Confirm exact production titles and document-library names
+on the approved SharePoint site before performing setup, migration, or recovery.
+
+                                                                                                               Action Items
+
+
+
+
+                                                                                                                  Risks
+
+
+
+
+                                                                                                                Meetings
+
+
+                                                                      authorizes
+                                                                                     Projects
+
+                                                                                                             Travel Requests
+                                                                                                                + Debriefs
+
+                                                                                   Notifications
+                                                         App Roles
+                                                                                    + Config
+
+                                                                                                            Document Review
+                                                                                                            + Reviewer Groups
+
+                                                                                    Audit Log
+
+
+                                                                                                                 Issues
+
+
+
+
+PULSE App Roles                                                                                 PULSE Document Review
+User association and authorization.                                                             Formal review workflow and history.
+
+PULSE Projects                                                                                  PULSE Doc Reviewer Groups
+Project portfolio and project-level metadata.                                                   Reusable review routing groups.
+
+PULSE Risks                                                                                     PULSE Issues
+Project risks and mitigation records.                                                           Support ticket and blocker records.
+
+PULSE Action Items                                                                              PULSE Notifications
+Tasks and action records.                                                                       Outbound notification queue or records.
+
+PULSE Meetings                                                                                  PULSE Notification Config
+Global and project meeting sessions.                                                            User and system notification settings.
+
+PULSE Team Events                                                                               PULSE Audit Log
+Team-level event records.                                                                       Supported activity and change history.
+
+PULSE Travel Requests                                                                           PULSE App Settings
+Travel and leave workflow records.                                                              Single-row or shared application settings.
+
+PULSE Travel Debriefs                                                                           PULSE Location Config
+After-action records linked to travel.                                                          Approved location and travel configuration.
+
+
+
+     Document storage is separate. Project files use SharePoint document libraries. Formal Document Review lifecycle data remains in its dedicated list and must not be
+     collapsed into file storage.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                            VERSION 1.0 | JULY 2026 | 11
+PULSE                                                                                                                             10 / DATA AND REPOSITORY PATTERN
+
+
+
+
+10 / DATA MODEL AND REPOSITORY PATTERN
+
+
+
+Map once. Normalize every load.
+The repository converts SharePoint list items into a normalized browser store used by every page. Composite areas may be
+serialized into JSON fields when the application treats them as one record boundary.
+
+
+
+
+    01                                                         02                                                    03
+    Load                                                       Use                                                   Persist
+    Read lists, hydrate records, then normalize                Page modules read from one in-memory                  Repository mappers serialize validated
+    missing or older fields into the current                   store rather than calling SharePoint                  objects back to existing list columns.
+    store shape.                                               independently.
+
+
+
+
+Cross-cutting field checklist
+✓    Schema definition exists with the correct internal and display names.          ✓    Write mapper emits the field in the expected SharePoint format.
+
+
+✓    Read mapper hydrates the field back into the browser object.                   ✓    Normalization provides a safe value for older or missing records.
+
+
+✓    UI validation matches the real column type and allowed choices.                ✓    SharePoint setup has been run and live read/write verified.
+
+
+
+
+    CONCURRENCY                                                                         REFRESH PROTECTION
+
+    When a create returns the SharePoint item ID, later updates to the                  Background refresh must not overwrite an active edit or recently
+    same object must wait for that result. Do not fire a second save                    written record. Keep modal, pending-save, and recent-write guards
+    against an object whose identity has not been stamped.                              intact.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                       VERSION 1.0 | JULY 2026 | 12
+PULSE                                                                                                                                           11 / ROLES AND PERMISSIONS
+
+
+
+
+11 / ROLES AND PERMISSIONS
+
+
+
+Authorization comes from PULSE App Roles.
+After current-user resolution, PULSE associates the user with an active role record. Administrative rights, ordinary
+membership, and project access should be evaluated through the application role service.
+
+
+
+    PRIMARY AUTHORITY                                                                           RECOVERY EXCEPTION
+
+
+    Active role record                                                                          SharePoint site admin
+    Use the approved role association and the application's current                             A site administrator may require setup or recovery access when role
+    matching logic. User administration remains restricted to                                   data is missing, but site-admin status is not a substitute for a PULSE
+    administrators.                                                                             role.
+
+
+
+
+Identity and role validation
+
+  Check                                  Expected evidence
+
+
+  Current user                           SharePoint REST identity agrees with the visible user context.
+
+
+  Role association                       An active PULSE App Roles record matches the resolved user.
+
+
+  Restricted navigation                  Admin and other gated routes remain hidden or blocked for ordinary users.
+
+
+  Project access                         Project-scoped controls follow the current user's assignment and role.
+
+
+  Recovery path                          Approved administrators can reach setup without granting ordinary feature rights.
+
+
+
+
+    Do not gate feature permissions directly on IsSiteAdmin . That property belongs to SharePoint administration, not the PULSE business-role model.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                            VERSION 1.0 | JULY 2026 | 13
+PULSE                                                                                                                                           12 / NOTIFICATIONS AND AUDIT
+
+
+
+
+12 / NOTIFICATIONS AND AUDIT
+
+
+
+Actions should route and leave evidence.
+Notification preferences and system configuration control which PULSE areas can contact a user and through which
+channel. Supported create, update, delete, navigation, and workflow actions may be recorded in the audit log when
+persistence succeeds.
+
+
+
+    NOTIFICATION PAYLOAD                                                                       AUDIT PAYLOAD
+
+
+    One event, contextual delivery                                                             Who, what, where, when
+      • Recipient and preferred channels                                                         • Actor and resolved role
+      • Application area and record context                                                      • Action and application area
+      • Direct route or deep link                                                                • Route and object type
+      • Human-readable subject and message                                                       • Relevant record context
+      • Delivery state when queued                                                               • Timestamp and persistence result
+
+
+
+
+Maintainer checks
+✓    Preferences are resolved for the intended user.                                       ✓    The source record exists before a deep link is sent.
+
+
+✓    Route parameters open the correct context.                                            ✓    Failure does not erase the source workflow action.
+
+
+✓    Audit entries do not contain secret material.                                         ✓    Delivery and audit behavior are verified on SharePoint.
+
+
+
+
+    Trust boundary: a notification is a pointer, not the authoritative record. Users should confirm the source record inside PULSE before acting.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                                 VERSION 1.0 | JULY 2026 | 14
+PULSE                                                                                                                                             13 / REPORTING AND EXPORTS
+
+
+
+
+13 / REPORTING AND EXPORTS
+
+
+
+Generate in the browser. Verify before use.
+Project and group PowerPoint output is generated client-side with the bundled PptxGenJS runtime. The export path reads
+current browser-store data, builds slides, and returns a file without a separate reporting server.
+
+
+
+
+    01                                                              02                                                        03
+    Assemble                                                        Generate                                                  Deliver
+    Select projects or group context and                            Create slides and assets with the bundled                 Download locally or, where supported,
+    normalize the reporting data.                                   browser library.                                          upload the package to project files.
+
+
+
+
+Verification before distribution
+
+  Area                       Check
+
+
+  Content                    Project identifiers, owners, dates, milestones, risk language, and current state are accurate.
+
+
+  Selection                  The output contains only the intended project or group records.
+
+
+  Images                     Photos and logos are present, proportioned, and safe to distribute.
+
+
+  File                       The PowerPoint opens, remains editable where intended, and has no clipped elements.
+
+
+  Destination                If uploaded, the approved project library path and permissions are correct.
+
+
+  Traceability               The generated file can be connected to the source records and release context.
+
+
+
+
+    Export success is not content approval. A generated file must be reviewed before it is used for an official brief or external distribution.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                              VERSION 1.0 | JULY 2026 | 15
+PULSE                                                                                                                                           14 / TESTING AND VERIFICATION
+
+
+
+
+14 / TESTING AND VERIFICATION
+
+
+
+Local first. SharePoint final.
+Use local development to shorten the UI feedback loop, then test the full change in a safe SharePoint environment. The
+second step is mandatory for any code that touches identity, roles, lists, files, notifications, or deployment.
+
+
+
+    LOCAL CHECKS                                                                                SHAREPOINT CHECKS
+
+      • Page loads without console errors                                                         • Current user and role resolve correctly
+      • Route renders the intended module                                                         • Required lists and columns exist
+      • Forms and modals remain usable                                                            • Controlled create, update, and delete persist
+      • Responsive layout remains stable                                                          • Document upload and open paths work
+      • Browser export generation completes                                                       • Notifications and audit entries appear
+
+
+
+
+Recommended regression sequence
+✓    Boot and diagnostics                                                                   ✓    Dashboard and navigation
+
+
+✓    Role-restricted routes                                                                 ✓    Project read and write
+
+
+✓    Action item and nested-data save                                                       ✓    Document-library operation
+
+
+✓    Workflow notification                                                                  ✓    Audit record
+
+
+✓    Project PowerPoint                                                                     ✓    Group PowerPoint
+
+
+
+
+    Evidence: retain the build artifact, source revision, test role, target site, changed record type, expected result, actual result, and any screenshots or REST responses
+    needed to reproduce a failure.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                                VERSION 1.0 | JULY 2026 | 16
+PULSE                                                                                                                                                       15 / TROUBLESHOOTING
+
+
+
+
+15 / TROUBLESHOOTING
+
+
+
+Inspect the boundary before rewriting the feature.
+Most high-impact failures occur at packaging, identity, schema, mapping, or hosted-environment boundaries. Diagnose
+those areas before changing page logic.
+
+
+  Symptom                               First inspection                                                Safe response
+
+
+  Blank or partial page                 Hosted page, console, generated package, asset paths,           Rebuild with the preferred builder. Compare to the prior known-good
+                                        provenance                                                      artifact.
+
+
+  Incorrect role                        Current user, active role record, diagnostics, target site      Correct the approved role record. Do not infer authorization from site
+                                                                                                        membership.
+
+
+  Save appears successful but data is   Live column, mapper pair, filtered payload, REST response       Repair schema and mappings together, run setup, then repeat live read/
+  missing                                                                                               write validation.
+
+
+  Choice value will not persist         UI options versus the SharePoint Choice column                  Align schema and UI choices, provision the change, and retest.
+
+
+  Binary file is corrupt                Upload path and request body type                               Use raw bytes. Do not route binary data through text encoding.
+
+
+  Stale data overwrites an edit         Background refresh, open modal, pending save, recent write      Restore refresh guards and isolate the timing before changing the store.
+
+
+  Notification does not arrive          User preferences, notification config, source event, delivery   Confirm the source action first, then inspect routing and delivery status.
+                                        record
+
+
+  Export fails or is malformed          Browser console, PptxGenJS load, image data, selected           Reproduce with a minimal safe record, fix the export boundary, and
+                                        record set                                                      visually inspect the file.
+
+
+  Release-only defect                   Hosted page, target permissions, prior artifact                 Roll back first, preserve evidence, then isolate the source change.
+
+
+
+
+     DIAGNOSTIC ORDER
+
+
+     Host -> identity -> role -> schema -> mapper -> feature.
+     Following the boundary inward prevents a visible symptom from being mistaken for an architectural failure.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                                   VERSION 1.0 | JULY 2026 | 17
+PULSE                                                                                                                            16 / CHANGE WORKFLOW AND HANDOFF
+
+
+
+
+16 / CHANGE WORKFLOW AND HANDOFF
+
+
+
+Leave the system easier to maintain.
+Every change should leave a clear path from request to source, build, hosted verification, release evidence, rollback, and
+updated documentation.
+
+
+
+    CHANGE WORKFLOW                                                                      MAINTAINER HANDOFF
+
+     1. Identify the active feature file and data boundary.                               ✓    Approved source location and branch
+
+     2. Update schema, mapper, normalization, and UI together when data
+                                                                                          ✓    Production host and release authority [VERIFY]
+        changes.
+
+     3. Validate locally.                                                                 ✓    Approved SharePoint site and libraries [VERIFY]
+
+     4. Build the approved artifact.                                                           Known-good rollback artifact
+                                                                                          ✓
+     5. Test on a safe SharePoint site.
+                                                                                          ✓    Current list schema and role records
+     6. Deploy with a retained rollback copy.
+
+     7. Record evidence and update references.                                            ✓    Open defects and technical debt
+
+
+                                                                                          ✓    Last successful test evidence
+
+
+
+
+Known limitations requiring confirmation
+  • The current production hosting arrangement is not available in the source package. Confirm whether the approved surface is the browser package, the SPFx host,
+    or another host.
+  • Confirm the approved live SharePoint site, document-library names, retention controls, and deployment authority.
+  • Confirm whether AI grammar review has an approved endpoint, key-management path, and authorization before enabling it.
+  • The typed SPFx structure is not a complete standalone feature implementation because the host currently renders the embedded browser application.
+
+
+
+
+     FINAL MAINTAINER RULE
+
+
+     Trace the change end to end.
+     UI -> store -> repository -> schema -> SharePoint -> hosted verification -> release evidence.
+
+
+
+
+PULSE TECHNICAL REFERENCE                                                                                                                        VERSION 1.0 | JULY 2026 | 18
+

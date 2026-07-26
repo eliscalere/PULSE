@@ -1,0 +1,3 @@
+Title,ProjectId,Portfolio,RiskName,RiskDescription,OwnerName,OwnerEmail,Likelihood,Impact,RiskRating,Category,MitigationPlan,ResponseStrategy,DueDate,RiskStatus,LastReviewedDate,ReviewNotesJson,MitigationsJson,ResidualLikelihood,ResidualImpact
+PULSE Risks Sample 1,1,Portfolio sample 1,RiskName sample 1,RiskDescription sample text,OwnerName sample 1,OwnerEmail sample 1,1,1,Green,Schedule,MitigationPlan sample text,Accept,2026-07-01,Open,2026-07-01,ReviewNotesJson sample text,MitigationsJson sample text,1,1
+PULSE Risks Sample 2,2,Portfolio sample 2,RiskName sample 2,RiskDescription sample text,OwnerName sample 2,OwnerEmail sample 2,2,2,Green,Schedule,MitigationPlan sample text,Accept,2026-07-15,Open,2026-07-15,ReviewNotesJson sample text,MitigationsJson sample text,2,2

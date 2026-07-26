@@ -1,0 +1,52 @@
+{
+  "name": "aewttr-workspace-spfx",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0 <23.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "env:check": "./.local/node22/bin/node -v && ./.local/node22/bin/npm -v",
+    "build": "gulp bundle",
+    "clean": "gulp clean",
+    "legacy:sync": "./use-node22.sh node ./tools/generate-legacy-html.mjs",
+    "lint": "eslint . --ext .ts,.tsx",
+    "serve": "gulp serve",
+    "test": "gulp test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fluentui/react-components": "9.58.1",
+    "@microsoft/decorators": "1.23.0",
+    "@microsoft/sp-component-base": "1.23.0",
+    "@microsoft/sp-core-library": "1.23.0",
+    "@microsoft/sp-lodash-subset": "1.23.0",
+    "@microsoft/sp-office-ui-fabric-core": "1.23.0",
+    "@microsoft/sp-property-pane": "1.23.0",
+    "@microsoft/sp-webpart-base": "1.23.0",
+    "@pnp/core": "4.20.0",
+    "@pnp/graph": "4.20.0",
+    "@pnp/logging": "4.20.0",
+    "@pnp/queryable": "4.20.0",
+    "@pnp/sp": "4.20.0",
+    "react": "17.0.1",
+    "react-dom": "17.0.1",
+    "tslib": "2.3.1"
+  },
+  "devDependencies": {
+    "@microsoft/eslint-config-spfx": "1.23.0",
+    "@microsoft/eslint-plugin-spfx": "1.23.0",
+    "@microsoft/rush-stack-compiler-5.3": "0.1.0",
+    "@microsoft/sp-build-web": "1.23.0",
+    "@microsoft/sp-module-interfaces": "1.23.0",
+    "@rushstack/eslint-config": "4.6.4",
+    "@types/react": "17.0.45",
+    "@types/react-dom": "17.0.17",
+    "@types/webpack-env": "1.16.3",
+    "ajv": "8.17.1",
+    "eslint": "8.57.0",
+    "gulp": "4.0.2",
+    "typescript": "5.3.3"
+  }
+}

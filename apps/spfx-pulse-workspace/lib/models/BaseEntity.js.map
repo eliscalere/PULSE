@@ -1,0 +1,1 @@
+{"version":3,"file":"BaseEntity.js","sourceRoot":"","sources":["../../src/models/BaseEntity.ts"],"names":[],"mappings":"","sourcesContent":["export interface BaseEntity {\n  readonly id: number;\n  readonly title: string;\n  readonly created?: string;\n  readonly modified?: string;\n}\n"]}

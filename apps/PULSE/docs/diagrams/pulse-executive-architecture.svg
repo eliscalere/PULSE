@@ -1,0 +1,528 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 3840 2160" width="3840" height="2160">
+  <defs>
+    <!-- Grid texture -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e8eef4" stroke-width="0.8"/>
+    </pattern>
+    <!-- Subtle radial gradient background center -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#f0f6ff"/>
+      <stop offset="100%" stop-color="#f7f9fc"/>
+    </radialGradient>
+    <!-- Engine glow -->
+    <filter id="engineShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="0" stdDeviation="18" flood-color="#0078d4" flood-opacity="0.18"/>
+      <feDropShadow dx="0" dy="8" stdDeviation="24" flood-color="#001f4a" flood-opacity="0.10"/>
+    </filter>
+    <!-- Card shadow -->
+    <filter id="cardShadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#001433" flood-opacity="0.09"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#001433" flood-opacity="0.06"/>
+    </filter>
+    <!-- Module card shadow -->
+    <filter id="moduleShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#001433" flood-opacity="0.08"/>
+    </filter>
+    <!-- Arrow marker -->
+    <marker id="arrowBlue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0078d4" opacity="0.7"/>
+    </marker>
+    <marker id="arrowGray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#8a9bb0" opacity="0.7"/>
+    </marker>
+    <!-- Engine gradient -->
+    <linearGradient id="engineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0f6ff"/>
+    </linearGradient>
+    <!-- Source card gradient -->
+    <linearGradient id="sourceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f5f9ff"/>
+    </linearGradient>
+    <!-- Output card gradient -->
+    <linearGradient id="outputGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f5fff9"/>
+    </linearGradient>
+    <!-- Module gradients by category -->
+    <linearGradient id="modBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e8f4ff"/>
+      <stop offset="100%" stop-color="#dbeeff"/>
+    </linearGradient>
+    <linearGradient id="modTeal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0f7f4"/>
+      <stop offset="100%" stop-color="#d0f2ed"/>
+    </linearGradient>
+    <linearGradient id="modPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ede8ff"/>
+      <stop offset="100%" stop-color="#e4dcff"/>
+    </linearGradient>
+    <linearGradient id="modOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff3e0"/>
+      <stop offset="100%" stop-color="#ffe9c8"/>
+    </linearGradient>
+    <linearGradient id="modGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e6f9f1"/>
+      <stop offset="100%" stop-color="#d8f5e8"/>
+    </linearGradient>
+    <!-- Title accent -->
+    <linearGradient id="titleAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0078d4"/>
+      <stop offset="100%" stop-color="#50e6ff"/>
+    </linearGradient>
+    <!-- Callout gradient -->
+    <linearGradient id="calloutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e8f4ff"/>
+      <stop offset="100%" stop-color="#f0f8ff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="3840" height="2160" fill="url(#bgGrad)"/>
+  <rect width="3840" height="2160" fill="url(#grid)" opacity="0.55"/>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- TITLE BLOCK -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="120" y="56" width="260" height="6" rx="3" fill="url(#titleAccent)"/>
+  <text x="120" y="120" font-family="'Segoe UI', system-ui, -apple-system, sans-serif"
+        font-size="68" font-weight="700" fill="#0c1a2e" letter-spacing="-1">PULSE</text>
+  <text x="120" y="186" font-family="'Segoe UI', system-ui, -apple-system, sans-serif"
+        font-size="36" font-weight="300" fill="#3a5068" letter-spacing="0.5">Application Architecture</text>
+
+  <!-- Metrics chips -->
+  <!-- Chip 1 -->
+  <rect x="120" y="214" width="230" height="52" rx="26" fill="#ffffff" filter="url(#cardShadow)" stroke="#d0dde8" stroke-width="1"/>
+  <text x="235" y="245" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#0078d4" text-anchor="middle">16</text>
+  <text x="235" y="262" font-family="'Segoe UI', sans-serif" font-size="15" fill="#5a7a96" text-anchor="middle">SharePoint Lists</text>
+  <!-- Chip 2 -->
+  <rect x="368" y="214" width="220" height="52" rx="26" fill="#ffffff" filter="url(#cardShadow)" stroke="#d0dde8" stroke-width="1"/>
+  <text x="478" y="245" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#0078d4" text-anchor="middle">7</text>
+  <text x="478" y="262" font-family="'Segoe UI', sans-serif" font-size="15" fill="#5a7a96" text-anchor="middle">Core Modules</text>
+  <!-- Chip 3 -->
+  <rect x="604" y="214" width="250" height="52" rx="26" fill="#ffffff" filter="url(#cardShadow)" stroke="#d0dde8" stroke-width="1"/>
+  <text x="729" y="245" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#0078d4" text-anchor="middle">1</text>
+  <text x="729" y="262" font-family="'Segoe UI', sans-serif" font-size="15" fill="#5a7a96" text-anchor="middle">Deployable Package</text>
+  <!-- Chip 4 -->
+  <rect x="870" y="214" width="260" height="52" rx="26" fill="#ffffff" filter="url(#cardShadow)" stroke="#d0dde8" stroke-width="1"/>
+  <text x="1000" y="245" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#0078d4" text-anchor="middle">100%</text>
+  <text x="1000" y="262" font-family="'Segoe UI', sans-serif" font-size="15" fill="#5a7a96" text-anchor="middle">SharePoint-Backed</text>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LAYER LABELS -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <text x="340" y="340" font-family="'Segoe UI', sans-serif" font-size="21" font-weight="600"
+        fill="#0078d4" text-anchor="middle" letter-spacing="3" opacity="0.8">DATA SOURCES</text>
+  <text x="1920" y="340" font-family="'Segoe UI', sans-serif" font-size="21" font-weight="600"
+        fill="#0078d4" text-anchor="middle" letter-spacing="3" opacity="0.8">APPLICATION ENGINE</text>
+  <text x="2880" y="340" font-family="'Segoe UI', sans-serif" font-size="21" font-weight="600"
+        fill="#0078d4" text-anchor="middle" letter-spacing="3" opacity="0.8">FEATURE MODULES</text>
+  <text x="3580" y="340" font-family="'Segoe UI', sans-serif" font-size="21" font-weight="600"
+        fill="#0078d4" text-anchor="middle" letter-spacing="3" opacity="0.8">OUTPUTS</text>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LEFT COLUMN: SharePoint Data Sources -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <!-- Column background -->
+  <rect x="60" y="356" width="560" height="1430" rx="20" fill="white" opacity="0.45" stroke="#c8d8e8" stroke-width="1.2"/>
+
+  <!-- Source card macro -->
+  <!-- List: Projects -->
+  <rect x="88" y="388" width="504" height="110" rx="14" fill="url(#sourceGrad)" filter="url(#moduleShadow)" stroke="#ccdaea" stroke-width="1.2"/>
+  <!-- SP icon -->
+  <rect x="108" y="408" width="52" height="52" rx="10" fill="#0078d4" opacity="0.12"/>
+  <text x="134" y="443" font-family="'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0078d4" text-anchor="middle">SP</text>
+  <text x="178" y="434" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Projects List</text>
+  <text x="178" y="460" font-family="'Segoe UI', sans-serif" font-size="17" fill="#6a8aa8">Project records, codes &amp; owners</text>
+  <rect x="496" y="418" width="80" height="26" rx="13" fill="#e8f4ff"/>
+  <text x="536" y="436" font-family="'Segoe UI', sans-serif" font-size="14" fill="#0078d4" text-anchor="middle">List</text>
+
+  <!-- Meetings List -->
+  <rect x="88" y="516" width="504" height="110" rx="14" fill="url(#sourceGrad)" filter="url(#moduleShadow)" stroke="#ccdaea" stroke-width="1.2"/>
+  <rect x="108" y="536" width="52" height="52" rx="10" fill="#00b4d8" opacity="0.12"/>
+  <text x="134" y="571" font-family="'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#00b4d8" text-anchor="middle">SP</text>
+  <text x="178" y="562" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Meetings List</text>
+  <text x="178" y="588" font-family="'Segoe UI', sans-serif" font-size="17" fill="#6a8aa8">Sessions, rocks &amp; action items</text>
+  <rect x="496" y="546" width="80" height="26" rx="13" fill="#e0f7f4"/>
+  <text x="536" y="564" font-family="'Segoe UI', sans-serif" font-size="14" fill="#00897b" text-anchor="middle">List</text>
+
+  <!-- Document Review List -->
+  <rect x="88" y="644" width="504" height="110" rx="14" fill="url(#sourceGrad)" filter="url(#moduleShadow)" stroke="#ccdaea" stroke-width="1.2"/>
+  <rect x="108" y="664" width="52" height="52" rx="10" fill="#7c3aed" opacity="0.12"/>
+  <text x="134" y="699" font-family="'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#7c3aed" text-anchor="middle">SP</text>
+  <text x="178" y="690" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Document Review List</text>
+  <text x="178" y="716" font-family="'Segoe UI', sans-serif" font-size="17" fill="#6a8aa8">Revisions, reviewers &amp; approvals</text>
+  <rect x="496" y="674" width="80" height="26" rx="13" fill="#ede8ff"/>
+  <text x="536" y="692" font-family="'Segoe UI', sans-serif" font-size="14" fill="#7c3aed" text-anchor="middle">List</text>
+
+  <!-- Travel Requests -->
+  <rect x="88" y="772" width="504" height="110" rx="14" fill="url(#sourceGrad)" filter="url(#moduleShadow)" stroke="#ccdaea" stroke-width="1.2"/>
+  <rect x="108" y="792" width="52" height="52" rx="10" fill="#ea7600" opacity="0.12"/>
+  <text x="134" y="827" font-family="'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#ea7600" text-anchor="middle">SP</text>
+  <text x="178" y="818" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Travel Requests List</text>
+  <text x="178" y="844" font-family="'Segoe UI', sans-serif" font-size="17" fill="#6a8aa8">Requests, debriefs &amp; approvals</text>
+  <rect x="496" y="802" width="80" height="26" rx="13" fill="#fff3e0"/>
+  <text x="536" y="820" font-family="'Segoe UI', sans-serif" font-size="14" fill="#ea7600" text-anchor="middle">List</text>
+
+  <!-- Notifications List -->
+  <rect x="88" y="900" width="504" height="110" rx="14" fill="url(#sourceGrad)" filter="url(#moduleShadow)" stroke="#ccdaea" stroke-width="1.2"/>
+  <rect x="108" y="920" width="52" height="52" rx="10" fill="#f59e0b" opacity="0.12"/>
+  <text x="134" y="955" font-family="'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#f59e0b" text-anchor="middle">SP</text>
+  <text x="178" y="946" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Notifications List</text>
+  <text x="178" y="972" font-family="'Segoe UI', sans-serif" font-size="17" fill="#6a8aa8">Delivery queue &amp; preferences</text>
+  <rect x="496" y="930" width="80" height="26" rx="13" fill="#fff8e1"/>
+  <text x="536" y="948" font-family="'Segoe UI', sans-serif" font-size="14" fill="#f59e0b" text-anchor="middle">List</text>
+
+  <!-- App Roles List -->
+  <rect x="88" y="1028" width="504" height="110" rx="14" fill="url(#sourceGrad)" filter="url(#moduleShadow)" stroke="#ccdaea" stroke-width="1.2"/>
+  <rect x="108" y="1048" width="52" height="52" rx="10" fill="#059669" opacity="0.12"/>
+  <text x="134" y="1083" font-family="'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#059669" text-anchor="middle">SP</text>
+  <text x="178" y="1074" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">App Roles List</text>
+  <text x="178" y="1100" font-family="'Segoe UI', sans-serif" font-size="17" fill="#6a8aa8">Users, roles &amp; permissions</text>
+  <rect x="496" y="1058" width="80" height="26" rx="13" fill="#e6f9f1"/>
+  <text x="536" y="1076" font-family="'Segoe UI', sans-serif" font-size="14" fill="#059669" text-anchor="middle">List</text>
+
+  <!-- Audit Log List -->
+  <rect x="88" y="1156" width="504" height="110" rx="14" fill="url(#sourceGrad)" filter="url(#moduleShadow)" stroke="#ccdaea" stroke-width="1.2"/>
+  <rect x="108" y="1176" width="52" height="52" rx="10" fill="#dc2626" opacity="0.12"/>
+  <text x="134" y="1211" font-family="'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#dc2626" text-anchor="middle">SP</text>
+  <text x="178" y="1202" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Audit Log List</text>
+  <text x="178" y="1228" font-family="'Segoe UI', sans-serif" font-size="17" fill="#6a8aa8">User actions &amp; system events</text>
+  <rect x="496" y="1186" width="80" height="26" rx="13" fill="#fee2e2"/>
+  <text x="536" y="1204" font-family="'Segoe UI', sans-serif" font-size="14" fill="#dc2626" text-anchor="middle">List</text>
+
+  <!-- RAG Config List -->
+  <rect x="88" y="1284" width="504" height="110" rx="14" fill="url(#sourceGrad)" filter="url(#moduleShadow)" stroke="#ccdaea" stroke-width="1.2"/>
+  <rect x="108" y="1304" width="52" height="52" rx="10" fill="#6366f1" opacity="0.12"/>
+  <text x="134" y="1339" font-family="'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#6366f1" text-anchor="middle">SP</text>
+  <text x="178" y="1330" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">RAG Config List</text>
+  <text x="178" y="1356" font-family="'Segoe UI', sans-serif" font-size="17" fill="#6a8aa8">Status thresholds &amp; config rules</text>
+  <rect x="496" y="1314" width="80" height="26" rx="13" fill="#eef2ff"/>
+  <text x="536" y="1332" font-family="'Segoe UI', sans-serif" font-size="14" fill="#6366f1" text-anchor="middle">List</text>
+
+  <!-- Location Config List -->
+  <rect x="88" y="1412" width="504" height="110" rx="14" fill="url(#sourceGrad)" filter="url(#moduleShadow)" stroke="#ccdaea" stroke-width="1.2"/>
+  <rect x="108" y="1432" width="52" height="52" rx="10" fill="#0891b2" opacity="0.12"/>
+  <text x="134" y="1467" font-family="'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0891b2" text-anchor="middle">SP</text>
+  <text x="178" y="1458" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Location Config List</text>
+  <text x="178" y="1484" font-family="'Segoe UI', sans-serif" font-size="17" fill="#6a8aa8">Travel locations &amp; cost codes</text>
+  <rect x="496" y="1442" width="80" height="26" rx="13" fill="#e0f7fa"/>
+  <text x="536" y="1460" font-family="'Segoe UI', sans-serif" font-size="14" fill="#0891b2" text-anchor="middle">List</text>
+
+  <!-- SharePoint Schema badge at bottom of sources -->
+  <rect x="88" y="1552" width="504" height="76" rx="14" fill="#0078d4" filter="url(#moduleShadow)"/>
+  <text x="340" y="1590" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="white" text-anchor="middle">SharePoint Schema</text>
+  <text x="340" y="1614" font-family="'Segoe UI', sans-serif" font-size="16" fill="rgba(255,255,255,0.75)" text-anchor="middle">Runtime list introspection &amp; validation</text>
+
+  <!-- Source count label -->
+  <text x="340" y="1684" font-family="'Segoe UI', sans-serif" font-size="18" fill="#8a9bb0" text-anchor="middle">+ 7 additional supporting lists</text>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- CONNECTOR ARROWS — Sources → Engine -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <!-- Main trunk line from sources -->
+  <line x1="592" y1="1071" x2="1100" y2="1071" stroke="#0078d4" stroke-width="3" stroke-dasharray="8,5" opacity="0.45" marker-end="url(#arrowBlue)"/>
+  <rect x="660" y="1048" width="140" height="32" rx="16" fill="white" stroke="#c8daea" stroke-width="1"/>
+  <text x="730" y="1069" font-family="'Segoe UI', sans-serif" font-size="17" fill="#0078d4" text-anchor="middle" font-weight="600">Loads</text>
+
+  <!-- Secondary label -->
+  <line x1="592" y1="1210" x2="900" y2="1210" stroke="#0078d4" stroke-width="2" stroke-dasharray="6,4" opacity="0.3"/>
+  <line x1="592" y1="1338" x2="900" y2="1338" stroke="#0078d4" stroke-width="2" stroke-dasharray="6,4" opacity="0.3"/>
+  <line x1="592" y1="443" x2="900" y2="443" stroke="#0078d4" stroke-width="2" stroke-dasharray="6,4" opacity="0.3"/>
+  <line x1="592" y1="571" x2="900" y2="571" stroke="#0078d4" stroke-width="2" stroke-dasharray="6,4" opacity="0.3"/>
+  <!-- Vertical trunk -->
+  <line x1="900" y1="388" x2="900" y2="1660" stroke="#0078d4" stroke-width="2" stroke-dasharray="6,4" opacity="0.25"/>
+  <line x1="900" y1="1071" x2="1100" y2="1071" stroke="#0078d4" stroke-width="3" opacity="0" marker-end="url(#arrowBlue)"/>
+
+  <!-- Arrow label box -->
+  <rect x="818" y="1044" width="166" height="36" rx="18" fill="white" stroke="#c8daea" stroke-width="1.2"/>
+  <text x="901" y="1067" font-family="'Segoe UI', sans-serif" font-size="18" fill="#0078d4" text-anchor="middle" font-weight="600">Synchronizes</text>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- CENTER: PULSE APPLICATION ENGINE -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <!-- Engine outer glow ring -->
+  <rect x="1086" y="530" width="1668" height="1100" rx="28" fill="none" stroke="#0078d4" stroke-width="2" opacity="0.18" filter="url(#engineShadow)"/>
+
+  <!-- Engine card -->
+  <rect x="1100" y="544" width="1640" height="1072" rx="24" fill="url(#engineGrad)" filter="url(#engineShadow)" stroke="#0078d4" stroke-width="1.8"/>
+
+  <!-- Engine header bar -->
+  <rect x="1100" y="544" width="1640" height="88" rx="24" fill="#0078d4"/>
+  <rect x="1100" y="600" width="1640" height="32" fill="#0078d4"/>
+
+  <!-- Engine logo -->
+  <rect x="1128" y="562" width="52" height="52" rx="12" fill="rgba(255,255,255,0.18)"/>
+  <!-- Pulse waveform icon in header -->
+  <polyline points="1138,588 1148,588 1153,572 1160,604 1168,568 1175,604 1180,588 1172,588" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="1196" y="588" font-family="'Segoe UI', sans-serif" font-size="34" font-weight="700" fill="white">PULSE</text>
+  <text x="1196" y="620" font-family="'Segoe UI', sans-serif" font-size="20" fill="rgba(255,255,255,0.8)">Application Engine</text>
+
+  <!-- Version badge -->
+  <rect x="2634" y="567" width="86" height="30" rx="15" fill="rgba(255,255,255,0.16)"/>
+  <text x="2677" y="587" font-family="'Segoe UI', sans-serif" font-size="15" fill="white" text-anchor="middle">v2026.07</text>
+
+  <!-- ═══ CAPABILITY BULLETS — 2 column layout ═══ -->
+  <!-- Left column bullets -->
+  <!-- Bullet: Authentication -->
+  <rect x="1140" y="670" width="760" height="82" rx="12" fill="white" opacity="0.7" stroke="#d8e8f4" stroke-width="1"/>
+  <!-- Icon circle -->
+  <circle cx="1178" cy="711" r="20" fill="#0078d4" opacity="0.12"/>
+  <text x="1178" y="718" font-family="'Segoe UI', sans-serif" font-size="18" fill="#0078d4" text-anchor="middle">🔐</text>
+  <text x="1210" y="706" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="#0c1a2e">Authentication</text>
+  <text x="1210" y="732" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">SharePoint SSO · session validation · token refresh</text>
+
+  <!-- Bullet: Role Resolution -->
+  <rect x="1140" y="764" width="760" height="82" rx="12" fill="white" opacity="0.7" stroke="#d8e8f4" stroke-width="1"/>
+  <circle cx="1178" cy="805" r="20" fill="#0078d4" opacity="0.12"/>
+  <text x="1178" y="812" font-family="'Segoe UI', sans-serif" font-size="18" fill="#0078d4" text-anchor="middle">👤</text>
+  <text x="1210" y="800" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="#0c1a2e">Role Resolution</text>
+  <text x="1210" y="826" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">App Roles List → permission matrix → UI gating</text>
+
+  <!-- Bullet: Repository Mapping -->
+  <rect x="1140" y="858" width="760" height="82" rx="12" fill="white" opacity="0.7" stroke="#d8e8f4" stroke-width="1"/>
+  <circle cx="1178" cy="899" r="20" fill="#0078d4" opacity="0.12"/>
+  <text x="1178" y="906" font-family="'Segoe UI', sans-serif" font-size="18" fill="#0078d4" text-anchor="middle">🗺</text>
+  <text x="1210" y="894" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="#0c1a2e">Repository Mapping</text>
+  <text x="1210" y="920" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Schema-driven list mappers · bidirectional serialization</text>
+
+  <!-- Bullet: Workflow Engine -->
+  <rect x="1140" y="952" width="760" height="82" rx="12" fill="white" opacity="0.7" stroke="#d8e8f4" stroke-width="1"/>
+  <circle cx="1178" cy="993" r="20" fill="#0078d4" opacity="0.12"/>
+  <text x="1178" y="1000" font-family="'Segoe UI', sans-serif" font-size="18" fill="#0078d4" text-anchor="middle">⚙️</text>
+  <text x="1210" y="988" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="#0c1a2e">Workflow Engine</text>
+  <text x="1210" y="1014" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Approval chains · status transitions · RAG logic</text>
+
+  <!-- Right column bullets -->
+  <!-- Bullet: Notification Pipeline -->
+  <rect x="1920" y="670" width="780" height="82" rx="12" fill="white" opacity="0.7" stroke="#d8e8f4" stroke-width="1"/>
+  <circle cx="1958" cy="711" r="20" fill="#0078d4" opacity="0.12"/>
+  <text x="1958" y="718" font-family="'Segoe UI', sans-serif" font-size="18" fill="#0078d4" text-anchor="middle">🔔</text>
+  <text x="1990" y="706" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="#0c1a2e">Notification Pipeline</text>
+  <text x="1990" y="732" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Email · Teams adaptive cards · per-user preferences</text>
+
+  <!-- Bullet: Persistence Layer -->
+  <rect x="1920" y="764" width="780" height="82" rx="12" fill="white" opacity="0.7" stroke="#d8e8f4" stroke-width="1"/>
+  <circle cx="1958" cy="805" r="20" fill="#0078d4" opacity="0.12"/>
+  <text x="1958" y="812" font-family="'Segoe UI', sans-serif" font-size="18" fill="#0078d4" text-anchor="middle">💾</text>
+  <text x="1990" y="800" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="#0c1a2e">Persistence Layer</text>
+  <text x="1990" y="826" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Optimistic UI · session cache · debounced saves</text>
+
+  <!-- Bullet: SharePoint Synchronization -->
+  <rect x="1920" y="858" width="780" height="82" rx="12" fill="white" opacity="0.7" stroke="#d8e8f4" stroke-width="1"/>
+  <circle cx="1958" cy="899" r="20" fill="#0078d4" opacity="0.12"/>
+  <text x="1958" y="906" font-family="'Segoe UI', sans-serif" font-size="18" fill="#0078d4" text-anchor="middle">🔄</text>
+  <text x="1990" y="894" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="#0c1a2e">SharePoint Synchronization</text>
+  <text x="1990" y="920" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">REST adapter · digest tokens · proactive refresh</text>
+
+  <!-- Bullet: Audit &amp; Compliance -->
+  <rect x="1920" y="952" width="780" height="82" rx="12" fill="white" opacity="0.7" stroke="#d8e8f4" stroke-width="1"/>
+  <circle cx="1958" cy="993" r="20" fill="#0078d4" opacity="0.12"/>
+  <text x="1958" y="1000" font-family="'Segoe UI', sans-serif" font-size="18" fill="#0078d4" text-anchor="middle">📋</text>
+  <text x="1990" y="988" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="#0c1a2e">Audit &amp; Compliance</text>
+  <text x="1990" y="1014" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Action logging · tamper-evident records · export</text>
+
+  <!-- Engine divider -->
+  <line x1="1140" y1="1056" x2="2700" y2="1056" stroke="#d0e0ef" stroke-width="1.2"/>
+
+  <!-- Engine sub-section: technical layer -->
+  <text x="1920" y="1094" font-family="'Segoe UI', sans-serif" font-size="17" font-weight="600" fill="#0078d4" text-anchor="middle" letter-spacing="2" opacity="0.7">TECHNICAL SUBSTRATE</text>
+
+  <!-- Tech chips row -->
+  <!-- SharePoint REST -->
+  <rect x="1160" y="1110" width="290" height="56" rx="12" fill="white" stroke="#c8daea" stroke-width="1.2"/>
+  <text x="1305" y="1141" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#0c1a2e" text-anchor="middle">SharePoint REST</text>
+  <text x="1305" y="1159" font-family="'Segoe UI', sans-serif" font-size="14" fill="#6a8aa8" text-anchor="middle">_api/web/lists adapter</text>
+
+  <!-- Session Cache -->
+  <rect x="1470" y="1110" width="270" height="56" rx="12" fill="white" stroke="#c8daea" stroke-width="1.2"/>
+  <text x="1605" y="1141" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#0c1a2e" text-anchor="middle">Session Cache</text>
+  <text x="1605" y="1159" font-family="'Segoe UI', sans-serif" font-size="14" fill="#6a8aa8" text-anchor="middle">sessionStorage · data.js</text>
+
+  <!-- Schema Introspection -->
+  <rect x="1760" y="1110" width="310" height="56" rx="12" fill="white" stroke="#c8daea" stroke-width="1.2"/>
+  <text x="1915" y="1141" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#0c1a2e" text-anchor="middle">Schema Introspection</text>
+  <text x="1915" y="1159" font-family="'Segoe UI', sans-serif" font-size="14" fill="#6a8aa8" text-anchor="middle">sharepoint-schema.js</text>
+
+  <!-- Repo Mappers -->
+  <rect x="2090" y="1110" width="260" height="56" rx="12" fill="white" stroke="#c8daea" stroke-width="1.2"/>
+  <text x="2220" y="1141" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#0c1a2e" text-anchor="middle">Repo Mappers</text>
+  <text x="2220" y="1159" font-family="'Segoe UI', sans-serif" font-size="14" fill="#6a8aa8" text-anchor="middle">sharepoint-repo.js</text>
+
+  <!-- Forge Packager -->
+  <rect x="2370" y="1110" width="330" height="56" rx="12" fill="white" stroke="#c8daea" stroke-width="1.2"/>
+  <text x="2535" y="1141" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#0c1a2e" text-anchor="middle">Forge Packager</text>
+  <text x="2535" y="1159" font-family="'Segoe UI', sans-serif" font-size="14" fill="#6a8aa8" text-anchor="middle">single-file .html deploy</text>
+
+  <!-- Boot sequence -->
+  <rect x="1140" y="1200" width="1560" height="80" rx="14" fill="#f0f6ff" stroke="#c0d8f0" stroke-width="1.2"/>
+  <text x="1920" y="1238" font-family="'Segoe UI', sans-serif" font-size="20" font-weight="600" fill="#0c1a2e" text-anchor="middle">Boot Sequence</text>
+  <text x="1920" y="1264" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96" text-anchor="middle">index.html → app-config.js → sharepoint-adapter.js → sharepoint-schema.js → sharepoint-repo.js → app.js</text>
+
+  <!-- Engine footer label -->
+  <rect x="1140" y="1308" width="760" height="268" rx="14" fill="white" opacity="0.6" stroke="#d0e4f4" stroke-width="1"/>
+  <text x="1180" y="1344" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#0078d4">Supported Deployments</text>
+  <text x="1180" y="1372" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a5068">✓  Flank Speed SharePoint Online</text>
+  <text x="1180" y="1398" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a5068">✓  Firepit Web Part host</text>
+  <text x="1180" y="1424" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a5068">✓  Local-fallback development mode</text>
+  <text x="1180" y="1450" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a5068">✓  Single .html Forge artifact</text>
+  <text x="1180" y="1494" font-family="'Segoe UI', sans-serif" font-size="16" font-weight="600" fill="#059669">No server. No backend. No build step required.</text>
+  <text x="1180" y="1520" font-family="'Segoe UI', sans-serif" font-size="15" fill="#5a7a96">Pure SharePoint REST + vanilla JS.</text>
+  <text x="1180" y="1544" font-family="'Segoe UI', sans-serif" font-size="15" fill="#5a7a96">Deploys as a single packaged HTML file.</text>
+
+  <rect x="1920" y="1308" width="760" height="268" rx="14" fill="white" opacity="0.6" stroke="#d0e4f4" stroke-width="1"/>
+  <text x="1960" y="1344" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#0078d4">Data Integrity Controls</text>
+  <text x="1960" y="1372" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a5068">✓  Schema field alias resolution</text>
+  <text x="1960" y="1398" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a5068">✓  Orphaned field detection</text>
+  <text x="1960" y="1424" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a5068">✓  Options:28 column-creation fix</text>
+  <text x="1960" y="1450" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a5068">✓  Debounced + chained save pattern</text>
+  <text x="1960" y="1494" font-family="'Segoe UI', sans-serif" font-size="16" font-weight="600" fill="#059669">Postmortem bugs resolved &amp; documented.</text>
+  <text x="1960" y="1520" font-family="'Segoe UI', sans-serif" font-size="15" fill="#5a7a96">All known SharePoint REST edge cases</text>
+  <text x="1960" y="1544" font-family="'Segoe UI', sans-serif" font-size="15" fill="#5a7a96">catalogued and mitigated.</text>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- CONNECTOR — Engine → Feature Modules -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <line x1="2740" y1="1080" x2="2950" y2="1080" stroke="#0078d4" stroke-width="3.5" marker-end="url(#arrowBlue)" opacity="0.6"/>
+  <rect x="2778" y="1058" width="130" height="34" rx="17" fill="white" stroke="#c8daea" stroke-width="1.2"/>
+  <text x="2843" y="1080" font-family="'Segoe UI', sans-serif" font-size="17" fill="#0078d4" text-anchor="middle" font-weight="600">Routes</text>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- RIGHT COLUMN: Feature Modules -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <rect x="2960" y="356" width="560" height="1430" rx="20" fill="white" opacity="0.45" stroke="#c8d8e8" stroke-width="1.2"/>
+
+  <!-- Project Management -->
+  <rect x="2988" y="388" width="504" height="110" rx="14" fill="url(#modBlue)" filter="url(#moduleShadow)" stroke="#b8d0e8" stroke-width="1.2"/>
+  <text x="3024" y="428" font-family="'Segoe UI', sans-serif" font-size="30">📁</text>
+  <text x="3076" y="434" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Project Management</text>
+  <text x="3076" y="460" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Gantt · RAG · workload · milestones</text>
+
+  <!-- Weekly Meetings -->
+  <rect x="2988" y="516" width="504" height="110" rx="14" fill="url(#modTeal)" filter="url(#moduleShadow)" stroke="#b0ddd8" stroke-width="1.2"/>
+  <text x="3024" y="556" font-family="'Segoe UI', sans-serif" font-size="30">📅</text>
+  <text x="3076" y="562" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Weekly Meetings</text>
+  <text x="3076" y="588" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Agenda · rocks · action items · notes</text>
+
+  <!-- Document Review -->
+  <rect x="2988" y="644" width="504" height="110" rx="14" fill="url(#modPurple)" filter="url(#moduleShadow)" stroke="#c4b8e8" stroke-width="1.2"/>
+  <text x="3024" y="684" font-family="'Segoe UI', sans-serif" font-size="30">📄</text>
+  <text x="3076" y="690" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Document Review</text>
+  <text x="3076" y="716" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Revisions · peer review · approval gate</text>
+
+  <!-- Travel Management -->
+  <rect x="2988" y="772" width="504" height="110" rx="14" fill="url(#modOrange)" filter="url(#moduleShadow)" stroke="#e0c8a8" stroke-width="1.2"/>
+  <text x="3024" y="812" font-family="'Segoe UI', sans-serif" font-size="30">✈️</text>
+  <text x="3076" y="818" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Travel Management</text>
+  <text x="3076" y="844" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Request wizard · approvals · debriefs · PDF export</text>
+
+  <!-- Notification Center -->
+  <rect x="2988" y="900" width="504" height="110" rx="14" fill="#fffbeb" filter="url(#moduleShadow)" stroke="#e0d090" stroke-width="1.2"/>
+  <text x="3024" y="940" font-family="'Segoe UI', sans-serif" font-size="30">🔔</text>
+  <text x="3076" y="946" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Notification Center</text>
+  <text x="3076" y="972" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Email · Teams cards · per-area preferences</text>
+
+  <!-- Admin &amp; User Management -->
+  <rect x="2988" y="1028" width="504" height="110" rx="14" fill="url(#modGreen)" filter="url(#moduleShadow)" stroke="#a8d8c0" stroke-width="1.2"/>
+  <text x="3024" y="1068" font-family="'Segoe UI', sans-serif" font-size="30">🛡️</text>
+  <text x="3076" y="1074" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Admin &amp; User Management</text>
+  <text x="3076" y="1100" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Roles · permissions · demo data · schema setup</text>
+
+  <!-- Checklists &amp; Boards -->
+  <rect x="2988" y="1156" width="504" height="110" rx="14" fill="#f5f0ff" filter="url(#moduleShadow)" stroke="#c8b8e0" stroke-width="1.2"/>
+  <text x="3024" y="1196" font-family="'Segoe UI', sans-serif" font-size="30">✅</text>
+  <text x="3076" y="1202" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Checklists &amp; Kanban</text>
+  <text x="3076" y="1228" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Project boards · custom columns · priorities</text>
+
+  <!-- Audit Log Viewer -->
+  <rect x="2988" y="1284" width="504" height="110" rx="14" fill="#fff5f5" filter="url(#moduleShadow)" stroke="#e0c0c0" stroke-width="1.2"/>
+  <text x="3024" y="1324" font-family="'Segoe UI', sans-serif" font-size="30">📊</text>
+  <text x="3076" y="1330" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="600" fill="#0c1a2e">Audit Log Viewer</text>
+  <text x="3076" y="1356" font-family="'Segoe UI', sans-serif" font-size="16" fill="#5a7a96">Filtered history · actor tracking · export</text>
+
+  <!-- Leadership Overview badge -->
+  <rect x="2988" y="1418" width="504" height="76" rx="14" fill="#0078d4" filter="url(#moduleShadow)"/>
+  <text x="3240" y="1456" font-family="'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="white" text-anchor="middle">Leadership Overview</text>
+  <text x="3240" y="1480" font-family="'Segoe UI', sans-serif" font-size="16" fill="rgba(255,255,255,0.75)" text-anchor="middle">Portfolio health · completion % · RAG summary</text>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- FAR RIGHT: Outputs / Dashboards -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <!-- Connector: modules → outputs -->
+  <line x1="3492" y1="1080" x2="3640" y2="1080" stroke="#059669" stroke-width="3" marker-end="url(#arrowGray)" opacity="0.5"/>
+  <rect x="3520" y="1059" width="130" height="34" rx="17" fill="white" stroke="#b8deca" stroke-width="1.2"/>
+  <text x="3585" y="1081" font-family="'Segoe UI', sans-serif" font-size="17" fill="#059669" text-anchor="middle" font-weight="600">Publishes</text>
+
+  <rect x="3650" y="356" width="170" height="1430" rx="16" fill="url(#outputGrad)" filter="url(#cardShadow)" stroke="#b8d8c8" stroke-width="1.2"/>
+
+  <!-- Output items - vertical text pills -->
+  <text x="3735" y="480" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#059669" text-anchor="middle" transform="rotate(-90, 3735, 700)">Dashboard</text>
+  <text x="3735" y="560" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#059669" text-anchor="middle" transform="rotate(-90, 3735, 700)">Notifications</text>
+  <text x="3735" y="640" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#059669" text-anchor="middle" transform="rotate(-90, 3735, 700)">Reports &amp; PDFs</text>
+  <text x="3735" y="720" font-family="'Segoe UI', sans-serif" font-size="19" font-weight="600" fill="#059669" text-anchor="middle" transform="rotate(-90, 3735, 700)">Audit Trail</text>
+
+  <!-- Output icons stacked vertically -->
+  <text x="3735" y="430" font-family="'Segoe UI', sans-serif" font-size="40" text-anchor="middle">📊</text>
+  <text x="3735" y="600" font-family="'Segoe UI', sans-serif" font-size="40" text-anchor="middle">🔔</text>
+  <text x="3735" y="770" font-family="'Segoe UI', sans-serif" font-size="40" text-anchor="middle">📑</text>
+  <text x="3735" y="940" font-family="'Segoe UI', sans-serif" font-size="40" text-anchor="middle">🔒</text>
+  <text x="3735" y="1110" font-family="'Segoe UI', sans-serif" font-size="40" text-anchor="middle">📈</text>
+  <text x="3735" y="1280" font-family="'Segoe UI', sans-serif" font-size="40" text-anchor="middle">✉️</text>
+  <text x="3735" y="1450" font-family="'Segoe UI', sans-serif" font-size="40" text-anchor="middle">🗓</text>
+
+  <!-- Vertical output labels -->
+  <text x="3735" y="475" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a6652" text-anchor="middle">Dashboard</text>
+  <text x="3735" y="645" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a6652" text-anchor="middle">Notifications</text>
+  <text x="3735" y="815" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a6652" text-anchor="middle">PDF Reports</text>
+  <text x="3735" y="985" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a6652" text-anchor="middle">Audit Trail</text>
+  <text x="3735" y="1155" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a6652" text-anchor="middle">Analytics</text>
+  <text x="3735" y="1325" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a6652" text-anchor="middle">Teams Alerts</text>
+  <text x="3735" y="1495" font-family="'Segoe UI', sans-serif" font-size="16" fill="#3a6652" text-anchor="middle">Calendar</text>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- CALLOUT CARD (bottom center) -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="1100" y="1650" width="1640" height="196" rx="18" fill="url(#calloutGrad)" filter="url(#cardShadow)" stroke="#0078d4" stroke-width="1.5" stroke-dasharray="8,5"/>
+  <!-- Quote mark -->
+  <text x="1140" y="1718" font-family="Georgia, serif" font-size="64" fill="#0078d4" opacity="0.22">"</text>
+  <text x="1184" y="1710" font-family="'Segoe UI', sans-serif" font-size="26" font-weight="600" fill="#0c1a2e">Generated directly from the deployed SharePoint schema.</text>
+  <text x="1184" y="1750" font-family="'Segoe UI', sans-serif" font-size="17" fill="#5a7a96" font-style="italic">Architecture documentation is generated from the live repository mappings and SharePoint schema</text>
+  <text x="1184" y="1774" font-family="'Segoe UI', sans-serif" font-size="17" fill="#5a7a96" font-style="italic">rather than maintained manually. Every list, field, and relationship shown here is live.</text>
+  <!-- Badge -->
+  <rect x="2524" y="1680" width="190" height="36" rx="18" fill="#0078d4"/>
+  <text x="2619" y="1703" font-family="'Segoe UI', sans-serif" font-size="16" fill="white" text-anchor="middle" font-weight="600">🔗 Live Schema</text>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- FOOTER -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <line x1="120" y1="2020" x2="3720" y2="2020" stroke="#d0dde8" stroke-width="1.2"/>
+  <text x="120" y="2058" font-family="'Segoe UI', sans-serif" font-size="18" fill="#8a9bb0">
+    Derived automatically from the deployed SharePoint schema.
+  </text>
+  <text x="120" y="2084" font-family="'Segoe UI', sans-serif" font-size="15" fill="#b0c0d0">
+    Generated from: Repository mappings · SharePoint schema · Runtime configuration · Workflow definitions
+  </text>
+
+  <!-- Footer right: version + classification -->
+  <rect x="3540" y="2030" width="180" height="36" rx="18" fill="#f0f6ff" stroke="#c8daea" stroke-width="1"/>
+  <text x="3630" y="2053" font-family="'Segoe UI', sans-serif" font-size="16" fill="#0078d4" text-anchor="middle" font-weight="600">PULSE v2026.07</text>
+
+  <!-- PULSE favicon/brand mark top right -->
+  <text x="3720" y="120" font-family="'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#0078d4" text-anchor="end" opacity="0.5">AEWTTR IPT</text>
+  <text x="3720" y="150" font-family="'Segoe UI', sans-serif" font-size="16" fill="#8a9bb0" text-anchor="end">Operational Platform</text>
+</svg>

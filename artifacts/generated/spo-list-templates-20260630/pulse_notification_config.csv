@@ -1,0 +1,3 @@
+Title,TeamsEnabled,AlsoSendEmail
+PULSE Notification Config Sample 1,TRUE,TRUE
+PULSE Notification Config Sample 2,FALSE,FALSE

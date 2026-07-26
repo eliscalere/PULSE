@@ -1,0 +1,7 @@
+ListName,PULSE Notification Config
+Description,Single-row settings for outbound Teams/email notifications.
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+TeamsEnabled,Boolean,No,,
+AlsoSendEmail,Boolean,No,,

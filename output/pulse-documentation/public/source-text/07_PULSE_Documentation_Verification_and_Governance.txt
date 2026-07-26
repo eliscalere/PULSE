@@ -1,0 +1,565 @@
+I N T E R N A L A S S U R A N C E PAC K AG E
+
+
+
+
+Documentation Verification &
+Governance
+A controlled internal appendix that records what the current source package supports,
+what the local capture demonstrates, and what still requires an authorized SharePoint
+session or organizational decision.
+
+
+
+
+DOCUMENT TYPE                   STATUS                       VERSION
+
+Verification appendix           Internal working reference   July 2026
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                           01
+                                                                                                                                 V E R I F I CAT I O N & G OV E R N A N C E
+
+
+
+
+01 / PURPOSE
+
+
+
+
+What this appendix controls
+This document keeps the polished documentation set honest. It separates repository-
+supported behavior, locally visible interface evidence, live SharePoint verification, and
+unresolved organizational policy.
+
+
+
+     VERIFIED SOURCE                                                                     VERIFICATION BOUNDARY
+
+
+
+
+   What the package can state now                                                     What the package cannot prove locally
+   The active browser source, current route labels, current                           Live SharePoint permissions, transaction persistence,
+   schema file, and supplied brand guidance were reviewed                             production deployment authority, and records policy
+   and used as the basis of the documentation set.                                    require an approved operational environment or an
+                                                                                      authoritative policy source.
+
+
+
+
+  13                                       9                                         8                                         7
+  FEATURE AREAS TRACKED                    PROCEDURE GROUPS TRACKED                  CURRENT UI CAPTURES                       POLICY QUESTIONS OPEN
+
+
+
+
+    INTERPRETATION RULE
+    A locally visible route proves that the interface exists. It does not prove that the route can complete a SharePoint transaction, enforce the intended
+    permission, send a notification, or satisfy records policy.
+
+
+
+
+   01                                                     02                                                      03
+
+   Source support                                         Operational proof                                       Policy authority
+   Code, schema, current module                           Authorized create, update, refresh,                     Retention, classification, approval
+   order, and visible labels.                             approval, export, and audit evidence.                   rights, release authority, and
+                                                                                                                  escalation rules.
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                                                                                                           02
+                                                                                                                                       SOURCE OF TRUTH
+
+
+
+
+02 / SOURCE HIERARCHY
+
+
+
+
+Evidence is ranked by authority
+The current package uses the active implementation and current application labels first.
+Historical references are retained only when they remain consistent with the current source.
+
+  1        Active implementation. The SharePoint Framework web part renders LegacyWorkspaceFrame, which embeds the generated browser
+           application sourced from apps/PULSE.
+
+
+  2        Current browser source. apps/PULSE/index.html defines the active module order and current visible interface labels.
+
+
+
+  3        Current schema. apps/PULSE/assets/js/sharepoint-schema.js is the current source schema referenced by the package.
+
+
+
+  4        Local route capture. The clean local browser instance verifies visible routes, labels, and empty-state behavior.
+
+
+
+  5        Brand guide. Logo use, color vocabulary, typography, and voice follow the supplied PULSE identity system.
+
+
+
+  6        Historical documents. Older naming and superseded status descriptions are excluded when they conflict with the current implementation.
+
+
+
+
+       INCLUDED IN THE CURRENT DOCUMENTATION                                       DELIBERATELY EXCLUDED
+       PULSE naming, current visible lifecycle and health terminology,             Legacy product naming, superseded color-coded project
+       current routes, current schema references, and browser-local                descriptions, and any suggestion that browser-local fallback is an
+       limitations.                                                                authoritative operational record.
+
+
+
+
+       CORE BOUNDARY
+
+
+
+
+      Source-supported is not the same as operationally approved.
+      The documentation can describe supported behavior. Release authority, production permissions, data handling, retention, and
+      classification remain outside the evidence available in the local source package.
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                                                                                           03
+                                                                                                                                       F E AT U R E V E R I F I CAT I O N
+
+
+
+
+0 3 / F E AT U R E M AT R I X
+
+
+
+
+Interface and source support
+The first matrix records what is supported by the repository and what was visible in the clean
+local application.
+
+ FEATURE AREA                                      SOURCE EVIDENCE                                                     LOCAL EVIDENCE
+
+
+ Shell, Dashboard, notifications, account         app.js, dashboard.js, notification-settings.js                         CAPTURED
+ settings
+
+ Overview and workload views                      pages/overview.js, pages/workload.js                                Overview captured
+
+ Projects, portfolios, programs, end-item         pages/projects.js and repository mapper                             Projects route captured
+ configurations
+
+ Project People and Documents                     pages/people.js, pages/project-documents.js                         Not populated
+
+ Tracker, Gantt, Notes, risks, settings           pages/projects.js, data.js                                          Not populated
+
+ Boards                                           pages/checklists.js and board mapper                                Not populated
+
+ Reporting and PowerPoint output                  Export modules and bundled PptxGenJS                                Source reviewed
+
+ Weekly and project meetings                      pages/weekly.js                                                     Weekly route captured
+
+ Travel and debriefs                              pages/travel.js                                                     Travel route captured
+
+ Formal Document Review                           pages/docreview.js                                                  Review route captured
+
+ Tickets                                          pages/tickets.js, issue-reporting.js                                Source reviewed
+
+ Admin, users, roles, locations, logs, setup      Admin, users, logs, schema, and adapter modules                     Restricted entry captured
+
+ REST and role resolution                         Adapter, repository, and schema modules                             Not applicable locally
+
+
+
+
+    MEANING OF CAPTURED
+    Captured means the local route and its visible labels were observed. It does not mean that a live record was written to SharePoint.
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                                                                                                         04
+                                                                                                                                                     L I V E V E R I F I CAT I O N
+
+
+
+
+0 4 / O P E R AT I O N A L E V I D E N C E
+
+
+
+
+What still requires an authorized site
+Every major workflow has a clear live-verification requirement. These checks should be
+completed on an approved SharePoint site using representative, non-sensitive records.
+
+  FEATURE AREA                                              REQUIRED OPERATIONAL EVIDENCE
+
+
+  Shell and account surfaces                                Current identity, notification state, account settings, and role-aware navigation.
+
+  Overview and workload                                     Correct rollups from live project, task, travel, and review records.
+
+  Projects and organizational groupings                     Create, edit, filter, assign access, refresh, and confirm persistence.
+
+  People and Documents                                      Directory resolution, document-library access, uploads, links, and permissions.
+
+  Tracker, Gantt, Boards, Notes, risks, settings            Create and update records, reload, and confirm data remains consistent.
+
+  Reporting                                                 Generate PowerPoint, inspect output, confirm destination and access, and verify SharePoint upload when
+                                                            enabled.
+
+  Meetings                                                  Start and save a session, retain notes, link action items, and retrieve history.
+
+  Travel and debriefs                                       Submit, approve or deny with the correct role, complete finance actions, and file a debrief.
+
+  Document Review                                           Upload revision, assign reviewers, record decisions, complete signing, and test archive behavior.
+
+  Tickets and notifications                                 Submit and update a ticket, verify preference persistence, routing, and delivery.
+
+  Admin and setup                                           Perform authorized configuration, schema setup, user/role maintenance, and audit-log review.
+
+  REST and role resolution                                  Confirm writes, permissions, identity mapping, and error handling on the approved site.
+
+
+
+
+     EVIDENCE TO RETAIN                                                                      DO NOT INFER
+     Record ID, action time, role used, before and after state, notification                 A successful local render cannot prove permissions, persistence,
+     evidence, audit entry, output file, and result after refresh.                           notification delivery, retention, classification, or approval authority.
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                                                                                                                  05
+                                                                                                                               P R O C E D U R E V E R I F I CAT I O N
+
+
+
+
+0 5 / P R O C E D U R E M AT R I X
+
+
+
+
+Evidence required before operational
+use
+The SOP describes the intended workflow. This matrix records the minimum evidence needed
+before a procedure should be treated as operationally validated.
+
+  PROCEDURE GROUP                               SOURCE-SUPPORTED BASIS                         EVIDENCE REQUIRED
+
+
+  Project and tracker maintenance               Project, action-item, risk, settings UI, and   Live create, update, refresh, and activity evidence
+                                                repository mapping
+
+
+  Gantt and boards                              Tracker/Gantt and board modules                Task scheduling and board persistence
+
+
+  Reporting and PowerPoint                      Browser export modules                         Output review, upload destination, and access confirmation
+
+
+  Weekly and project meetings                   Meeting module                                 Session save, action-item linkage, and history retrieval
+
+
+  Travel and debriefs                           Travel module and schema                       Request, role-restricted decision, finance, and debrief
+                                                                                               transaction
+
+
+  Formal Document Review                        Review module and schema                       Revision, decision, signing, and archive workflow
+
+
+  Tickets and notifications                     Ticket and notification modules                Ticket updates and preference persistence
+
+
+  Users, roles, setup, and logs                 Admin, users, schema, adapter, and audit       Administrator operation on approved site
+                                                modules
+
+
+  Export and troubleshooting                    Build and diagnostics code                     Hosted release, rollback, and retained evidence
+
+
+
+
+      VERIFICATION STANDARD
+
+
+
+
+   A procedure is validated only when the full transaction survives
+   refresh.
+   For role-restricted workflows, validation also requires the correct role boundary, downstream notification or queue state, and the
+   expected audit record.
+
+
+
+
+   01                                            02                                                        03
+
+   Perform                                       Refresh                                                   Trace
+   Complete the action with the                  Reload and confirm the state                              Confirm notification, queue, output,
+   intended role.                                persisted.                                                and audit evidence.
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                                                                                                      06
+                                                                                                                                            POLICY QUESTIONS
+
+
+
+
+0 6 / G OV E R N A N C E D E C I S I O N S
+
+
+
+
+Seven decisions remain outside the
+code
+These questions require an authoritative organizational answer. The application and
+repository cannot establish policy by themselves.
+
+01         Deployment authority
+           Which office authorizes production deployment and rollback of a PULSE package?
+
+
+
+02         Records retention
+           What retention periods apply to project, meeting, travel, formal review, ticket, notification, and activity records?
+
+
+
+03         Classification and handling
+           Which markings, handling restrictions, and approved storage locations apply to each record type and generated PowerPoint file?
+
+
+
+04         Travel evidence
+           What evidence is required for travel approval, finance approval, denial, revocation, and cancellation?
+
+
+
+05         Role authority
+           Which roles may create, edit, archive, restore, export, or delete each record type?
+
+
+
+06         AI grammar review
+           Is the capability approved, and if so, what endpoint, identity mechanism, data-handling rule, and model are authorized?
+
+
+
+07         Change control and escalation
+           What is the approved peer-review, release-validation, incident-response, and escalation process?
+
+
+
+
+     POLICY BOUNDARY
+     Until an authoritative answer is recorded, these items should remain explicitly marked as open and should not be presented as enforced system
+     behavior.
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                                                                                             07
+                                                                                                                                  S C R E E N S H OT E V I D E N C E
+
+
+
+
+07 / CAPTURE SET
+
+
+
+
+Current interface evidence
+All eight captures were made on July 25, 2026 from a clean local browser instance at 1600 x
+1172 pixels. The neutral display name was Operations Lead, with empty local storage and no
+personal email addresses or seeded records.
+
+
+
+
+  Dashboard                                            Member / empty local      Overview                                               Member / empty local
+
+
+
+
+  Projects                                             Member / empty local      Weekly Meeting                                         Member / empty local
+
+
+
+
+    CAPTURE BOUNDARY
+    These images verify visible routes, labels, and empty-state behavior. They do not prove SharePoint writes, permission enforcement, or workflow
+    completion.
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                                                                                                    08
+                                                                                                                             S C R E E N S H OT E V I D E N C E
+
+
+
+
+07 / CAPTURE SET CONTINUED
+
+
+
+
+Workflow and administration surfaces
+The second capture page records the remaining workflow and access-aware entry surfaces
+from the same clean local browser instance.
+
+
+
+
+  Travel                                               Member / empty local   Document Review                                      Member / empty local
+
+
+
+
+  Notification Settings                                Member / empty local   Admin                                                  Access-aware entry
+
+
+
+
+     DATA HYGIENE                                                               EVIDENCE LIMITATION
+     No personal email addresses or seeded records were present in the          The Admin capture is an access-aware entry state, not proof of
+     capture instance.                                                          administrator-only operations.
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                                                                                               09
+                                                                                                  V E R I F I CAT I O N P L A N
+
+
+
+
+08 / RECOMMENDED SEQUENCE
+
+
+
+
+Close the evidence gaps in controlled
+passes
+The sequence below is a structured recommendation derived from the open verification
+items. It does not replace organizational change-control or test policy.
+
+
+   PASS 01                                            PASS 02
+
+   Identity and access                                Core records
+       Confirm user resolution                           Create and update a project
+
+       Confirm role-aware navigation                     Create tasks, notes, risks, and boards
+
+       Confirm list and library permissions              Refresh and confirm persistence
+
+       Confirm admin recovery path                       Review audit entries
+
+
+
+
+   PASS 03                                            PASS 04
+
+   Operational workflows                              Outputs and delivery
+       Save a meeting and actions                        Generate PowerPoint output
+
+       Complete travel stages                            Confirm upload destination and access
+
+       Complete review and signing                       Verify email or Teams delivery
+
+       Submit and close a ticket                         Test preferences and deep links
+
+
+
+
+   PASS 05                                            EXIT CRITERIA
+
+   Release and recovery                               Evidence complete
+       Deploy approved package                           Expected state survives refresh
+
+       Retain build and release evidence                 Role boundary is correct
+
+       Test rollback to known-good package               Notification or output is retained
+
+       Record incident and escalation route              Audit record matches the action
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                                                               10
+                                                                                                                                      A P P R OVA L R E C O R D
+
+
+
+
+09 / CLOSEOUT
+
+
+
+
+Document the decision, not just the test
+Once live verification and policy decisions are complete, the evidence should be linked to the
+relevant feature and procedure matrices and retained with the approved documentation
+release.
+
+
+
+          RELEASE READINESS
+
+
+
+
+       One shared view. Clear evidence.
+       Operational acceptance should show who tested the behavior, which role and environment were used, what changed, what
+       persisted after refresh, which notification or output was produced, and where the audit evidence is retained.
+
+
+
+
+     Verification record                                                            Approval record
+           Feature or procedure                                                           Policy owner
+
+           Environment and version                                                        Release authority
+
+           Tester and role                                                                Approved storage location
+
+           Test record identifiers                                                        Retention requirement
+
+           Expected and actual result                                                     Classification or handling rule
+
+           Evidence location                                                              Approval date and review cycle
+
+
+
+
+      MAINTENANCE RULE
+      Update this appendix whenever the application route, schema, role model, deployment method, workflow behavior, or governing policy changes.
+
+
+
+
+Technical verification lead / date                                               Operational or policy authority / date
+
+
+
+
+PULSE DOCUMENTATION ASSURANCE                                                                                                                                11
+

@@ -1,0 +1,1 @@
+{"version":3,"file":"AppRoute.js","sourceRoot":"","sources":["../../src/types/AppRoute.ts"],"names":[],"mappings":"","sourcesContent":["export type AppRoute =\n  | 'dashboard'\n  | 'projects'\n  | 'project'\n  | 'meetings'\n  | 'calendar'\n  | 'tasks'\n  | 'reports'\n  | 'documents'\n  | 'settings'\n  | 'admin';\n"]}

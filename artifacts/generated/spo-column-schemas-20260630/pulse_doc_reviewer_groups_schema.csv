@@ -1,0 +1,11 @@
+ListName,PULSE Doc Reviewer Groups
+Description,Global people groups (Admin-managed + project auto-groups). Used in people pickers app-wide; Document Review expands a selected group into individual reviewers.
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+GroupName,Text,Yes,,
+MembersJson,Note,No,,Suggested lines: 10
+GroupSource,Text,No,,
+ProjectId,Text,No,,
+CreatedByEmail,Text,No,,
+CreatedDate,DateTime,No,,

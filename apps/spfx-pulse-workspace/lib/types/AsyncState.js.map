@@ -1,0 +1,1 @@
+{"version":3,"file":"AsyncState.js","sourceRoot":"","sources":["../../src/types/AsyncState.ts"],"names":[],"mappings":"","sourcesContent":["export interface AsyncState<T> {\n  readonly data?: T;\n  readonly error?: Error;\n  readonly isLoading: boolean;\n}\n"]}

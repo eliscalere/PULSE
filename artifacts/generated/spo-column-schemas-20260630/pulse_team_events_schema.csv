@@ -1,0 +1,13 @@
+ListName,PULSE Team Events
+Description,"One-day, non-travel team events displayed on the PULSE calendar."
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+EventCode,Text,Yes,,
+EventDate,DateTime,Yes,,
+AllDay,Boolean,No,,
+StartTime,Text,No,,
+EndTime,Text,No,,
+Location,Text,No,,
+Description,Note,No,,Suggested lines: 8
+UpdatedAt,DateTime,No,,

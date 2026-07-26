@@ -1,0 +1,1 @@
+{"version":3,"file":"Issue.js","sourceRoot":"","sources":["../../src/models/Issue.ts"],"names":[],"mappings":"","sourcesContent":["import { BaseEntity } from './BaseEntity';\n\nexport interface Issue extends BaseEntity {\n  readonly projectId?: number;\n  readonly status: 'Open' | 'Monitoring' | 'Resolved';\n  readonly ownerId?: number;\n}\n"]}

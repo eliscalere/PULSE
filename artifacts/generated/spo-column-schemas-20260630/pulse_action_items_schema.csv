@@ -1,0 +1,22 @@
+ListName,PULSE Action Items
+Description,Tracker tasks and checklist items (see Source field). Subtasks are stored as nested JSON in SubtasksJson.
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+ProjectId,Number,Yes,,
+ParentActionItemId,Number,No,,
+WorkItemLevel,Choice,No,Task | Subtask,
+Source,Choice,No,Tracker | Checklist,
+AssignedToName,Text,No,,
+StartDate,DateTime,No,,
+DueDate,DateTime,No,,
+ActionStatus,Choice,No,Not Started | In Progress | Blocked | On Hold | Complete | Done | Cancelled,
+Health,Choice,No,On Track | At Risk | Off Track | Blocked | On Hold | Complete,
+BlockedReason,Note,No,,Suggested lines: 6
+OnHoldReason,Note,No,,Suggested lines: 6
+Notes,Note,No,,
+SubtasksJson,Note,No,,Suggested lines: 10
+MetadataJson,Note,No,,Suggested lines: 20
+IsMilestone,Choice,No,Yes | No,
+Position,Number,No,,
+SortOrder,Number,No,,

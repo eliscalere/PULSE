@@ -1,0 +1,45 @@
+ListName,PULSE Document Review
+Description,"Documents moving through review, concurrence, and signature."
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+ProjectId,Number,No,,
+DocType,Text,No,,
+DocKind,Choice,No,Government Document | Contractor Deliverable,
+ContractorName,Text,No,,
+PortfolioOrConfigItem,Text,No,,
+PortfoliosJson,Note,No,,Suggested lines: 5
+ConfigEndItemsJson,Note,No,,Suggested lines: 5
+ReviewerGroupName,Text,No,,
+OwnerName,Text,No,,
+SubmitterName,Text,No,,
+SubmitterEmail,Text,No,,
+SubmittedDate,DateTime,No,,
+DeadlineDate,DateTime,No,,
+ReviewColumn,Choice,No,Not Started | In Review | Changes Requested | Review Complete | Awaiting Final Pack | Signing in Progress | Signed | Archived | Concurrence | Final / Signed | Awaiting Signature,
+RevisionLabel,Text,No,,
+SignatureStatus,Choice,No,Not Started | Pending Review | Awaiting Final Pack | Pending Signature | Signed | Archived,
+PendingReviewersJson,Note,No,,Suggested lines: 10
+ReviewersJson,Note,No,,Suggested lines: 10
+SignersJson,Note,No,,Suggested lines: 10
+CommentsJson,Note,No,,Suggested lines: 10
+SignedDate,DateTime,No,,
+FileUrl,Text,No,,
+FileName,Text,No,,
+FileType,Text,No,,
+ExtractedText,Note,No,,Suggested lines: 20
+RevisionHistoryJson,Note,No,,Suggested lines: 30
+AiSuggestionsJson,Note,No,,Suggested lines: 30
+ReviewActivityJson,Note,No,,Suggested lines: 30
+CurrentRevisionNumber,Number,No,,
+ActiveRevisionId,Text,No,,
+IsArchived,Boolean,No,,
+ArchivedDate,DateTime,No,,
+FullyReviewedDate,DateTime,No,,
+FinalPackUrl,Text,No,,
+FinalPackFileName,Text,No,,
+FinalPackUploadedAt,DateTime,No,,
+FinalPackUploadedBy,Text,No,,
+SigningSequenceLocked,Boolean,No,,
+AwaitingFinalPackNotifiedAt,Text,No,,
+CurrentSignerNotifiedAt,Text,No,,

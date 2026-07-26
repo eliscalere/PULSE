@@ -1,0 +1,154 @@
+/* assets/css/dropdowns.css */
+/* Unified, modern, premium styling for all select inputs and people pickers */
+
+/* Base sleek select styling */
+.select-aewttr,
+.monday-status-select,
+.overview-filter-select,
+.docreview-rev-select,
+.docreview-revision-select,
+.monday-gantt-zoom-select {
+  appearance: none !important;
+  background-color: var(--aewttr-input-bg, #ffffff) !important;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%24%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 14px !important;
+  
+  border: 1px solid var(--aewttr-input-border, #d1d5db) !important;
+  border-radius: 6px !important;
+  padding: 8px 32px 8px 12px !important;
+  font-family: inherit !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: var(--aewttr-input-text, #111827) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .select-aewttr,
+[data-theme="dark"] .monday-status-select,
+[data-theme="dark"] .overview-filter-select,
+[data-theme="dark"] .docreview-rev-select,
+[data-theme="dark"] .docreview-revision-select,
+[data-theme="dark"] .monday-gantt-zoom-select {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%24%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E") !important;
+}
+
+/* Hover effect */
+.select-aewttr:hover,
+.monday-status-select:hover,
+.overview-filter-select:hover,
+.docreview-rev-select:hover,
+.docreview-revision-select:hover,
+.monday-gantt-zoom-select:hover {
+  border-color: #9ca3af !important;
+  background-color: #f9fafb !important;
+}
+
+[data-theme="dark"] .select-aewttr:hover,
+[data-theme="dark"] .monday-status-select:hover,
+[data-theme="dark"] .overview-filter-select:hover,
+[data-theme="dark"] .docreview-rev-select:hover,
+[data-theme="dark"] .docreview-revision-select:hover,
+[data-theme="dark"] .monday-gantt-zoom-select:hover {
+  border-color: #4b5563 !important;
+  background-color: #1f2937 !important;
+}
+
+/* Focus glow */
+.select-aewttr:focus,
+.monday-status-select:focus,
+.overview-filter-select:focus,
+.docreview-rev-select:focus,
+.docreview-revision-select:focus,
+.monday-gantt-zoom-select:focus {
+  border-color: var(--aewttr-blue, #2563eb) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Disabled */
+.select-aewttr:disabled,
+.monday-status-select:disabled,
+.overview-filter-select:disabled,
+.docreview-rev-select:disabled,
+.docreview-revision-select:disabled {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+  border-color: #e5e7eb !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .select-aewttr:disabled,
+[data-theme="dark"] .monday-status-select:disabled,
+[data-theme="dark"] .overview-filter-select:disabled,
+[data-theme="dark"] .docreview-rev-select:disabled,
+[data-theme="dark"] .docreview-revision-select:disabled {
+  background-color: #111827 !important;
+  color: #4b5563 !important;
+  border-color: #374151 !important;
+}
+
+/* Colored Status Pills Override */
+.monday-status-select:not(.status-None), 
+.meeting-health-select {
+  border: none !important;
+  color: #ffffff !important;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%24%2024%22%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E") !important;
+}
+.monday-status-select:not(.status-None):hover, 
+.meeting-health-select:hover {
+  filter: brightness(0.9);
+}
+
+/* People Picker Suggestions Panel Modernization */
+.traveler-suggestions,
+.tag-picker-suggestions,
+.aewttr-context-menu {
+  background: var(--aewttr-panel-bg, #ffffff) !important;
+  border: 1px solid var(--aewttr-panel-border, #e5e7eb) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  /* Do not use overflow: hidden! It breaks max-height scrolling! */
+  padding: 4px 0; /* No important so empty pseudo-class can hide padding */
+}
+
+.traveler-suggestions:empty,
+.tag-picker-suggestions:empty {
+  display: none !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.traveler-suggestions button,
+.tag-picker-suggestions button,
+.aewttr-context-menu-item {
+  padding: 8px 16px !important;
+  transition: background-color 0.15s ease !important;
+  border-radius: 4px !important;
+  margin: 0 4px !important;
+  width: calc(100% - 8px) !important;
+  text-align: left !important;
+}
+
+.traveler-suggestions button:hover, 
+.traveler-suggestions button:focus,
+.tag-picker-suggestions button:hover,
+.tag-picker-suggestions button:focus,
+.aewttr-context-menu-item:hover,
+.aewttr-context-menu-item:focus {
+  background-color: var(--aewttr-blue-tint, #f0f9ff) !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .traveler-suggestions button:hover, 
+[data-theme="dark"] .traveler-suggestions button:focus,
+[data-theme="dark"] .tag-picker-suggestions button:hover,
+[data-theme="dark"] .tag-picker-suggestions button:focus,
+[data-theme="dark"] .aewttr-context-menu-item:hover,
+[data-theme="dark"] .aewttr-context-menu-item:focus {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}

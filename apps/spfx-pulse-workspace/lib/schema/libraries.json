@@ -1,0 +1,29 @@
+[
+    {
+        "key": "documents",
+        "title": "PULSE Documents",
+        "description": "Managed documents for operational workstreams.",
+        "versioningEnabled": true,
+        "documentTemplate": "",
+        "fields": [
+            { "internalName": "RelatedProject", "displayName": "Project", "type": "Lookup", "lookup": { "listKey": "projects", "showField": "Title" } },
+            { "internalName": "DocumentStatus", "displayName": "Document Status", "type": "Choice", "choices": [{ "value": "Draft" }, { "value": "Review" }, { "value": "Concurrence" }, { "value": "Final" }] }
+        ],
+        "views": [
+            { "key": "allDocuments", "title": "All Documents", "fields": ["DocIcon", "LinkFilename", "Modified", "Editor"], "defaultView": true, "rowLimit": 200 }
+        ]
+    },
+    {
+        "key": "reports",
+        "title": "PULSE Reports",
+        "description": "Generated outputs, exports, and leadership reports.",
+        "versioningEnabled": true,
+        "documentTemplate": "",
+        "fields": [
+            { "internalName": "ReportCategory", "displayName": "Report Category", "type": "Choice", "choices": [{ "value": "Leadership" }, { "value": "Project" }, { "value": "Operational" }] }
+        ],
+        "views": [
+            { "key": "allReports", "title": "All Reports", "fields": ["DocIcon", "LinkFilename", "Modified", "Editor"], "defaultView": true, "rowLimit": 200 }
+        ]
+    }
+]

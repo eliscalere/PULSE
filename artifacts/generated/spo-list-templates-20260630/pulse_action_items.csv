@@ -1,0 +1,3 @@
+Title,ProjectId,ParentActionItemId,WorkItemLevel,Source,AssignedToName,StartDate,DueDate,ActionStatus,Health,BlockedReason,OnHoldReason,Notes,SubtasksJson,MetadataJson,IsMilestone,Position,SortOrder
+PULSE Action Items Sample 1,1,1,Task,Tracker,AssignedToName sample 1,2026-07-01,2026-07-01,Not Started,On Track,BlockedReason sample text,OnHoldReason sample text,Notes sample text,SubtasksJson sample text,MetadataJson sample text,Yes,1,1
+PULSE Action Items Sample 2,2,2,Task,Tracker,AssignedToName sample 2,2026-07-15,2026-07-15,Not Started,On Track,BlockedReason sample text,OnHoldReason sample text,Notes sample text,SubtasksJson sample text,MetadataJson sample text,Yes,2,2

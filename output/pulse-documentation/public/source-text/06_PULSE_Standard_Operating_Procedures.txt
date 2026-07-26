@@ -1,0 +1,1015 @@
+CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+Standard Operating Procedures
+Repeatable operating procedures for project maintenance, reporting, meetings, travel, formal review, support,
+administration, export, and incident response within PULSE.
+
+
+
+
+AUDIENCE                                       SCOPE                                          USE
+
+PULSE users and administrators                 Current source package                         Internal operating reference
+PULSE                                                          DOCUMENT AUTHORITY                                                                CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+00 / DOCUMENT AUTHORITY
+
+
+
+Use the procedure. Preserve the evidence.
+These procedures organize the source-supported operating steps for PULSE. They explain the expected process, the record created or
+changed, the verification that should follow, and the point at which a user should stop and escalate.
+
+
+   OPERATING RULE                                                                                EVIDENCE BOUNDARY
+
+   Refresh before declaring success.                                                             Local screenshots show routes, not transactions.
+   A visible save indication is not the final check. In SharePoint mode, refresh                 The screenshots in this document were captured in a clean local
+   or reopen the affected record and confirm the expected values remain.                         workspace. SharePoint identity, permissions, persistence, notifications,
+                                                                                                 and audit behavior require live-site verification.
+
+
+
+
+  01        Project and tracker                                                                 02        Planning and reporting
+            Pages 4-5                                                                                     Page 6
+
+
+
+
+  03        Weekly and project meetings                                                         04        Travel and debriefs
+            Pages 7-8                                                                                     Pages 9-10
+
+
+
+
+  05        Formal Document Review                                                              06        Tickets and notifications
+            Pages 11-12                                                                                   Pages 13-14
+
+
+
+
+  07        Administration                                                                      08        Export and troubleshooting
+            Pages 15-16                                                                                   Pages 17-18
+
+
+
+
+  09        Policy boundaries                                                                   10        Quick reference
+            Page 19                                                                                       Page 20
+
+
+
+
+    Terminology: use the labels displayed in the current PULSE interface. Do not treat a generated report, screenshot, meeting note, or project document as a substitute for the
+    underlying source record.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                  INTERNAL USE | 02
+PULSE                                                                   OPERATING MODEL                                                                       CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+00 / OPERATING MODEL
+
+
+
+One action. One owner. One durable record.
+PULSE supports daily execution by connecting project settings, work items, meetings, travel, reviews, support activity, and audit evidence.
+The procedure is complete only when the action is saved, verified, and traceable.
+
+
+   BEFORE                                                               DURING                                                             AFTER
+
+   Confirm authority                                                    State the action clearly                                           Verify and preserve
+   Use the correct role, project, record, and                           Record the owner, timing, condition, reason,                       Refresh the record, confirm downstream
+   source information before changing data.                             and expected recovery or completion.                               state, and retain required activity or release
+                                                                                                                                           evidence.
+
+
+
+
+Common boundaries
+
+ Area                     Operational boundary                                                             Escalate when
+
+
+  Project Documents       Reference files and project storage.                                             A formal approval, revision, or signature record is required.
+
+
+  Document Review         Controlled reviewer decisions, revision history, and final-pack activity.        Reviewer state, revision, or archive behavior is incorrect.
+
+
+  Boards                  Board-specific workflow.                                                         A user assumes board activity changed the Tracker without verification.
+
+
+  Generated reports       Output assembled from source records.                                            The output disagrees with settings, tracker, risks, or meeting records.
+
+
+  Local fallback          Visible route and layout verification only.                                      Identity, permissions, persistence, notifications, or audit evidence must be proven.
+
+
+
+
+  Ownership                                         Timing                                            Condition                                         Evidence
+  Who is responsible?                               When is action due?                               What is current state?                            How is success verified?
+
+
+
+
+    Stop condition: do not repeatedly retry a failed save or permission action without preserving the route, time, role, record identifier, expected result, and actual result.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                                INTERNAL USE | 03
+PULSE                                                      SOP 01 / PROJECT AND TRACKER                                          CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 01               Maintain a project and tracker
+   Purpose                                                       Applies to                                    Trigger
+   Keep project delivery records current.                        Authorized project members and leads.         Ownership, timing, health, scope, or work changes.
+
+
+
+
+        PROJECTS ROUTE
+
+
+
+
+    Prerequisites: correct PULSE role, access to the project, and current source information for the change.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                   INTERNAL USE | 04
+PULSE                                                              SOP 01 / PROCEDURE                                                                         CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 01 / PROCEDURE
+
+
+
+Update the source record, not the summary.
+ 01
+          Open Projects, locate or create the project, and confirm the project identity before editing.
+
+ 02
+          In Settings, maintain lifecycle, technical health, ownership, dates, portfolios, program, and end-item configuration as applicable.
+
+ 03
+          In People, maintain the roster and responsibilities so ownership remains current.
+
+ 04
+          In Tracker, create or update work items with owner, start date, due date, workflow value, health, notes, and related documents.
+
+ 05
+          Use Blocked only when a dependency prevents progress; record the dependency and the recovery action. Use On Hold only with a reason and restart condition.
+
+ 06
+          Use Gantt to confirm schedule placement. Use Boards only for the board workflow; do not assume board activity updated Tracker items.
+
+ 07
+          Confirm the save indication, refresh the record, and review the Activity Log when required.
+
+
+
+    EXPECTED RESULT                                                                                     VERIFICATION
+
+    The project summary and Tracker show the updated owner, timing,                                     Refresh or reopen the affected project in SharePoint mode and confirm
+    condition, and work.                                                                                the values remain.
+
+
+
+
+Exception handling
+
+ Condition                                      Action
+
+
+  Save does not persist                         Stop editing. Capture route, record, role, expected result, actual result, and time; file a support ticket.
+
+
+  Control is unavailable                        Verify the project and user role. Escalate access changes to an administrator.
+
+
+  Field or list error                           Do not create an ad hoc SharePoint field. Escalate schema repair through Admin setup.
+
+
+  Conflicting source information                Pause the update and obtain the current approved source from the responsible owner.
+
+
+
+
+  Project                                       Action items                                        Risks                                                Activity
+  Identity and settings                         Owner and schedule                                  Condition and mitigation                             Change evidence
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                         INTERNAL USE | 05
+PULSE                                                        SOP 02 / PLANNING AND REPORTING                                                          CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 02               Plan and report project work
+Produce a project or group report that agrees with the current operational records and is reviewed before distribution.
+
+
+
+
+         OVERVIEW AND REPORTING CONTEXT
+
+
+
+
+ 01
+         Review current project settings, Tracker, Gantt, risks, meeting records, and
+                                                                                                          EXPECTED RESULT
+         formal review records.
+
+         Open Reporting and verify technical bullets, milestones, risks, timeline,                        Output matches the source.
+ 02
+         selected projects, and export settings.                                                          The report agrees with the settings, tracker, risks, meetings, and records
+         Generate the project or group PowerPoint output.                                                 used to generate it.
+ 03
+
+ 04
+         Inspect the file for current dates, names, condition statements, project
+         selection, and intended audience.
+
+ 05
+         When operating in SharePoint mode, confirm the approved destination and file
+                                                                                                          Caution: a generated PowerPoint does not supersede the source records and
+         access; otherwise record the approved storage location.
+                                                                                                          should not be edited into a conflicting version.
+
+
+
+
+ Check                           Verify before release
+
+
+  Scope                          Correct project, portfolio, program, end-item configuration, or selected project set.
+
+
+  Dates                          Current reporting date, milestones, due dates, and next actions.
+
+
+  Ownership                      Current project lead, responsible owner, and action ownership.
+
+
+  Condition                      Current health statement, blockers, risks, and recovery actions.
+
+
+  Distribution                   Approved filename, storage location, audience, and access.
+
+
+
+
+      Records: reporting configuration, generated file, approved destination, and release evidence.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                      INTERNAL USE | 06
+PULSE                                                           SOP 03 / MEETING ENTRY                                                             CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 03              Run a weekly or project meeting
+   Purpose                                                        Applies to                                                     Trigger
+   Convert discussion into decisions and owned work.              Participants, facilitators, and meeting administrators.        Scheduled weekly session or project meeting.
+
+
+
+
+        WEEKLY MEETING ROUTE
+
+
+
+
+    Prerequisites: correct meeting scope, current roster, known agenda, active project context, and authority to facilitate the session.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                     INTERNAL USE | 07
+PULSE                                                        SOP 03 / MEETING CLOSE                                                                CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 03 / PROCEDURE
+
+
+
+End with owners, timing, and a saved record.
+ 01
+         Open Weekly Meeting or the project Meeting tab and confirm the correct scope.
+
+ 02
+         Confirm the date, roster, agenda, attendance, Rocks, carry-forward items, and active project context.
+
+ 03
+         Capture decisions separately from general notes so the decision remains easy to retrieve.
+
+ 04
+         Create or update a Tracker item for each follow-up that requires an owner or timing.
+
+ 05
+         Review action ownership and dates with participants before closing the session.
+
+ 06
+         End or save the meeting through the displayed workflow.
+
+ 07
+         Open meeting history and verify the session record and carry-forward items.
+
+
+
+   EXPECTED RESULT                                                                                   ESCALATE
+
+   Decisions and follow-up work remain traceable to the meeting and its                              Inability to save, incorrect roster, missing meeting authority, or
+   participants.                                                                                     inaccessible history.
+
+
+
+
+Meeting close checklist
+
+ Check                                       Question
+
+
+  Attendance                                 Are participants and guests recorded accurately?
+
+
+  Decisions                                  Is each decision distinct from narrative notes?
+
+
+  Actions                                    Does each follow-up have an owner and timing?
+
+
+  Carry-forward                              Are unresolved items visible for the next session?
+
+
+  History                                    Can the completed session be reopened after refresh?
+
+
+
+
+  Session                                     Notes                                               Decisions                                   Actions
+  Date and scope                              Discussion record                                   Outcome record                              Owner and timing
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                     INTERNAL USE | 08
+PULSE                                                    SOP 04 / TRAVEL ENTRY                                              CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 04            Submit, approve, and debrief travel
+Manage travel and leave records through the applicable request, decision, finance, and debrief workflow.
+
+
+
+
+        TRAVEL ROUTE
+
+
+
+
+   APPLIES TO                                                                    PREREQUISITES
+
+   Requesters, approvers, finance users, and travelers according to role.        Approved business need and the required traveler, destination, date,
+                                                                                 purpose, project, estimate, and supporting information.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                          INTERNAL USE | 09
+PULSE                                                           SOP 04 / TRAVEL WORKFLOW                                                                  CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 04 / PROCEDURE
+
+
+
+Keep the request and the debrief connected.
+Requester                                                                                          Approver, finance, and traveler
+
+ 01
+         Open Travel and select New Request.                                                         01
+                                                                                                             Use only the role-restricted decision actions displayed for the current record.
+
+ 02
+         Enter the required request, traveler, destination, dates, purpose, related project,         02
+                                                                                                             Record the required approval, denial, return, or finance information.
+         estimate, and supporting information.
+                                                                                                     03
+                                                                                                             After travel, create the required debrief and connect it to the request.
+ 03
+         Review the request for completeness and submit it.
+                                                                                                     04
+                                                                                                             Record systems or subjects, classification, summary, issues, and follow-up as
+ 04
+         Monitor the request in the applicable travel view and respond to returned                           required.
+         information requests.
+
+
+
+
+      VERIFICATION                                                                                        EXCEPTION
+
+      Refresh and confirm the request and debrief retain their current values                             Correct incomplete information before approval. Escalate role,
+      and relationship.                                                                                   persistence, or workflow faults.
+
+
+
+
+Decision controls
+
+ Situation                                            Required discipline
+
+
+  Incomplete request                                  Return or correct it before approval according to the displayed workflow.
+
+
+  Role action missing                                 Do not route around the control. Verify role assignment with an administrator.
+
+
+  Approved details change                             Use the current edit workflow and preserve the approval history.
+
+
+  Post-travel follow-up                               Record the debrief and create owned follow-up work when required.
+
+
+
+
+  Request                                          Decision                                         Debrief                                         Audit
+  Trip or leave data                               Approval history                                 After-action record                             Change evidence
+
+
+
+
+      Policy boundary: required lead time, approval evidence, finance authority, debrief timing, and retention periods require organizational policy confirmation.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                           INTERNAL USE | 10
+PULSE                                                      SOP 05 / DOCUMENT REVIEW ENTRY                                                      CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 05               Conduct formal Document Review
+   Purpose                                                       Applies to                                                Prerequisites
+   Preserve controlled review, revision, completion, and         Owners, reviewers, signers, and administrators.           Current file, project, reviewers, due date, and required
+   signature evidence.                                                                                                     signers.
+
+
+
+
+        FORMAL DOCUMENT REVIEW ROUTE
+
+
+
+
+    Do not confuse workflows: project Documents provide file storage and reference. Formal Document Review creates reviewer decisions, revision history, and completion
+    evidence.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                   INTERNAL USE | 11
+PULSE                                                             SOP 05 / REVIEW PROCEDURE                                                               CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 05 / PROCEDURE
+
+
+
+Never overwrite the evidence trail.
+ 01
+          Open Document Review and select New Review.
+
+ 02
+          Record the project, type, title, due date, revision label, current file, reviewers, and required signers.
+
+ 03
+          Reviewers open the assigned review record, assess the current revision, and record a decision with actionable comments.
+
+ 04
+          When changes are requested, upload a new revision and preserve the prior revision history. Run the review again for the new revision.
+
+ 05
+          When all required reviewers approve, follow the displayed workflow for review completion or final-pack signing.
+
+ 06
+          Archive only through the workflow after required review and signature activity is complete.
+
+ 07
+          Refresh the record and verify reviewer decisions, revision history, and workflow state.
+
+
+
+    EXPECTED RESULT                                                                                           ESCALATE
+
+    The record shows who reviewed which revision, what decision was made,                                     Missing reviewer state, incorrect revision reset, inaccessible signer
+    and the current workflow state.                                                                           control, or unexpected archive behavior.
+
+
+
+
+Required evidence
+
+ Evidence                                       What it must show
+
+
+  Review record                                 Project, document identity, due date, revision, reviewers, and current workflow state.
+
+
+  Revision history                              Prior file versions remain distinguishable and retrievable.
+
+
+  Reviewer decision                             Reviewer identity, decision, comments when required, and time.
+
+
+  Completion/signature                          Required completion or signing activity according to the displayed path.
+
+
+  Audit trail                                   Change history sufficient to reconstruct the workflow.
+
+
+
+
+      Records: review record, revision files, decisions, comments, signature activity, notifications, and audit history.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                          INTERNAL USE | 12
+PULSE                                                                    SOP 06 / TICKETS                                                               CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 06               Manage tickets and notifications
+Create an actionable support record, preserve factual updates, and maintain personal notification preferences.
+
+
+
+
+        DASHBOARD AND ISSUE ENTRY CONTEXT
+
+
+
+
+File the issue
+                                                                                                        GOOD TICKET
+ 01
+        Use Report issue or Tickets to open a ticket.
+                                                                                                        Someone new can act.
+ 02
+        State the affected route, project or record identifier, expected result, actual
+        result, priority, and approved screenshot.                                                      The ticket explains the context, source record, failure, impact, evidence,
+                                                                                                        and next useful diagnostic step without depending on verbal history.
+ 03
+        Include the time, user role, browser or device, and any approved workaround.
+
+ 04
+        Submit the ticket and retain its identifier.
+
+ 05
+        Add factual updates as the condition changes.
+                                                                                                        Do not include: credentials, tokens, private URLs, personal data, classified
+                                                                                                        content, or unapproved screenshots.
+
+
+
+
+ Required field                                   Example of useful content
+
+
+  Route                                           Projects - Tracker - selected project
+
+
+  Record                                          Project or ticket identifier, not personal data
+
+
+  Expected                                        What should have saved, opened, routed, or changed
+
+
+  Actual                                          What occurred, including visible message
+
+
+  Evidence                                        Approved screenshot, time, role, and browser/device
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                          INTERNAL USE | 13
+PULSE                                                             SOP 06 / NOTIFICATIONS                                                              CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 06 / NOTIFICATION SETTINGS
+
+
+
+Control the channel without losing the signal.
+Users manage their own notification areas and delivery channels. Administrators maintain platform configuration only through authorized
+Admin workflows.
+
+
+
+
+         NOTIFICATION SETTINGS
+
+
+
+
+ 01
+         Open Notification Settings from the user or account surface.
+                                                                                                     EXPECTED RESULT
+
+ 02
+         Review the available areas and delivery channels.
+                                                                                                     Your current preference record matches the selected areas and channels.
+ 03
+         Enable only the notifications required for your responsibilities.
+
+ 04
+         Confirm the preferences persist after refresh in SharePoint mode.
+
+ 05
+         Use the available test-notification control when appropriate.
+                                                                                                     Admin only: change organization-wide notification configuration only through
+                                                                                                     authorized Admin controls.
+
+
+
+
+      Verification boundary: a preference visible in the local screenshot is not evidence that email or Teams delivery succeeded. Delivery requires live-site verification.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                         INTERNAL USE | 14
+PULSE                                                          SOP 07 / ADMIN ENTRY                                                            CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 07             Administer users, roles, configuration, logs, and setup
+Maintain access and schema without uncontrolled changes, while preserving the records that explain what was changed and why.
+
+
+
+
+        ADMIN ROUTE
+
+
+
+
+    Admin only: this procedure applies to authorized PULSE administrators. Broad access, schema, retention, hosting, and production changes require organizational authorization.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                               INTERNAL USE | 15
+PULSE                                                            SOP 07 / ADMIN PROCEDURE                                                       CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 07 / PROCEDURE
+
+
+
+Use the provided controls. Avoid ad hoc repairs.
+ 01
+          Open Admin and confirm the current-user and site diagnostics.
+
+ 02
+          In Users, locate the approved person, associate them with PULSE, and apply the least-privileged appropriate role.
+
+ 03
+          Retain required role metadata and deactivate a departing user record rather than removing history.
+
+ 04
+          Use SharePoint Setup to validate or provision the defined lists and fields. Do not create ad hoc schema changes.
+
+ 05
+          Maintain locations and application configuration only through the provided administrative workflows.
+
+ 06
+          Use Activity Log and diagnostics to investigate operational problems.
+
+ 07
+          Refresh or reopen the affected area and verify role resolution, setup result, or configuration behavior.
+
+
+
+    EXPECTED RESULT                                                                                  ESCALATE
+
+    The authorized action is reflected in role resolution, setup results,                            Authorization uncertainty, production-host change, retention decision, or
+    configuration behavior, and audit evidence.                                                      schema behavior outside the defined setup process.
+
+
+
+
+Least-privilege checks
+
+ Question                    Required answer before completion
+
+
+  Identity                   Is this the correct approved person or service identity?
+
+
+  Role                       Is this the minimum role needed for the approved responsibility?
+
+
+  History                    Will the action preserve prior records and attribution?
+
+
+  Schema                     Is the change defined by the current setup workflow?
+
+
+  Audit                      Can the action be reconstructed from the Activity Log and approval evidence?
+
+
+
+
+  Role                                             Config                                         Setup                                    Audit
+  Access decision                                  Approved settings                              Validation result                        Change history
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                               INTERNAL USE | 16
+PULSE                                                       SOP 08 / EXPORT AND RESPONSE                                                          CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 08               Export, troubleshoot, and preserve evidence
+Safely produce exports and respond to application faults without destroying the information needed to diagnose or recover.
+
+
+      EXPORT                                                                                       FAULT RESPONSE
+
+      Verify the source first.                                                                     Preserve the failure state.
+      Confirm the records, scope, filename, destination, intended audience, and                    Capture the route, time, role, record, action, expected result, actual result,
+      access before release.                                                                       device, and approved screenshot.
+
+
+
+
+Export procedure
+
+ 01
+         Verify the source records and the access required for the output.
+
+ 02
+         Generate the export through the current PULSE workflow.
+
+ 03
+         Open the file and verify content, dates, scope, filename, and intended destination.
+
+ 04
+         Confirm the approved storage location and audience access.
+
+ 05
+         Retain release evidence according to organizational policy.
+
+
+Fault response procedure
+
+ 01
+         Stop repeated retries when the fault could alter data or obscure evidence.
+
+ 02
+         Capture time, route, user role, record identifier, action, expected result, actual result, browser or device, and approved screenshot.
+
+ 03
+         Check diagnostics and Activity Log when authorized.
+
+ 04
+         File or update the support ticket with factual evidence.
+
+ 05
+         Maintainers validate locally, then on a safe SharePoint site, then on the actual hosted page.
+
+
+      Deployment regression: restore the prior known-good package, preserve the failed artifact and evidence, and isolate the source change before trying a new release.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                 INTERNAL USE | 17
+PULSE                                                     SOP 08 / TROUBLESHOOTING                                                                 CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+SOP 08 / TROUBLESHOOTING MATRIX
+
+
+
+Diagnose in the smallest safe scope.
+ Symptom                                First check                                                                       Next action
+
+
+  Save appears successful but data      Refresh and confirm SharePoint mode, role, and record identity.                   Capture evidence and file a ticket; do not continue editing.
+  returns
+
+
+  Control or module is missing          Confirm current role and project membership.                                      Ask an administrator to verify role resolution.
+
+
+  List or field error                   Review Admin diagnostics and setup status.                                        Use the defined setup repair workflow; do not add ad hoc
+                                                                                                                          fields.
+
+
+  Notification not received             Check personal settings, area, channel, and address data.                         Verify queue or delivery behavior on the live site.
+
+
+  Export is incomplete                  Compare project settings, tracker, risk, and reporting selections.                Correct source data or configuration, then regenerate.
+
+
+  Hosted page regressed                 Compare to the prior known-good package and acceptance evidence.                  Rollback, preserve artifacts, and isolate the change.
+
+
+  Local mode differs from SharePoint    Determine whether the behavior depends on identity, role, list data, or           Validate on an approved SharePoint site.
+                                        persistence.
+
+
+
+
+    VALIDATION ORDER                                                                              ROLLBACK EVIDENCE
+
+    Local - safe site - hosted page                                                               Keep both sides.
+    Move outward only after the smaller scope behaves as expected and the                         Retain the prior known-good artifact, failed artifact, validation notes,
+    evidence is retained.                                                                         acceptance evidence, and incident ticket.
+
+
+
+
+     CORE RESPONSE
+
+
+     Stabilize. Preserve. Isolate. Verify.
+     Recovery is complete only when the restored service and the underlying source records have been verified.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                       INTERNAL USE | 18
+PULSE                                                              POLICY BOUNDARIES                                                                    CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+09 / POLICY BOUNDARIES
+
+
+
+Application behavior is not organizational policy.
+The source package supports the procedures in this document, but several governance decisions require an authoritative organizational
+answer before operational use.
+
+
+   VERIFY AUTHORITY                                                                                    VERIFY HANDLING
+
+      • Production deployment and rollback approval                                                       • Retention periods for project, meeting, travel, review, ticket, notification,
+      • Change control, peer review, release validation, and incident escalation                            and activity records
+
+      • Roles allowed to create, edit, archive, restore, export, or delete records                        • Classification markings and approved storage locations
+                                                                                                          • Handling of generated PowerPoint and other exports
+
+
+
+
+   TRAVEL POLICY                                                                                       AI CAPABILITY
+
+      • Required approval and finance evidence                                                            • Whether grammar review is approved
+      • Denial, revocation, and cancellation authority                                                    • Authorized endpoint and identity mechanism
+      • Required debrief timing and content                                                               • Data handling and model authorization
+
+
+
+
+    Do not convert an assumption into a procedure. When policy is unresolved, preserve the question, identify the authority needed, and avoid stating a requirement as enforced
+    by PULSE unless the tool actually enforces it.
+
+
+
+
+Procedure readiness
+
+ Procedure                                  Evidence still needed before full operational validation
+
+
+  Project and tracker                       Live create, update, refresh, and activity evidence.
+
+
+  Reporting                                 Output review, upload destination, and access confirmation.
+
+
+  Meetings                                  Session save, action linkage, and history retrieval.
+
+
+  Travel and review                         Role-restricted decisions, persistence, notifications, and complete workflow evidence.
+
+
+  Administration                            Approved-site role, setup, and audit operation.
+
+
+  Deployment response                       Hosted-page release, rollback, and evidence-retention authority.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                                          INTERNAL USE | 19
+PULSE                                                             QUICK REFERENCE                                                            CONTROLLED INTERNAL PROCEDURE
+
+
+
+
+10 / QUICK REFERENCE
+
+
+
+Before you close the record.
+   1 / CORRECT SCOPE                                                                          2 / COMPLETE INFORMATION
+
+   Right project, person, route, and record?                                                  Owner, timing, condition, reason, and next action?
+   Confirm the identity before making the change.                                             Do not leave an operational state without the context needed to act.
+
+
+
+
+   3 / EXPECTED DOWNSTREAM EFFECT                                                             4 / VERIFIED EVIDENCE
+
+   What should route, notify, generate, or appear?                                            Refresh, reopen, and preserve.
+   Know the result before declaring completion.                                               Confirm persistence and retain the evidence required by policy.
+
+
+
+
+Escalation package
+
+  When                                         Where                                       Who                                          What
+  Date and time                                Route and record                            User role                                    Expected vs actual
+
+
+
+
+  Device                                       Evidence                                    Impact                                       Workaround
+  Browser and device                           Approved screenshot                         Work affected                                Approved temporary path
+
+
+
+
+    OPERATING STANDARD
+
+
+    Clear action. Verified state. Durable evidence.
+    Use PULSE to make work visible and accountable without creating a parallel record outside the system.
+
+
+
+
+    Related documents: General Overview for orientation, Internal User Guide for screen-by-screen use, and Technical Reference for architecture, deployment, schema,
+    diagnostics, and maintainer handoff.
+
+
+
+
+PULSE - STANDARD OPERATING PROCEDURES                                                                                                                             INTERNAL USE | 20
+

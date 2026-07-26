@@ -1,0 +1,3 @@
+Title,UserEmail,UserDisplayName,SharePointUserId,LoginName,PrincipalType,IsSiteAdmin,Role,JobTitle,SpoAccess,PowerBiAccess,ThemeMode,NotificationPrefsJson,HideFromMeetings,IsActive,Source,CreatedByEmail,CreatedDate,UpdatedByEmail,UpdatedDate
+PULSE App Roles Sample 1,member1@example.invalid,Member One,1,member1,1,TRUE,Admin,JobTitle sample 1,None,None,Light,NotificationPrefsJson sample text,TRUE,TRUE,Manual,CreatedByEmail sample 1,2026-07-01,UpdatedByEmail sample 1,2026-07-01
+PULSE App Roles Sample 2,member2@example.invalid,Member Two,2,member2,2,FALSE,Admin,JobTitle sample 2,None,None,Light,NotificationPrefsJson sample text,FALSE,FALSE,Manual,CreatedByEmail sample 2,2026-07-15,UpdatedByEmail sample 2,2026-07-15

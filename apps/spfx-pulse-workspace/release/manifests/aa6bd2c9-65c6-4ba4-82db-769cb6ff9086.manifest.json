@@ -1,0 +1,54 @@
+{
+  "id": "aa6bd2c9-65c6-4ba4-82db-769cb6ff9086",
+  "alias": "AewttrWorkspaceWebPart",
+  "componentType": "WebPart",
+  "version": "1.0.0",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "supportsThemeVariants": true,
+  "preconfiguredEntries": [
+    {
+      "groupId": "cf066440-0614-43d6-98ae-0b31cf14c7c3",
+      "group": {
+        "default": "Advanced"
+      },
+      "title": {
+        "default": "AEWTTR-PULSE"
+      },
+      "description": {
+        "default": "AEWTTR-PULSE for SharePoint Online."
+      },
+      "officeFabricIconFontName": "Page",
+      "properties": {
+        "description": "AEWTTR-PULSE"
+      }
+    }
+  ],
+  "loaderConfig": {
+    "internalModuleBaseUrls": [
+      "<!-- PATH TO CDN -->"
+    ],
+    "entryModuleId": "aewttr-workspace-web-part",
+    "scriptResources": {
+      "aewttr-workspace-web-part": {
+        "type": "path",
+        "path": "aewttr-workspace-web-part_8ae3b79768ecca4efecc.js"
+      },
+      "react": {
+        "type": "component",
+        "id": "0d910c1c-13b9-4e1c-9aa4-b008c5e42d7d",
+        "version": "17.0.1"
+      },
+      "react-dom": {
+        "type": "component",
+        "id": "aa0a46ec-1505-43cd-a44a-93f3a5aa460a",
+        "version": "17.0.1"
+      },
+      "@microsoft/sp-webpart-base": {
+        "type": "component",
+        "id": "974a7777-0990-4136-8fa6-95d80114c2e0",
+        "version": "1.23.0"
+      }
+    }
+  }
+}

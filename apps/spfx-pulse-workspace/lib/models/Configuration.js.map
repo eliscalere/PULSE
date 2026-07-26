@@ -1,0 +1,1 @@
+{"version":3,"file":"Configuration.js","sourceRoot":"","sources":["../../src/models/Configuration.ts"],"names":[],"mappings":"","sourcesContent":["export interface Configuration {\n  readonly siteUrl: string;\n  readonly lists: Record<string, string>;\n  readonly libraries: Record<string, string>;\n  readonly enableProvisioning: boolean;\n}\n"]}

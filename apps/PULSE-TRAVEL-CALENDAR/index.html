@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PULSE Travel Calendar</title>
+  <link rel="stylesheet" href="../PULSE/vendor/fullcalendar/css/main.min.css">
+  <link rel="stylesheet" href="assets/css/calendar.css?v=20260724d">
+  <style>
+    /* ── PULSE boot loader ── */
+    #pulse-boot-loader {
+      position: fixed; inset: 0; z-index: 9999;
+      display: grid; place-items: center;
+      background: var(--aewttr-bg, #ECEDEF);
+      color: var(--aewttr-text, #070708);
+    }
+    .pulse-center-loader { position: relative; width: min(80vw, 680px); height: 250px; display: flex; align-items: center; justify-content: center; }
+    .pulse-loader-reveal { position: absolute; width: 100%; overflow: hidden; clip-path: inset(0 50% 0 50%); animation: pulse-loader-text-burst 1.2s cubic-bezier(.2,.8,.2,1) both; }
+    .pulse-loader-wordmark { display: grid; grid-template-columns: repeat(5, 1fr); place-items: center; width: 100%; color: var(--aewttr-text, #070708); font-family: "Inter", "Segoe UI", system-ui, sans-serif; font-size: clamp(3rem, 7vw, 5.5rem); font-weight: 700; line-height: 1; letter-spacing: -.035em; }
+    .pulse-loader-dot { position: absolute; z-index: 2; width: 18px; aspect-ratio: 1; border-radius: 50%; background: var(--aewttr-text, #070708); opacity: 0; will-change: left, top, transform, opacity; }
+    .pulse-loader-dot--one { animation: pulse-loader-dot-one 1.2s cubic-bezier(.2,.8,.2,1) both; }
+    .pulse-loader-dot--two { animation: pulse-loader-dot-two 1.2s cubic-bezier(.2,.8,.2,1) both; }
+    .pulse-loader-impact { position: absolute; z-index: 1; width: 18px; aspect-ratio: 1; border: 1.5px solid var(--aewttr-text, #070708); border-radius: 50%; opacity: 0; animation: pulse-loader-impact 1.2s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes pulse-loader-dot-one {
+      0%, 8% { left: -8%; top: 50%; transform: translate(-50%, -50%) scale(.8); opacity: 0; }
+      16% { opacity: 1; }
+      36% { left: 50%; top: 50%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      42% { transform: translate(-50%, -50%) scale(1.22); }
+      64%, 100% { left: 30%; top: 28%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    @keyframes pulse-loader-dot-two {
+      0%, 8% { left: 108%; top: 50%; transform: translate(-50%, -50%) scale(.8); opacity: 0; }
+      16% { opacity: 1; }
+      36% { left: 50%; top: 50%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      42% { transform: translate(-50%, -50%) scale(1.22); }
+      64%, 100% { left: 70%; top: 72%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    @keyframes pulse-loader-impact {
+      0%, 34% { left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.2); opacity: 0; }
+      38% { opacity: 1; }
+      53% { left: 50%; top: 50%; transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes pulse-loader-text-burst {
+      0%, 32% { clip-path: inset(0 50% 0 50%); opacity: 0; transform: scale(.985); }
+      54%, 100% { clip-path: inset(0 0 0 0); opacity: 1; transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pulse-loader-reveal { clip-path: none; opacity: 1; transform: none; animation: none !important; }
+      .pulse-loader-dot { opacity: 1; animation: none !important; transform: translate(-50%, -50%); }
+      .pulse-loader-dot--one { left: 30%; top: 28%; }
+      .pulse-loader-dot--two { left: 70%; top: 72%; }
+      .pulse-loader-impact { display: none; }
+    }
+
+  </style>
+</head>
+<body>
+  <div id="pulse-boot-loader" role="status" aria-label="Loading PULSE Travel Calendar">
+    <main class="pulse-center-loader" aria-hidden="true">
+      <span class="pulse-loader-dot pulse-loader-dot--one"></span>
+      <span class="pulse-loader-dot pulse-loader-dot--two"></span>
+      <span class="pulse-loader-impact"></span>
+      <div class="pulse-loader-reveal">
+        <div class="pulse-loader-wordmark"><span>P</span><span>U</span><span>L</span><span>S</span><span>E</span></div>
+      </div>
+    </main>
+  </div>
+
+  <main class="pulse-calendar-card" aria-labelledby="calendar-title">
+    <div class="pulse-calendar-workspace">
+      <aside class="pulse-calendar-refiners" id="calendar-refiners" aria-label="Calendar refiners"></aside>
+      <section class="pulse-calendar-main">
+        <div class="pulse-calendar-context">
+          <div class="pulse-calendar-context-copy">
+            <span class="pulse-calendar-eyebrow">Team schedule</span>
+            <h1 id="calendar-title">Travel and leave at a glance.</h1>
+            <p>Filter the shared calendar by activity type.</p>
+          </div>
+          <span class="pulse-calendar-signature" aria-label="PULSE">
+            <i class="pulse-calendar-signature-dot pulse-calendar-signature-dot--one" aria-hidden="true"></i>
+            <i class="pulse-calendar-signature-dot pulse-calendar-signature-dot--two" aria-hidden="true"></i>
+          </span>
+        </div>
+        <div id="calendar-status" class="pulse-calendar-status" role="status">Loading calendar…</div>
+        <div class="pulse-calendar-legend" id="calendar-legend" aria-label="Calendar legend"></div>
+        <div id="travel-calendar"></div>
+      </section>
+    </div>
+  </main>
+  <div id="travel-detail-modal" class="pulse-calendar-modal" hidden></div>
+  <script src="../PULSE/vendor/fullcalendar/js/main.min.js"></script>
+  <script src="assets/js/calendar.js?v=20260724c"></script>
+</body>
+</html>

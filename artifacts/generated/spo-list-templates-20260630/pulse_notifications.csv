@@ -1,0 +1,3 @@
+Title,ToEmails,Subject,BodyHtml,EmailBodyHtml,TeamsText,NotificationArea,DeliveryStatus,DeliveryError
+PULSE Notifications Sample 1,ToEmails sample 1,Subject sample 1,BodyHtml sample text,EmailBodyHtml sample text,TeamsText sample text,Travel,Pending,DeliveryError sample text
+PULSE Notifications Sample 2,ToEmails sample 2,Subject sample 2,BodyHtml sample text,EmailBodyHtml sample text,TeamsText sample text,Travel,Pending,DeliveryError sample text

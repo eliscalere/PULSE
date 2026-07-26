@@ -1,0 +1,28 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "aa6bd2c9-65c6-4ba4-82db-769cb6ff9086",
+  "alias": "AewttrWorkspaceWebPart",
+  "componentType": "WebPart",
+  "version": "*",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "supportsThemeVariants": true,
+  "preconfiguredEntries": [
+    {
+      "groupId": "cf066440-0614-43d6-98ae-0b31cf14c7c3",
+      "group": {
+        "default": "Advanced"
+      },
+      "title": {
+        "default": "AEWTTR-PULSE"
+      },
+      "description": {
+        "default": "AEWTTR-PULSE for SharePoint Online."
+      },
+      "officeFabricIconFontName": "Page",
+      "properties": {
+        "description": "AEWTTR-PULSE"
+      }
+    }
+  ]
+}

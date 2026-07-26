@@ -1,0 +1,1 @@
+{"version":3,"file":"Requirement.js","sourceRoot":"","sources":["../../src/models/Requirement.ts"],"names":[],"mappings":"","sourcesContent":["import { BaseEntity } from './BaseEntity';\n\nexport interface Requirement extends BaseEntity {\n  readonly projectId?: number;\n  readonly source?: string;\n  readonly verificationMethod?: string;\n}\n"]}

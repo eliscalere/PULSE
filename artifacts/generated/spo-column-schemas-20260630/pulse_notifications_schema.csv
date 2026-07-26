@@ -1,0 +1,13 @@
+ListName,PULSE Notifications
+Description,Outbound notification queue for Power Automate. BodyHtml stores Adaptive Card JSON for Teams.
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+ToEmails,Text,No,,
+Subject,Text,No,,
+BodyHtml,Note,No,,Suggested lines: 12
+EmailBodyHtml,Note,No,,Suggested lines: 10
+TeamsText,Note,No,,Suggested lines: 10
+NotificationArea,Choice,No,Travel | Documents | Projects | Weekly | Tickets | Admin | General,
+DeliveryStatus,Choice,No,Pending | Sent | Failed,
+DeliveryError,Note,No,,

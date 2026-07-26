@@ -1,0 +1,13 @@
+ListName,PULSE Travel Debriefs
+Description,Post-trip debriefs linked to a travel request. One row per traveler — a multi-traveler request can have one debrief each.
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+RequestCode,Text,Yes,,
+TravelerName,Text,No,,
+TravelerEmail,Text,No,,
+TripDates,Text,No,,
+Systems,Text,No,,
+Classification,Choice,No,Non-Contractor-Forward | Contractor-Forward,
+Summary,Note,No,,
+Followup,Note,No,,

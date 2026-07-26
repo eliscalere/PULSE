@@ -1,0 +1,1 @@
+{"version":3,"file":"Notification.js","sourceRoot":"","sources":["../../src/models/Notification.ts"],"names":[],"mappings":"","sourcesContent":["export interface Notification {\n  readonly id: string;\n  readonly title: string;\n  readonly intent: 'success' | 'info' | 'warning' | 'error';\n  readonly message: string;\n}\n"]}

@@ -1,0 +1,20 @@
+ListName,PULSE Meetings
+Description,"Weekly Meeting sessions, global and per-project."
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+ProjectId,Number,No,,
+MeetingSeries,Text,No,,
+SeriesKey,Text,No,,
+MeetingDate,DateTime,No,,
+AgendaJson,Note,No,,Suggested lines: 20
+Attendees,Note,No,,
+AttendanceJson,Note,No,,
+Notes,Note,No,,
+DecisionsJson,Note,No,,Suggested lines: 20
+ActionItemsJson,Note,No,,Suggested lines: 20
+CarryForwardJson,Note,No,,Suggested lines: 20
+RiskChangesJson,Note,No,,Suggested lines: 20
+ProjectStatusChangesJson,Note,No,,Suggested lines: 20
+ActivityJson,Note,No,,Suggested lines: 10
+SessionStatus,Choice,No,planned | active | ended,

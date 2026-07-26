@@ -1,0 +1,1 @@
+{"version":3,"file":"Meeting.js","sourceRoot":"","sources":["../../src/models/Meeting.ts"],"names":[],"mappings":"","sourcesContent":["import { BaseEntity } from './BaseEntity';\n\nexport interface Meeting extends BaseEntity {\n  readonly meetingDate: string;\n  readonly facilitatorId?: number;\n  readonly summary?: string;\n  readonly nextSteps?: string;\n}\n"]}

@@ -1,0 +1,7 @@
+flowchart LR
+  C[Source change] --> V[Local UI validation]
+  V --> B[Build self-contained package]
+  B --> T[Safe SharePoint validation]
+  T --> H[Hosted-page acceptance]
+  H --> R[Retain release evidence and rollback artifact]
+  H -->|Failure| RB[Restore prior known-good package]

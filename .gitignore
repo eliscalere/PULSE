@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node
+node_modules/
+.npm
+npm-debug.log*
+
+# Build artifacts
+output/pulse-documentation/.next/
+output/pulse-documentation/dist/
+output/pulse-documentation/build/
+output/pulse-documentation/.wrangler/
+apps/PULSE/.pptx-build/
+apps/PULSE/graphify-out/
+graphify-out/
+
+# Archives and backups (use git history instead)
+archive/backups/
+
+# Temp working files
+tmp/
+
+# Generated zips (sources are tracked; zips are redundant)
+deliverables/PULSE-Documentation-SOURCE.zip
+
+# Editor / IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo

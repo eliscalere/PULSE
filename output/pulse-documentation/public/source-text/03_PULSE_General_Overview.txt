@@ -1,0 +1,423 @@
+INTERNAL ORIENTATION
+
+
+
+
+General Overview
+A concise internal guide to what PULSE is, who it serves, how it fits into the operating
+environment, and where to go next.
+
+
+
+
+       BRAND PROMISE
+
+
+
+       See the work.
+       Understand the state.
+       Move the mission.
+
+P                        U                   L                      S                      E
+
+Projects                 Updates             Logistics              Status                 Execution
+
+
+
+
+PULSE GENERAL OVERVIEW                                                                                 VERSION 1.0 | JULY 2026 | 01
+PULSE                                                                                                                        INTERNAL OVERVIEW
+
+
+
+
+01 / ORIENTATION
+
+
+
+
+One operating picture.
+PULSE connects project delivery, updates, logistics, status, and execution so teams can identify the next action, its owner, and the
+supporting record without assembling the answer from disconnected tools.
+
+
+
+
+    OPERATING PREMISE                                                  01        Current ownership
+
+                                                                       Work is linked to the responsible person, project, timing, and
+    Information in.                                                    supporting record.
+
+
+    Coordinated action out.
+    The platform turns current operational inputs into visible
+    ownership, decisions, and handoffs.
+
+                                                                       02        Operational context
+
+                                                                       Tasks, files, meetings, travel, review activity, and reporting remain
+                                                                       connected instead of becoming isolated records.
+
+
+    THIS DOCUMENT
+
+
+    Purpose        Orient readers before the detailed operating,
+                   technical, or procedural references.
+
+    Audience       Leadership, stakeholders, new team members,
+                   and anyone needing the current operating
+                                                                       03        Actionable visibility
+                   context.
+                                                                       Role-aware controls, notifications, and activity history help teams
+                                                                       move from awareness to coordinated execution.
+
+
+
+
+    CORE INTERPRETATION
+                                                                    The system should reduce ambiguity by making the current condition,
+                                                                    responsible owner, and next action easier to identify.
+    One shared view. Clear action.
+
+
+
+
+PULSE GENERAL OVERVIEW                                                                                                VERSION 1.0 | JULY 2026 | 02
+PULSE                                                                                                             INTERNAL OVERVIEW
+
+
+
+
+02 / WHAT PULSE IS
+
+
+
+
+A project-centered operations workspace.
+PULSE is a SharePoint-hosted browser application that joins day-to-day execution around a shared navigation model and
+connected project records.
+
+
+
+
+        DASHBOARD
+
+
+
+
+   PROJECT AS THE FRONT DOOR                     ONE NAVIGATION MODEL                      ONE TRACEABLE PICTURE
+
+
+   People, work items, files, meetings, notes,   Dashboard, Overview, Projects, Weekly     Linked records, notifications, role-aware
+   tickets, settings, and reporting are          Meeting, Travel, Document Review,         controls, and activity history make
+   reached in the context of the project they    preferences, and administration share a   current conditions and next actions easier
+   support.                                      consistent structure.                     to find.
+
+
+
+
+PULSE GENERAL OVERVIEW                                                                                       VERSION 1.0 | JULY 2026 | 03
+PULSE                                                                                                                                     INTERNAL OVERVIEW
+
+
+
+
+03 / WHO USES PULSE
+
+
+
+
+Built around the people who move the work.
+PULSE supports the roles that create, coordinate, review, approve, and maintain operational records. Access is established through
+the existing SharePoint session and the active PULSE role record.
+
+
+
+
+    SHARED OPERATING RHYTHM
+
+
+                                                                                  Project leads              Coordinate ownership, schedule, project
+
+    From work                                                              PL                                conditions, reporting, and handoffs.
+
+
+
+    to decision.                                                                  Delivery teams             Manage tasks, boards, project documents, notes,
+                                                                          DT                                 and day-to-day execution.
+
+
+    Different users see different controls, but the
+    underlying project, person, record, and history                                                          Evaluate formal documents, decisions, revisions,
+                                                                                  Reviewers
+    remain connected.                                                     RV                                 concurrence, and signing activity.
+
+
+
+
+                                                                                  Travelers & approvers      Submit, route, approve, track, and debrief
+                                                                          TR                                 operational travel.
+        SEE THE WORK
+
+
+
+        UNDERSTAND THE STATE                                                                                 Run current work reviews, record notes, and
+                                                                                  Meeting participants
+                                                                          MT                                 maintain shared actions and objectives.
+
+        MOVE THE MISSION
+
+
+                                                                                  Support & administrators   Manage tickets, users, configuration, diagnostics,
+                                                                          SA                                 SharePoint setup, and activity records.
+
+
+
+
+PROJECT-CENTERED FLOW
+
+
+
+
+   Operational inputs                                 PULSE project workspace                                          Operational outputs
+
+   People, tasks, files, meetings, travel,            One contextual operating record with role-aware                  Current visibility, reporting, decisions,
+   reviews, tickets.                                  controls and shared navigation.                                  approvals, and handoffs.
+
+
+
+
+PULSE GENERAL OVERVIEW                                                                                                             VERSION 1.0 | JULY 2026 | 04
+PULSE                                                                                                                      INTERNAL OVERVIEW
+
+
+
+
+04 / CURRENT CAPABILITIES
+
+
+
+
+Connected tools for the operating day.
+The capability set spans personal awareness, project execution, formal workflows, reporting, meetings, and administration.
+
+
+
+
+   01        Dashboard & Overview                                       02        Project organization
+
+   Personal and team-level situational awareness, workload, current     Projects organized through project, portfolio, program, and End Item
+   assignments, operations queues, and quick access to major modules.   Configuration groupings.
+
+
+
+
+   03        Project workspaces                                         04        Reporting
+
+   People, project documents, tracker, Gantt, boards, reporting,        Project and group PowerPoint reporting generated in the browser,
+   meetings, notes, tickets, and settings in one context.               with SharePoint upload when running in SharePoint.
+
+
+
+
+   05        Operational workflows                                      06        Administration & traceability
+
+   Weekly Meeting, travel requests and debriefs, formal Document        Users, configuration, diagnostics, SharePoint setup, role-aware
+   Review, support tickets, and notifications.                          controls, and activity records.
+
+
+
+
+        PROJECTS
+
+
+
+
+PULSE GENERAL OVERVIEW                                                                                               VERSION 1.0 | JULY 2026 | 05
+PULSE                                                                                                                                              INTERNAL OVERVIEW
+
+
+
+
+05 / SHAREPOINT FIT
+
+
+
+
+Infrastructure-light by design.
+PULSE is served from SharePoint, uses the existing SharePoint session for identity, and connects to PULSE Lists and project
+document-library operations through same-site REST calls.
+
+
+
+
+    OPERATING MODEL
+                                                                                                               NO SEPARATE APPLICATION DATABASE
+
+        Existing SharePoint session                                                                            The source schema defines required SharePoint lists
+                                                                                                               and columns for operational data.
+        The user enters through the approved SharePoint environment. There is no
+        separate PULSE sign-in.
+
+
+
+
+                                                                                                               NO SEPARATE IDENTITY
+
+                                                                                                               Identity begins with the existing SharePoint session and
+        PULSE browser application
+                                                                                                               is paired with the active PULSE role record.
+        Navigation, logic, reporting, and operational workflows run in the browser.
+
+
+
+
+                                                                                                               SETUP AND VALIDATION
+
+        PULSE Lists                                      Project library                                       SharePoint Setup validates or provisions lists and
+        Structured operational records and               Project-associated files and document                 columns required by the application.
+        configuration.                                   operations.
+
+
+
+
+A CRITICAL DISTINCTION
+
+
+
+
+    Project Documents                                                                            Document Review
+    Project-associated document-library files and references used                                A separate formal workflow that records reviewers, revisions,
+    in the project workspace. Storage here does not prove formal                                 approvals, final-pack handling, signatures, and workflow state.
+    review completion.
+
+
+
+
+PULSE GENERAL OVERVIEW                                                                                                                       VERSION 1.0 | JULY 2026 | 06
+PULSE                                                                                                                                                  INTERNAL OVERVIEW
+
+
+
+
+06 / WHY CONNECTED TOOLS MATTER
+
+
+
+
+From scattered records to coordinated execution.
+A loose collection of lists can store information. PULSE preserves the relationships that make the information usable during the
+operating day.
+
+
+
+
+  OPERATING NEED                               DISCONNECTED APPROACH                                             PULSE APPROACH
+
+
+
+  Find current ownership                       Search email, trackers, meeting notes, and individual lists.      Link the person, project, work item, timing, and supporting
+                                                                                                                 record.
+
+
+
+
+  Understand current conditions                Reconcile separately maintained status, schedule, and review      Use connected project, workload, workflow, and activity
+                                               information.                                                      views.
+
+
+
+
+  Move a workflow forward                      Rely on manual routing and follow-up across separate tools.       Use current-state routing, role-aware controls, notifications,
+                                                                                                                 and linked records.
+
+
+
+
+  Prepare leadership reporting                 Rebuild a briefing from spreadsheets, notes, and screenshots.     Generate project and group PowerPoint reporting from the
+                                                                                                                 operating record.
+
+
+
+
+  Reconstruct what happened                    Piece together changes from messages and local copies.            Use consistent labels, related records, and activity logging.
+
+
+
+
+CONNECTED CONTEXT                                                                            OPERATIONAL DISCIPLINE
+
+PULSE preserves the relationship between a project, its people, work                         Consistent labels and visible state reduce ambiguity. Role-aware
+items, risks, files, meetings, travel, review activity, and reporting.                       controls and notifications make the next action easier to identify.
+
+
+
+
+     PRIMARY TAGLINE
+
+
+
+     One shared view.                                                                                  The identity frames the operating picture without competing
+                                                                                                       with it.
+
+
+     Clear action.
+
+
+
+
+PULSE GENERAL OVERVIEW                                                                                                                          VERSION 1.0 | JULY 2026 | 07
+PULSE                                                                                                                                                INTERNAL OVERVIEW
+
+
+
+
+07 / READ NEXT
+
+
+
+
+Move from orientation to action.
+This overview establishes the operating context. Use the companion document that matches the work you need to perform next.
+
+
+
+
+    01          User Guide                                             Navigation, screen-by-screen explanation, role-aware controls, and day-to-day operating instructions.
+
+
+
+
+    02          Technical Reference                                    Source structure, configuration, SharePoint integration, packaging, deployment, maintenance, and
+                                                                       troubleshooting.
+
+
+
+
+    03          Standard Operating Procedures                          Repeatable workflows, prerequisites, expected results, verification, records, and escalation guidance.
+
+
+
+
+    04          Source Audit                                           Verified boundaries, deliberate exclusions, and the items that still require authorized live-site
+                                                                       confirmation.
+
+
+
+
+     BRAND IN ONE SENTENCE
+
+
+
+     A calm, precise system that turns
+     current information into coordinated execution.
+
+     Capability descriptions reflect the supplied source package and local role captures. Production hosting, live SharePoint permissions, write behavior, and role
+     assignments require confirmation in an authorized site session.
+
+
+
+
+PULSE GENERAL OVERVIEW                                                                                                                         VERSION 1.0 | JULY 2026 | 08
+

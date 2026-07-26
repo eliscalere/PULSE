@@ -1,0 +1,31 @@
+ListName,PULSE Travel Requests
+Description,Travel requests — standard or engineering submissions.
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+RequestCode,Text,Yes,,
+RequesterName,Text,No,,
+RequesterEmail,Text,No,,
+FormMode,Choice,No,Standard | Engineering | Leave | Contractor,
+RequestType,Choice,No,Standard | Engineering | Project Travel | Personal Leave | Contractor Travel,
+TripTitle,Text,No,,
+TravelersJson,Note,No,,Suggested lines: 12
+ProjectIdsJson,Note,No,,
+Destination,Text,No,,
+StartDate,DateTime,No,,
+EndDate,DateTime,No,,
+AllDay,Boolean,No,,
+StartTime,Text,No,,
+EndTime,Text,No,,
+Purpose,Note,No,,
+ImpactIfNotApproved,Note,No,,
+AlternativesJson,Note,No,,Suggested lines: 12
+EngineeringFormJson,Note,No,,Suggested lines: 20
+EstCost,Number,No,,
+TravelType,Choice,No,TDY | Conference | Training | Other,
+TravelNotes,Note,No,,
+ReqStatus,Choice,No,Pending | Pending Finance | Approved | Denied | Revoked | Cancelled,
+ChargeObject,Text,No,,
+DenyReason,Note,No,,
+ExportFileUrl,Text,No,,
+ExportFileName,Text,No,,

@@ -1,0 +1,24 @@
+ListName,PULSE Risks
+Description,"Project and portfolio risks with likelihood/impact scoring, mitigation, and meeting review state."
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+ProjectId,Number,No,,
+Portfolio,Text,No,,
+RiskName,Text,Yes,,
+RiskDescription,Note,No,,Suggested lines: 10
+OwnerName,Text,No,,
+OwnerEmail,Text,No,,
+Likelihood,Number,No,,
+Impact,Number,No,,
+RiskRating,Choice,No,Green | Amber | Red,
+Category,Choice,No,Schedule | Cost | Technical | Cyber | Contract | Staffing | Operational | External,
+MitigationPlan,Note,No,,Suggested lines: 10
+ResponseStrategy,Choice,No,Accept | Avoid | Mitigate | Transfer | Escalate,
+DueDate,DateTime,No,,
+RiskStatus,Choice,No,Open | Monitoring | Mitigating | Escalated | Closed,
+LastReviewedDate,DateTime,No,,
+ReviewNotesJson,Note,No,,Suggested lines: 20
+MitigationsJson,Note,No,,Suggested lines: 20
+ResidualLikelihood,Number,No,,
+ResidualImpact,Number,No,,

@@ -1,0 +1,24 @@
+ListName,PULSE App Roles
+Description,App-level role assignments for AEWTTR-PULSE. Active records = people associated with PULSE (AEWTTR tab).
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+UserEmail,Text,No,,
+UserDisplayName,Text,No,,
+SharePointUserId,Number,No,,
+LoginName,Text,No,,
+PrincipalType,Number,No,,
+IsSiteAdmin,Boolean,No,,
+Role,Choice,No,Admin | Meeting Admin | Finance Admin | Document Admin | Manager | Member | Viewer,
+JobTitle,Text,No,,
+SpoAccess,Choice,No,None | View | Full,
+PowerBiAccess,Choice,No,None | View | Full,
+ThemeMode,Choice,No,Light | Dark,
+NotificationPrefsJson,Note,No,,
+HideFromMeetings,Boolean,No,,
+IsActive,Boolean,No,,
+Source,Choice,No,Manual | SharePoint Site Users | SharePoint File Store | Bootstrap Admin,
+CreatedByEmail,Text,No,,
+CreatedDate,DateTime,No,,
+UpdatedByEmail,Text,No,,
+UpdatedDate,DateTime,No,,

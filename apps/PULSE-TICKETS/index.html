@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (function () {
+      try {
+        var savedTheme = String(localStorage.getItem("aewttr_theme") || "").toLowerCase();
+        var resolvedTheme = savedTheme === "dark" || savedTheme === "light"
+          ? savedTheme
+          : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", resolvedTheme);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+      document.documentElement.setAttribute("data-theme-ready", "true");
+    }());
+  </script>
+  <title>PULSE Tickets</title>
+  <link rel="stylesheet" href="assets/css/tickets.css?v=20260726c">
+</head>
+<body>
+
+  <div id="pulse-boot-loader" role="status" aria-label="Loading PULSE Tickets">
+    <div class="pulse-svgl-wrap">
+      <svg class="pulse-svgl" viewBox="0 0 960 360" aria-hidden="true">
+        <circle class="pulse-svgl-flash" cx="480" cy="180" r="90" />
+        <g class="pulse-svgl-wordmark">
+          <text class="pulse-svgl-letter pulse-svgl-letter--p" x="120" y="180">P</text>
+          <text class="pulse-svgl-letter pulse-svgl-letter--u" x="300" y="180">U</text>
+          <text class="pulse-svgl-letter pulse-svgl-letter--l" x="480" y="180">L</text>
+          <text class="pulse-svgl-letter pulse-svgl-letter--s" x="660" y="180">S</text>
+          <text class="pulse-svgl-letter pulse-svgl-letter--e" x="840" y="180">E</text>
+        </g>
+        <circle class="pulse-svgl-dot pulse-svgl-dot--upper" cx="300" cy="76" r="14" />
+        <circle class="pulse-svgl-dot pulse-svgl-dot--lower" cx="660" cy="258" r="14" />
+      </svg>
+    </div>
+  </div>
+
+  <div class="tkt-app">
+    <header class="tkt-app-header">
+      <div class="tkt-brand">
+        <span class="pulse-nav-mark" aria-hidden="true">
+          <i class="pulse-nav-dot pulse-nav-dot--one"></i>
+          <i class="pulse-nav-dot pulse-nav-dot--two"></i>
+        </span>
+        <span class="tkt-page-title">Tickets</span>
+      </div>
+      <div class="tkt-header-actions">
+        <button class="tkt-header-btn" id="btn-new-issue">+ New Issue</button>
+      </div>
+    </header>
+
+    <main class="tkt-app-main" id="tkt-view"></main>
+  </div>
+
+  <div id="tkt-modal-root"></div>
+  <div class="tkt-toast-stack" id="tkt-toast-stack"></div>
+
+  <script src="../PULSE/assets/js/app-config.js"></script>
+  <script src="assets/js/tickets.js?v=20260726b"></script>
+</body>
+</html>

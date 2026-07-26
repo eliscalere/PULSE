@@ -1,0 +1,1 @@
+{"version":3,"file":"Decision.js","sourceRoot":"","sources":["../../src/models/Decision.ts"],"names":[],"mappings":"","sourcesContent":["import { BaseEntity } from './BaseEntity';\n\nexport interface Decision extends BaseEntity {\n  readonly projectId?: number;\n  readonly decisionDate: string;\n  readonly decidedById?: number;\n}\n"]}

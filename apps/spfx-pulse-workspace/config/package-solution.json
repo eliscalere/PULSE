@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "AEWTTR-PULSE",
+    "id": "db71fb31-c4d4-46ea-bd19-f67af87f0f92",
+    "version": "1.0.0.1",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": false,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "AEWTTR-PULSE",
+      "websiteUrl": "https://contoso.sharepoint.com/sites/aewttr",
+      "privacyUrl": "https://contoso.sharepoint.com/sites/aewttr/SitePages/privacy.aspx",
+      "termsOfUseUrl": "https://contoso.sharepoint.com/sites/aewttr/SitePages/terms.aspx",
+      "mpnId": "Undefined-1.23.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "AEWTTR-PULSE for SharePoint Online."
+      },
+      "longDescription": {
+        "default": "AEWTTR-PULSE SharePoint workspace for projects, tasks, meetings, documents, and reporting."
+      },
+      "screenshotPaths": [],
+      "videoUrl": ""
+    },
+    "features": [
+      {
+        "id": "f1b2cdf8-4575-4413-adb5-0a52ef4d6586",
+        "title": "AEWTTR-PULSE Feature",
+        "description": "Deploys the AEWTTR-PULSE web part assets."
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/aewttr-pulse.sppkg"
+  }
+}

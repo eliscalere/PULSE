@@ -1,0 +1,1 @@
+{"version":3,"file":"User.js","sourceRoot":"","sources":["../../src/models/User.ts"],"names":[],"mappings":"","sourcesContent":["export interface User {\n  readonly id: number;\n  readonly title: string;\n  readonly email: string;\n  readonly role: string;\n  readonly isSiteOwner: boolean;\n  readonly isSiteMember: boolean;\n  readonly isAdministrator: boolean;\n}\n"]}

@@ -1,0 +1,3 @@
+Title,ProjectId,UpdateText,UpdateDate,AuthorName,AuthorEmail,StatusColor,Accomplishments,Blockers,NextSteps
+PULSE Updates Sample 1,1,UpdateText sample text,2026-07-01,AuthorName sample 1,AuthorEmail sample 1,Green,Accomplishments sample text,Blockers sample text,NextSteps sample text
+PULSE Updates Sample 2,2,UpdateText sample text,2026-07-15,AuthorName sample 2,AuthorEmail sample 2,Green,Accomplishments sample text,Blockers sample text,NextSteps sample text

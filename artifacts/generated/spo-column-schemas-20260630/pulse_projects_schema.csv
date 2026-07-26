@@ -1,0 +1,55 @@
+ListName,PULSE Projects
+Description,AEWTTR-PULSE project portfolio.
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+ProjectCode,Text,Yes,,
+ProjectStatus,Choice,No,Not Started | In Progress | At Risk | Off Track | Blocked | On Hold | Complete | Archived,
+ProjectType,Choice,No,Project | Subproject,
+ParentProjectId,Number,No,,
+Team,Choice,No,PM | Engineering | Contracts | Cyber | Support | All,
+Priority,Choice,No,Immediate | High | Medium | Lower | Stretch | Exploratory | Ongoing | Document,
+Tools,Text,No,,
+Stakeholders,Text,No,,
+Description,Note,No,,
+Scope,Note,No,,Suggested lines: 10
+Objectives,Note,No,,Suggested lines: 10
+CoverImageUrl,Text,No,,
+ProjectImagesJson,Note,No,,Suggested lines: 30
+HistoryJson,Note,No,,Suggested lines: 10
+RisksJson,Note,No,,Suggested lines: 10
+Handoff,Note,No,,
+MeetingNotes,Note,No,,
+PeopleJson,Note,No,,Suggested lines: 10
+BoardsJson,Note,No,,Suggested lines: 30
+LinkSubtaskDates,Boolean,No,,
+LastUpdated,DateTime,No,,
+IsArchived,Boolean,No,,
+Pm,Text,No,,
+Engineer,Text,No,,
+Isso,Text,No,,
+RangePoc,Text,No,,
+Contract,Text,No,,
+Contractor,Text,No,,
+TaskOrder,Text,No,,
+FundingType,Text,No,,
+FiscalYear,Text,No,,
+FundingStatus,Text,No,,
+ChangeRequestRequired,Boolean,No,,
+ConfigEndItem,Text,No,,
+Program,Text,No,,
+Product,Text,No,,
+LocationsJson,Note,No,,
+PortfoliosJson,Note,No,,
+MainFolderUrl,Text,No,,
+ExportSelectionsJson,Note,No,,Suggested lines: 20
+ReportConfigJson,Note,No,,Suggested lines: 30
+ProjectStartDate,DateTime,No,,
+ProjectDueDate,DateTime,No,,
+ProjectCompletionDate,DateTime,No,,
+NotesJson,Note,No,,Suggested lines: 20
+FundedOnContractAmount,Number,No,,
+ReimbursableAmount,Number,No,,
+FundingNotes,Note,No,,Suggested lines: 6
+TechnicalStatus,Choice,No,Green | Amber | Red,
+LifecycleStatus,Choice,No,Planned | Awaiting Funding | Active | Paused | Complete,

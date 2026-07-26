@@ -1,0 +1,3 @@
+Title,ProjectId,DecisionText,DecisionDate,DecidedBy,DecidedByEmail,Rationale,Impact
+PULSE Decisions Sample 1,1,DecisionText sample text,2026-07-01,DecidedBy sample 1,DecidedByEmail sample 1,Rationale sample text,Impact sample text
+PULSE Decisions Sample 2,2,DecisionText sample text,2026-07-15,DecidedBy sample 2,DecidedByEmail sample 2,Rationale sample text,Impact sample text

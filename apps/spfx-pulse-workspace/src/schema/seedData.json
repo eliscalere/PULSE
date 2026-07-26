@@ -1,0 +1,21 @@
+[
+  {
+    "listKey": "configuration",
+    "values": {
+      "Title": "Enable Provisioning",
+      "ConfigKey": "EnableProvisioning",
+      "ConfigValue": "true",
+      "IsEnabled": true
+    }
+  },
+  {
+    "listKey": "projects",
+    "values": {
+      "Title": "EW Program Tracker / PM Dashboard",
+      "ProjectCode": "P05",
+      "ProjectHealth": "Amber",
+      "ProjectStatus": "In Progress",
+      "TeamName": "PM"
+    }
+  }
+]

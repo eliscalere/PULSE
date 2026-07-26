@@ -1,0 +1,10 @@
+erDiagram
+  APP_ROLES ||--o{ PROJECTS : authorizes
+  PROJECTS ||--o{ ACTION_ITEMS : contains
+  PROJECTS ||--o{ RISKS : contains
+  PROJECTS ||--o{ MEETINGS : relates
+  PROJECTS ||--o{ TRAVEL_REQUESTS : relates
+  PROJECTS ||--o{ DOCUMENT_REVIEW : relates
+  DOCUMENT_REVIEW ||--o{ DOC_REVIEWER_GROUPS : routes
+  APP_ROLES ||--o{ NOTIFICATION_CONFIG : owns
+  APP_ROLES ||--o{ AUDIT_LOG : acts

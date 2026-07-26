@@ -1,0 +1,344 @@
+BRAND IDENTITY SYSTEM
+
+                                                                                                                           VERSION 1.3
+
+
+
+
+One shared view. Clear action.
+A precise, minimal identity for the operating system that connects projects, updates, logistics, status,
+and execution.
+
+
+
+
+P                       U                      L                      S                       E
+
+Projects                Updates                Logistics              Status                  Execution
+
+
+
+
+PULSE BRAND IDENTITY                                                                                       VERSION 1.3 | JULY 2026 | 01
+01 / BRAND IDEA
+
+
+
+The operating rhythm
+PULSE turns scattered activity into a current, shared, and actionable view of the work.
+
+
+
+                                                                                          PROJECTS
+                                                                                    P     Structure ownership, milestones, tasks, and outcomes.
+
+From information
+to coordinated execution.                                                                 UPDATES
+                                                                                    U     Keep the picture current through a consistent operating cadence.
+
+The name PULSE works on two levels. It is the acronym for the
+platform's core functions, and it is a metaphor for the continuous
+signal that tells a team whether the mission is healthy, moving,
+                                                                                          LOGISTICS
+and under control.                                                                   L    Coordinate people, documents, travel, reviews, and dependencies.
+
+
+
+
+                                                                                          STATUS
+    BRAND PROMISE                                                                    S    Create one trusted view of progress, risk, and workload.
+
+
+
+    See the work.
+    Understand the state.                                                           E
+                                                                                          EXECUTION
+                                                                                          Turn visibility into decisions, accountability, and completion.
+    Move the mission.
+
+
+
+
+PULSE BRAND IDENTITY                                                                                                                         VERSION 1.3 | JULY 2026 | 02
+02 / LOGO MEANING
+
+
+
+A signal moving through the system
+The wordmark is deliberately restrained. Its character comes from the internal dots, the external dot pair, and the movement they create together.
+
+ 01    Input / awareness                                                                             03     Clarity through space
+       The upper internal dot reads as a signal entering the operating                                      Wide tracking gives each function room to remain distinct while
+       picture: an update, observation, or new piece of work.                                               still operating as one system.
+
+
+
+
+                                                                                              02    Output / action
+                                                                                                    The lower internal dot completes the pulse: a decision, handoff,
+                                                                                                    approval, or action leaving the system.
+
+
+
+
+             CORE INTERPRETATION
+
+
+             Information in. Coordinated action out.                                                  The dots create motion without adding complexity.
+
+
+
+
+PULSE BRAND IDENTITY                                                                                                                         VERSION 1.3 | JULY 2026 | 03
+03 / LOGO SYSTEM
+
+
+
+One identity, four practical forms
+Use the form that best matches the available space and the level of brand emphasis required.
+
+
+
+   PRIMARY WORDMARK                           REVERSED WORDMARK                   DOT MARK                                     SECONDARY LOCKUP
+
+
+
+
+   Default for documents, application         Use on solid dark fields or         Use for icons, avatars, loading states,      Two dots lead into a clean PULSE
+   headers, presentations, and signage.       photography with strong contrast.   and compact digital surfaces.                letterform with no internal dots.
+
+
+
+
+PROTECT THE SIGNAL
+
+
+Keep the identity disciplined.
+
+
+         Do not move the dots                        Do not stretch the mark                Do not add effects                            Do not use status colors
+
+
+   Their placement is the defining gesture.    Scale every form proportionally.      Avoid shadows, outlines, gradients, and        The identity stays black or white.
+                                                                                     glows.
+
+
+
+
+PULSE BRAND IDENTITY                                                                                                                              VERSION 1.3 | JULY 2026 | 04
+04 / SECONDARY LOCKUP
+
+
+
+Two dots. Then PULSE.
+The secondary lockup places the two-dot mark to the left of a clean, dot-free PULSE wordmark. Extra separation keeps the pair distinct while the full signature
+still reads as one unit.
+
+
+
+
+                                                                     External two-dot mark + plain PULSE letters (no internal dots)
+
+
+
+
+      PAIR                                                             GAP                                                                 WORDMARK
+
+      Keep the original upper-left to lower-right diagonal.            Leave approximately 1.5D to 1.75D between the pair and              Use the plain PULSE letters with no dots above U or
+                                                                       PULSE.                                                              below S.
+
+
+
+ CONSTRUCTION RULES
+
+                                                                                                             USE THE SECONDARY LOCKUP FOR
+ Give the pair room to lead.
+                                                                                                                  Splash and loading screens
+
+ 01       Use the supplied secondary lockup asset whenever possible.                                              High-visibility horizontal signatures
+
+                                                                                                                  Branded dividers with generous width
+ 02       Keep the PULSE letters free of the internal dots used in the primary
+          wordmark.                                                                                               Selected presentation or document covers
+ 03       Keep the dot pair on its original diagonal and preserve the wider gap.
+
+
+ 04       Use black on light fields and white on dark fields only.
+
+
+
+PULSE BRAND IDENTITY                                                                                                                                                      VERSION 1.3 | JULY 2026 | 05
+05 / CONSTRUCTION
+
+
+
+Clear space preserves authority
+The identity should never compete with nearby type, interface controls, or page edges.
+
+
+
+     PRIMARY WORDMARK                                                                                   MINIMUM SIZE
+
+
+     One dot diameter defines the margin.                                                               Stay legible, not merely visible.
+
+
+                 D = dot diameter
+
+
+                                                                                                           PRIMARY WORDMARK                   1.5 in / 160 px
+
+
+
+
+                                                                                                           SECONDARY LOCKUP                  1.75 in / 200 px
+
+
+
+
+     Keep at least 1D around the full wordmark. For the standalone dot mark, retain at least 0.75D on
+     every side.
+                                                                                                                        DOT MARK
+
+                                                                                                                        0.25 in / 24 px
+
+
+
+
+PULSE BRAND IDENTITY                                                                                                                 VERSION 1.3 | JULY 2026 | 06
+06 / COLOR
+
+
+
+Monochrome identity, purposeful interface color
+Black and white carry the brand. Supporting colors organize information and communicate state without weakening the logo.
+
+
+
+CORE IDENTITY
+
+
+The identity only appears in black or white.
+
+
+
+
+   SIGNAL BLACK                               FIELD WHITE                        GRAPHITE                               SYSTEM MIST
+
+   #070708                                    #FFFFFF                            #51545A                                #ECEDEF
+
+
+
+
+SUPPORTING DIGITAL PALETTE
+
+
+Color should clarify an action or state.
+
+
+
+
+  COMMAND BLUE                                STATUS GREEN                      WARNING AMBER                           CRITICAL RED
+  #2F66FF                                     #2B7A5E                           #C77800                                 #B42318
+
+  Links, primary actions, current selection   Completed, approved, healthy      Attention, pending, at risk             Blocked, failed, destructive
+
+
+
+
+PULSE BRAND IDENTITY                                                                                                                   VERSION 1.3 | JULY 2026 | 07
+07 / TYPOGRAPHY AND VOICE
+
+
+
+Calm, direct, operational
+The visual system should feel precise without feeling cold. Language should reduce uncertainty and make the next action obvious.
+
+
+
+
+     RECOMMENDED TYPE FAMILY                                                             VOICE PRINCIPLES
+
+
+
+                                                                                         Write for the person who must act next.
+     Inter
+     Modern, neutral, legible, and built for digital systems.
+                                                                                         CLEAR BEFORE CLEVER
+
+     DISPLAY                                                    Inter Display Semibold   Use familiar words and state the action, owner, and timing.
+
+     Portfolio overview
+                                                                                         SPECIFIC, NOT VAGUE
+
+                                                                                         Replace general status language with a concrete condition or decision.
+     SECTION                                                           Inter Semibold
+
+     Documents awaiting review                                                           CALM UNDER PRESSURE
+
+                                                                                         Communicate risk directly without adding drama.
+
+     BODY                                                                Inter Regular
+
+                                                                                         ACTIVE AND ACCOUNTABLE
+     Project status is calculated from current tasks and milestones.
+                                                                                         Prefer verbs: review, assign, approve, complete, escalate.
+
+
+     DATA                                                               Inter Medium
+                                                                                             WEAK        The associated task may require review.
+     12 OPEN / 4 BLOCKED / 8 IN REVIEW
+
+                                                                                             PULSE       Review the task by 1600 Friday.
+
+
+
+
+PULSE BRAND IDENTITY                                                                                                                            VERSION 1.3 | JULY 2026 | 08
+08 / APPLICATIONS
+
+
+
+Designed to disappear into the work
+The identity should frame the operating picture, not compete with it.
+
+
+
+                                                  OVERVIEW      PROJECTS        REVIEWS   TRAVEL
+
+
+
+
+      PORTFOLIO OVERVIEW
+
+
+
+                                                                                                                               Weekly
+    Mission work at a glance
+                                                                                                                               Operations Brief
+    24                                   08                                04                                                  Portfolio status | Decisions | Next actions
+    ACTIVE PROJECTS                      IN REVIEW                         AT RISK
+
+
+
+
+    COMPACT USE                                                       QUICK SELECTION
+
+
+                                                                      Primary wordmark      Most documents and application headers
+
+
+
+                                                                      Secondary lockup      Covers, splash screens, and high-visibility signatures
+
+
+
+                                                                      Dot mark              Icons, avatars, loading states, and compact navigation
+
+  Use the dot mark when the wordmark will not remain legible.
+
+
+
+
+PULSE BRAND IDENTITY                                                                                                                                        VERSION 1.3 | JULY 2026 | 09
+

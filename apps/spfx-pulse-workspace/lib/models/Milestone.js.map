@@ -1,0 +1,1 @@
+{"version":3,"file":"Milestone.js","sourceRoot":"","sources":["../../src/models/Milestone.ts"],"names":[],"mappings":"","sourcesContent":["import { BaseEntity } from './BaseEntity';\n\nexport interface Milestone extends BaseEntity {\n  readonly projectId?: number;\n  readonly dueDate?: string;\n  readonly status: 'Upcoming' | 'On Track' | 'At Risk' | 'Complete';\n}\n"]}

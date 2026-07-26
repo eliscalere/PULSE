@@ -1,0 +1,5 @@
+[
+  { "listKey": "projects", "viewKey": "allProjects" },
+  { "listKey": "tasks", "viewKey": "activeTasks" },
+  { "listKey": "meetings", "viewKey": "recentMeetings" }
+]

@@ -1,0 +1,14 @@
+ListName,PULSE Updates
+Description,Project timeline / status updates.
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+ProjectId,Number,Yes,,
+UpdateText,Note,No,,
+UpdateDate,DateTime,No,,
+AuthorName,Text,No,,
+AuthorEmail,Text,No,,
+StatusColor,Choice,No,Green | Yellow | Red,
+Accomplishments,Note,No,,
+Blockers,Note,No,,
+NextSteps,Note,No,,
