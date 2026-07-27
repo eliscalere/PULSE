@@ -7,7 +7,18 @@
 
 ---
 
-PULSE is a single-file web dashboard deployed inside a **Forge web part on Flank Speed (SharePoint Online)**. No server, no build pipeline to deploy — edit source, run the build script, upload the `.html` file. SharePoint handles authentication and data storage via its native REST API.
+PULSE is a suite of single-file web apps deployed directly into **SharePoint Online (Flank Speed)**. No server, no build pipeline to deploy — edit source, run the build script, upload the `.html` file. SharePoint handles authentication and data storage through its native REST API using the user's existing browser session (CAC/PIV/SSO).
+
+---
+
+## Apps
+
+| App | Release file | Purpose |
+|---|---|---|
+| **PULSE** | `releases/PULSE-v1.0.0.html` | Main IPT dashboard — projects, travel, meetings, docs, admin |
+| **PULSE Tickets** | `releases/PULSE-Tickets-v1.0.0.html` | Issue tracker |
+| **PULSE Calendar** | `releases/PULSE-Calendar-v1.0.0.html` | Team travel and leave calendar |
+| **PULSE CODE** | `releases/PULSE-CODE-v1.0.0.html` | In-browser code editor for SharePoint-hosted files |
 
 ---
 
@@ -16,143 +27,211 @@ PULSE is a single-file web dashboard deployed inside a **Forge web part on Flank
 ```
 AEWTTR PAS/
 │
-├── releases/                          ← DEPLOY THESE TO SHAREPOINT
-│   ├── PULSE-v1.0.0.html             (6.8 MB — main dashboard)
-│   ├── PULSE-Calendar-v1.0.0.html    (314 KB — travel calendar)
-│   └── PULSE-Tickets-v1.0.0.html     ( 64 KB — issue tracker)
+├── releases/                               ← DEPLOY THESE TO SHAREPOINT
+│   ├── PULSE-v1.0.0.html                  (6.8 MB — main dashboard)
+│   ├── PULSE-Calendar-v1.0.0.html         (314 KB — travel calendar)
+│   ├── PULSE-Tickets-v1.0.0.html          ( 64 KB — issue tracker)
+│   └── PULSE-CODE-v1.0.0.html             ( 92 KB — code editor)
 │
 ├── apps/
-│   ├── PULSE/                         ← Primary app source (start here)
-│   │   ├── index.html                 Entry point
-│   │   ├── assets/
-│   │   │   ├── js/
-│   │   │   │   ├── app-config.js      App-level config + APP_VERSION
-│   │   │   │   ├── app.js             Core shell, router, shared utils
-│   │   │   │   ├── data.js            In-memory data model + normalizers
-│   │   │   │   ├── sharepoint-repo.js SharePoint data layer (read/write)
-│   │   │   │   ├── sharepoint-schema.js  SP list definitions + seeding
-│   │   │   │   ├── sharepoint-adapter.js Low-level SP REST calls
-│   │   │   │   ├── audit-log.js       Audit trail (multi-list rotation)
-│   │   │   │   ├── export.js          PowerPoint export (pptxgenjs)
-│   │   │   │   ├── notify.js          Email notifications via SP
-│   │   │   │   ├── project-pptx-export.js  Per-project slide generation
-│   │   │   │   └── pages/             One file per route
-│   │   │   │       ├── dashboard.js
-│   │   │   │       ├── projects.js
-│   │   │   │       ├── overview.js
-│   │   │   │       ├── weekly.js
-│   │   │   │       ├── travel.js
-│   │   │   │       ├── docreview.js
-│   │   │   │       ├── admin.js
-│   │   │   │       ├── logs.js
-│   │   │   │       └── users.js
-│   │   │   ├── css/
-│   │   │   │   ├── style.css          Main stylesheet
-│   │   │   │   └── dropdowns.css      Dropdown component styles
-│   │   │   └── images/                Seals, wordmarks, logos
-│   │   ├── vendor/                    Vendored libraries (offline-safe)
-│   │   │   ├── boxicons/              Icon font
-│   │   │   ├── flatpickr/             Date picker
-│   │   │   ├── fullcalendar/          Calendar widget
-│   │   │   └── pptxgenjs/            PowerPoint generation
-│   │   ├── docs/                      Developer + user documentation
-│   │   │   ├── current/               Canonical current-version docs
-│   │   │   │   ├── PULSE-User-Guide.md
-│   │   │   │   ├── PULSE-Technical-Handoff.md
-│   │   │   │   └── PULSE-Operations-SOP.md
-│   │   │   ├── handoff/
-│   │   │   │   ├── FORGE-DEPLOYMENT-GUIDE.md   How to deploy to Flank Speed
-│   │   │   │   └── FS-FORGE-STEPS.md            Step-by-step upload checklist
-│   │   │   └── architecture/          Technical deep-dives
-│   │   ├── scripts/
-│   │   │   ├── build-sharepoint-package.js  → outputs releases/PULSE-v1.0.0.html
-│   │   │   └── maintenance/           Diagram + screenshot utilities
-│   │   └── validation/pdf-samples/    Engineering travel PDF test output
+│   ├── PULSE/                              Primary app source (start here)
+│   │   ├── index.html                      Entry point
+│   │   ├── assets/js/
+│   │   │   ├── app-config.js               App-level config + APP_VERSION
+│   │   │   ├── app.js                      Core shell, router, shared utils
+│   │   │   ├── data.js                     In-memory data model + normalizers
+│   │   │   ├── sharepoint-repo.js          SharePoint data layer (read/write)
+│   │   │   ├── sharepoint-schema.js        SP list definitions + seeding
+│   │   │   ├── sharepoint-adapter.js       Low-level SP REST calls
+│   │   │   ├── audit-log.js                Audit trail (multi-list rotation)
+│   │   │   ├── export.js                   PowerPoint export (pptxgenjs)
+│   │   │   ├── notify.js                   Email notifications via SP
+│   │   │   └── pages/                      One file per route
+│   │   │       ├── dashboard.js
+│   │   │       ├── projects.js
+│   │   │       ├── overview.js
+│   │   │       ├── weekly.js
+│   │   │       ├── travel.js
+│   │   │       ├── docreview.js
+│   │   │       ├── admin.js
+│   │   │       ├── logs.js
+│   │   │       └── users.js
+│   │   ├── assets/css/
+│   │   │   ├── style.css
+│   │   │   └── dropdowns.css
+│   │   ├── assets/images/                  Seals, wordmarks, logos
+│   │   ├── vendor/                         Vendored libraries (offline-safe)
+│   │   │   ├── boxicons/
+│   │   │   ├── flatpickr/
+│   │   │   ├── fullcalendar/
+│   │   │   └── pptxgenjs/
+│   │   └── scripts/
+│   │       ├── build-sharepoint-package.js → releases/PULSE-v1.0.0.html
+│   │       └── build-forge.js              → Forge web part bundle (see below)
 │   │
-│   ├── PULSE-TICKETS/                 Issue tracker companion app
+│   ├── PULSE-TICKETS/
 │   │   ├── index.html
 │   │   ├── assets/js/tickets.js
 │   │   ├── assets/css/tickets.css
-│   │   └── scripts/build-sharepoint-package.js  → releases/PULSE-Tickets-v1.0.0.html
+│   │   └── scripts/build-sharepoint-package.js
 │   │
-│   ├── PULSE-TRAVEL-CALENDAR/         Travel calendar companion app
+│   ├── PULSE-TRAVEL-CALENDAR/
 │   │   ├── index.html
 │   │   ├── assets/js/calendar.js
 │   │   ├── assets/css/calendar.css
-│   │   └── scripts/build-sharepoint-package.js  → releases/PULSE-Calendar-v1.0.0.html
+│   │   └── scripts/build-sharepoint-package.js
 │   │
-│   └── spfx-pulse-workspace/          Legacy SPFx typed implementation (reference)
+│   └── PULSE-CODE/                         In-browser code editor
+│       ├── index.html                       Single self-contained file
+│       └── scripts/build-sharepoint-package.js
 │
-├── artifacts/
-│   └── generated/
-│       ├── spo-column-schemas-*/      SharePoint column schema CSVs
-│       └── spo-list-templates-*/      SP list template CSVs + Excel workbook
-│
-├── assets/
-│   ├── branding/                      Logos, seals (AEWTTR, NAVAIR, TTSD)
-│   └── presentation/screenshots/      UI screenshots for presentations
-│
-├── archive/backups/                   Point-in-time source backups
-├── deliverables/                      Final deliverable files (AoA, presentations)
-├── docs/                              Project-level documentation
-└── tools/sharepoint/                  SP list schema + template build scripts
+├── artifacts/generated/                    SharePoint list schema CSVs + Excel template
+├── assets/branding/                        Logos, seals (AEWTTR, NAVAIR, TTSD)
+├── deliverables/                           Final AoA and presentation files
+├── docs/                                   Project-level documentation
+└── tools/sharepoint/                       SP list schema build scripts
 ```
 
 ---
 
-## Building a Release
+## How the Stack Works
 
-Each app has its own build script that inlines all assets into a single self-contained HTML file.
+Every app follows the same pattern:
 
-```bash
-# Build PULSE (main dashboard)
-cd apps/PULSE
-node scripts/build-sharepoint-package.js
-# → releases/PULSE-v1.0.0.html
-
-# Build Calendar companion
-cd apps/PULSE-TRAVEL-CALENDAR
-node scripts/build-sharepoint-package.js
-# → releases/PULSE-Calendar-v1.0.0.html
-
-# Build Tickets companion
-cd apps/PULSE-TICKETS
-node scripts/build-sharepoint-package.js
-# → releases/PULSE-Tickets-v1.0.0.html
+```
+Browser session (CAC/PIV login to Flank Speed)
+        │
+        ▼
+HTML file served from SharePoint SiteAssets or a Forge web part
+        │
+        ├─► SharePoint REST API  (/_api/web/…)
+        │     • Same-origin fetch with credentials:'include'
+        │     • No Azure AD app registration
+        │     • No separate auth tokens — uses the existing session
+        │
+        └─► (PULSE CODE only) AskSage AI
+              POST https://api.asksage.ai/server/openai/v1/chat/completions
+              Authorization: Bearer {api_key}
 ```
 
-No `npm install` needed — all dependencies are vendored in `apps/PULSE/vendor/`.
+**SharePoint lists** store all data. `sharepoint-adapter.js` handles the low-level REST calls (contextinfo digest for writes, `odata=nometadata` for lean responses). `sharepoint-repo.js` provides the business-logic read/write layer on top.
+
+**No npm, no bundler, no framework.** Vendor libraries are checked in under `apps/PULSE/vendor/`. The build scripts are plain Node.js `require`-style scripts with zero dependencies.
+
+---
+
+## Building a Release (WFC Package)
+
+Each app has a `scripts/build-sharepoint-package.js` that inlines all local assets into a single self-contained HTML file with a `WFC-MANIFEST` header.
+
+```bash
+# Run from the repo root
+
+# PULSE (main dashboard)
+node apps/PULSE/scripts/build-sharepoint-package.js
+# → releases/PULSE-v1.0.0.html
+
+# PULSE Tickets
+node apps/PULSE-TICKETS/scripts/build-sharepoint-package.js
+# → releases/PULSE-Tickets-v1.0.0.html
+
+# PULSE Travel Calendar
+node apps/PULSE-TRAVEL-CALENDAR/scripts/build-sharepoint-package.js
+# → releases/PULSE-Calendar-v1.0.0.html
+
+# PULSE CODE
+node apps/PULSE-CODE/scripts/build-sharepoint-package.js
+# → releases/PULSE-CODE-v1.0.0.html
+```
+
+No `npm install` needed — PULSE, Tickets, and Calendar vendor all their dependencies locally. PULSE CODE loads Monaco Editor from the jsdelivr CDN at runtime.
+
+**What the build does:**
+1. Reads `index.html`
+2. Inlines every local `<link rel="stylesheet">` and `<script src="...">` (replaces with `<style>` and `<script>` blocks)
+3. Inlines CSS `url()` asset references as base64 data URIs
+4. Writes a `<!--WFC-MANIFEST:...-->` comment at the top (base64 JSON inventory of bundled files)
+5. Outputs a single `.html` file to `releases/`
+
+The output file is what you upload to SharePoint. Once uploaded, it is completely self-contained — no other files needed.
+
+---
+
+## Packaging with Forge
+
+**Forge** is the Flank Speed web part host that wraps an app in an iframe using an `srcdoc` attribute. Use this path when you need to embed the app inside an existing SharePoint page (rather than opening it as a standalone HTML document).
+
+### What you need
+
+- A **Forge template file** — a Forge `.html` stub that contains the placeholder string `const CHILD_HTML_B64 = "";`. This file is provided by the Forge platform administrator and is **not** in this repository.
+- Node.js (any recent version)
+
+### How to run it
+
+```bash
+# From the repo root:
+node apps/PULSE/scripts/build-forge.js <path-to-forge-template.html> [output-path]
+```
+
+Example:
+
+```bash
+node apps/PULSE/scripts/build-forge.js ~/forge-template.html releases/forge-builds/PULSE-Forge.html
+```
+
+The script outputs two files to the output path you specify (defaulting to `apps/PULSE/releases/forge-builds/`):
+- `Forge.html` — the packed file for upload (base64-encoded child app)
+- `Forge-readable.html` — a human-readable version using a template literal instead of base64 (useful for debugging)
+
+### What it does internally
+
+```
+index.html + assets/
+      │
+      ▼ build-forge.js
+  1. Inlines all local CSS → <style> blocks
+  2. Inlines all local JS  → <script> blocks
+  3. Base64-encodes the assembled child HTML
+  4. Replaces `const CHILD_HTML_B64 = "";` in the Forge template
+      │
+      ▼
+Forge.html  (Forge template + base64-encoded PULSE inside)
+```
+
+The Forge template then decodes and writes the child HTML into an iframe's `srcdoc` at runtime, isolating PULSE from the SharePoint page chrome.
+
+> **Note:** Only `apps/PULSE/` has a Forge build script. PULSE Tickets, PULSE Calendar, and PULSE CODE are deployed as standalone HTML files (WFC packages), not as Forge web parts.
+
+---
+
+## PULSE CODE — Quick Start
+
+PULSE CODE is a Monaco-based code editor that reads and writes files directly to a SharePoint document library using the same session auth as the other apps.
+
+1. Upload `releases/PULSE-CODE-v1.0.0.html` to `SiteAssets` on your SharePoint site
+2. Open it from SharePoint (not from a local file — session auth requires the SharePoint origin)
+3. Click **◈ No project — click to add** in the sidebar
+4. Paste any SharePoint folder URL from your browser's address bar
+5. The editor connects, lists the folder's files, and auto-syncs your Ask Sage API key from `SiteAssets/pulse-code-config.json`
+
+**Settings → Ask Sage AI:** Enter your API key once — it's saved to `SiteAssets/pulse-code-config.json` and shared automatically with anyone else running PULSE CODE on the same site.
 
 ---
 
 ## Versioning
 
-This project uses **Semantic Versioning (SemVer — MAJOR.MINOR.PATCH)**:
+| App | Current version |
+|---|---|
+| PULSE | `1.0.0` |
+| PULSE Calendar | `1.0.0` |
+| PULSE Tickets | `1.0.0` |
+| PULSE CODE | `1.0.0` |
 
-| Component | Current | Notes |
-|---|---|---|
-| PULSE | `1.0.0` | Core IPT dashboard — increment MINOR for new features, PATCH for fixes |
-| PULSE-Calendar | `1.0.0` | Travel calendar companion |
-| PULSE-Tickets | `1.0.0` | Issue tracker companion |
-
-Update `VERSION` in each app's `scripts/build-sharepoint-package.js` before a release. Also update `APP_VERSION` in `apps/PULSE/assets/js/app-config.js`.
-
----
-
-## Deployment (Flank Speed / Forge)
-
-1. Run the build script for the app you are updating.
-2. Open your Forge web part on SharePoint.
-3. Upload the `.html` file from `releases/` using the Forge upload interface.
-4. The app reads site context from `window._spPageContextInfo` automatically.
-
-See `apps/PULSE/docs/handoff/FORGE-DEPLOYMENT-GUIDE.md` for the full deployment walkthrough.
+To cut a new release: update `VERSION` in the relevant `scripts/build-sharepoint-package.js`, update `APP_VERSION` in `apps/PULSE/assets/js/app-config.js` (for PULSE), then run the build.
 
 ---
 
-## SharePoint Lists
-
-PULSE reads from and writes to these SharePoint lists on the host site:
+## SharePoint Lists (PULSE)
 
 | List | Purpose |
 |---|---|
