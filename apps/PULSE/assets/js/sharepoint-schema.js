@@ -84,7 +84,11 @@ const SHAREPOINT_SCHEMA = {
       { name: "ReimbursableAmount", type: "Number" },
       { name: "FundingNotes", type: "Note", numLines: 6 },
       { name: "TechnicalStatus", type: "Choice", choices: ["Green", "Amber", "Red"] },
-      { name: "LifecycleStatus", type: "Choice", choices: ["Planned", "Awaiting Funding", "Active", "Paused", "Complete"] }
+      { name: "LifecycleStatus", type: "Choice", choices: ["Planned", "Awaiting Funding", "Active", "Paused", "Complete"] },
+      { name: "ClassificationType", type: "Choice", choices: ["Development", "Sustainment", "Development & Sustainment", "Other"] },
+      { name: "ATO", type: "Text" },
+      { name: "AquOnly", type: "Boolean" },
+      { name: "RelatedProjects", type: "Text" }
     ]
   },
 

@@ -243,7 +243,11 @@ function projectToSpItem(proj) {
     ReimbursableAmount: proj.reimbursableAmount || 0,
     FundingNotes: proj.fundingNotes || "",
     TechnicalStatus: proj.technicalStatus || "",
-    LifecycleStatus: proj.lifecycleStatus || ""
+    LifecycleStatus: proj.lifecycleStatus || "",
+    ClassificationType: proj.projectType || "",
+    ATO: proj.ato || "",
+    AquOnly: !!proj.aquOnly,
+    RelatedProjects: proj.projects || ""
   };
 }
 
@@ -295,7 +299,11 @@ function spItemToProject(item) {
     reimbursableAmount: Number(item.ReimbursableAmount || 0),
     fundingNotes: item.FundingNotes || "",
     technicalStatus: item.TechnicalStatus || "",
-    lifecycleStatus: item.LifecycleStatus || ""
+    lifecycleStatus: item.LifecycleStatus || "",
+    projectType: item.ClassificationType || "",
+    ato: item.ATO || "",
+    aquOnly: !!item.AquOnly,
+    projects: item.RelatedProjects || ""
   };
   const extra = {
     status: item.ProjectStatus || "Not Started",

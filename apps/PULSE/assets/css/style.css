@@ -29,7 +29,7 @@
   --aewttr-radius-md: 6px;
   --aewttr-radius-sm: 4px;
 
-  --nav-height: 62px;
+  --nav-height: 48px;
   color-scheme: light;
 }
 
@@ -86,7 +86,7 @@ button { font-family: inherit; }
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 10px;
+  padding: 0;
   background: var(--aewttr-bg);
   overflow: hidden;
 }
@@ -122,7 +122,7 @@ button { font-family: inherit; }
   background: #070708;
   color: #FFFFFF;
   border: 0;
-  border-radius: 18px;
+  border-radius: 0;
   display: flex; align-items: center;
   padding: 0 18px;
   gap: 8px;
@@ -879,11 +879,8 @@ body.help-mode [data-help] { display: revert; }
   min-height: 0;
   display: flex;
   flex-direction: column;
-  margin-top: -1px;
   background: var(--aewttr-surface);
-  border: 1px solid var(--aewttr-border);
-  border-top: 0;
-  border-radius: 0 0 16px 16px;
+  border-top: 1px solid rgba(0,0,0,.06);
   overflow: hidden;
 }
 /* Above ~1760px (ultra-wide / large 4K monitors) the page header and
@@ -8693,9 +8690,9 @@ html[data-theme="dark"] .docreview-submit-note {
    full desktop window (placed alongside other web parts on a page), so this
    isn't just a "mobile" breakpoint. */
 @media (max-width: 700px) {
-  :root { --nav-height: 64px; }
-  .aewttr-shell { padding: 8px; }
-  .aewttr-topnav { padding: 0 12px; border-radius: 18px; gap: 4px; }
+  :root { --nav-height: 48px; }
+  .aewttr-shell { padding: 0; }
+  .aewttr-topnav { padding: 0 12px; border-radius: 0; gap: 4px; }
   .aewttr-topnav-brand { padding-right: 12px; margin-right: 4px; }
   .pulse-static-logo::before { width: 76px; height: 32px; }
   .aewttr-nav-item { padding: 0 11px; font-size: 12px; }
@@ -14471,26 +14468,51 @@ html[data-theme="dark"] .monday-gantt-group-label { background: color-mix(in srg
 .project-settings-shell {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: calc(100vh - 168px);
+  flex: 1;
+  min-height: 0;
 }
 .project-settings-bar {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 14px;
-  border: 1px solid var(--aewttr-border);
-  border-radius: 12px;
-  background: var(--aewttr-surface);
+  border-bottom: 1px solid var(--aewttr-border);
+  flex-shrink: 0;
+  margin: 0 -20px;
+  padding: 0 20px;
 }
-.project-settings-bar-copy h2 {
-  margin: 0;
-  font-size: 16px;
+.ps-tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  flex-shrink: 1;
+  min-width: 0;
+}
+.ps-tabs::-webkit-scrollbar { display: none; }
+.ps-tab {
+  padding: 0 14px;
+  height: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aewttr-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .12s, border-color .12s;
+  line-height: 1;
+}
+.ps-tab:hover { color: var(--aewttr-text); }
+.ps-tab.is-active { color: var(--aewttr-text); border-bottom-color: var(--aewttr-blue); font-weight: 600; }
+.ps-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 .ps-autosave-status {
   display: inline-block;
-  margin-top: 2px;
   font-size: 12px;
   font-weight: 600;
   color: var(--aewttr-muted);
@@ -14499,19 +14521,20 @@ html[data-theme="dark"] .monday-gantt-group-label { background: color-mix(in srg
 .ps-autosave-status[data-state="saving"] { color: var(--aewttr-blue); }
 .ps-autosave-status[data-state="saved"] { color: #1F845A; }
 .ps-autosave-status[data-state="error"] { color: #AE2E24; }
-.project-settings-grid {
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  grid-auto-rows: minmax(0, auto);
-  gap: 12px;
-  flex: 1;
-  align-content: start;
+.ps-tab-body {
+  padding: 20px 0 32px;
 }
+.ps-tab-body .form-row { margin-bottom: 10px; }
+.ps-tab-body .form-grid-2 { gap: 10px; }
+.ps-tab-panel { display: none; max-width: 820px; }
+.ps-tab-panel.is-active { display: block; }
+.ps-tab-panel .project-role-picker-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.ps-tab-panel .project-role-picker { padding: 10px; }
 .ps-panel {
-  border: 1px solid var(--aewttr-border);
-  border-radius: 12px;
-  background: var(--aewttr-surface);
-  padding: 14px 16px;
   min-width: 0;
 }
 /* Glossary tooltip icon in form labels */
@@ -14541,12 +14564,12 @@ html[data-theme="dark"] .monday-gantt-group-label { background: color-mix(in srg
 .admin-save-status { font-size: 13px; color: var(--aewttr-muted); }
 
 .ps-panel-title {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 700;
   color: var(--aewttr-muted);
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--aewttr-border);
 }
 .ps-identity-row {
   display: grid;
@@ -14564,22 +14587,11 @@ html[data-theme="dark"] .monday-gantt-group-label { background: color-mix(in srg
 .ps-identity-fields .form-row:last-child { margin-bottom: 0; }
 .ps-panel .form-row { margin-bottom: 10px; }
 .ps-panel .form-grid-2 { gap: 10px; }
-.ps-panel--roles .project-role-picker-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0;
-}
-.ps-panel--roles .project-role-picker {
-  padding: 10px;
-}
-@media (max-width: 1100px) {
-  .project-settings-grid { grid-template-columns: 1fr; }
-  .ps-panel--roles .project-role-picker-grid { grid-template-columns: 1fr 1fr; }
-}
 @media (max-width: 720px) {
   .ps-identity-row { grid-template-columns: 1fr; }
-  .ps-panel--roles .project-role-picker-grid { grid-template-columns: 1fr; }
-  .project-settings-bar { flex-wrap: wrap; }
+  .ps-tab-panel .project-role-picker-grid { grid-template-columns: 1fr; }
+  .project-settings-bar { flex-wrap: wrap; gap: 0; }
+  .ps-bar-actions { padding: 6px 0; }
 }
 
 @media (max-width: 900px) {

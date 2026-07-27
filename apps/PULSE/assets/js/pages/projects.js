@@ -9041,17 +9041,24 @@ function drawProjectSettings(body, proj) {
 
   body.innerHTML = `
     <div class="project-settings-shell">
-      <header class="project-settings-bar">
-        <div class="project-settings-bar-copy">
-          <h2>Project settings</h2>
+      <div class="project-settings-bar">
+        <nav class="ps-tabs">
+          <button class="ps-tab is-active" data-pstab="identity">Identity</button>
+          <button class="ps-tab" data-pstab="status">Status</button>
+          <button class="ps-tab" data-pstab="roles">Roles</button>
+          <button class="ps-tab" data-pstab="funding">Funding</button>
+          <button class="ps-tab" data-pstab="classification">Classification</button>
+          <button class="ps-tab" data-pstab="scope">Scope</button>
+          <button class="ps-tab" data-pstab="misc">Misc</button>
+        </nav>
+        <div class="ps-bar-actions">
           <span class="ps-autosave-status" id="ps-autosave-status" data-state="saved">All changes saved</span>
+          <button type="button" class="btn-danger-outline btn-aewttr-sm" id="ps-delete"><i class="bx bx-trash"></i> Delete</button>
         </div>
-        <button type="button" class="btn-danger-outline btn-aewttr-sm" id="ps-delete"><i class="bx bx-trash"></i> Delete project</button>
-      </header>
+      </div>
 
-      <div class="project-settings-grid">
-        <section class="ps-panel">
-          <div class="ps-panel-title">Identity</div>
+      <div class="ps-tab-body">
+        <div class="ps-tab-panel is-active" data-pspanel="identity">
           <div class="ps-identity-row">
             <div class="cover-upload-row ps-cover-compact">
               <div class="cover-upload-preview" id="ps-cover-preview" style="${proj.coverImage ? `background-image:url('${proj.coverImage}');` : `background:${projectBannerColor(proj)};`}"></div>
@@ -9070,10 +9077,9 @@ function drawProjectSettings(body, proj) {
             <label>Portfolios ${glossaryTip("Portfolio")}</label>
             ${portfolioPickerHtml(Array.from(selectedPortfolios), "ps-portfolios")}
           </div>
-        </section>
+        </div>
 
-        <section class="ps-panel">
-          <div class="ps-panel-title">Status &amp; schedule</div>
+        <div class="ps-tab-panel" data-pspanel="status">
           <div class="form-grid-2">
             <div class="form-row"><label>Technical Status ${glossaryTip("Lifecycle")}</label>
               <select class="select-aewttr" id="ps-tech-status">
@@ -9113,18 +9119,16 @@ function drawProjectSettings(body, proj) {
             <label>Locations</label>
             ${locationPickerHtml(Array.from(selectedLocations), "ps-locations")}
           </div>
-        </section>
+        </div>
 
-        <section class="ps-panel ps-panel--roles">
-          <div class="ps-panel-title">Roles</div>
+        <div class="ps-tab-panel" data-pspanel="roles">
           <div class="project-role-picker-grid">
             ${ASSIGNABLE_PROJECT_ROLE_FIELDS.filter((f) => f.key !== "contractor").map((field) => projectRolePickerHtml(proj, field)).join("")}
             ${projectContractorCompanyPickerHtml(proj)}
           </div>
-        </section>
+        </div>
 
-        <section class="ps-panel">
-          <div class="ps-panel-title">Program &amp; funding</div>
+        <div class="ps-tab-panel" data-pspanel="funding">
           <div class="form-grid-2">
             <div class="form-row"><label>Program Office ${glossaryTip("Program")}</label>${tagPickerHtml(Array.from(selectedProgram), "ps-program", { emptyText: "No program office set.", placeholder: "Search or add program office…", hint: "" })}</div>
             <div class="form-row"><label>Contract ${glossaryTip("Contract")}</label><input class="input-aewttr" id="ps-contract" value="${escapeHtml(proj.contract)}"></div>
@@ -9137,10 +9141,9 @@ function drawProjectSettings(body, proj) {
           </div>
           <div class="form-row"><label>Funding Notes</label><textarea class="textarea-aewttr" id="ps-fundingnotes" rows="2" placeholder="Additional funding details, notes on changes…">${escapeHtml(proj.fundingNotes || "")}</textarea></div>
           <div class="form-row" style="margin-bottom:0;"><label>Configuration End Item ${glossaryTip("End-item config")}</label>${configEndItemPickerHtml(Array.from(selectedConfigEnd), "ps-config")}</div>
-        </section>
+        </div>
 
-        <section class="ps-panel">
-          <div class="ps-panel-title">Classification</div>
+        <div class="ps-tab-panel" data-pspanel="classification">
           <div class="form-grid-2">
             <div class="form-row"><label>Project Type</label>
               <select class="select-aewttr" id="ps-project-type">
@@ -9156,32 +9159,37 @@ function drawProjectSettings(body, proj) {
               <label>Aqu Only</label>
               <div class="travel-choice-row">${travelChoiceGroup("ps-aquonly", ["Yes", "No"], proj.aquOnly ? "Yes" : "No")}</div>
             </div>
-            <div class="form-row"><label>Projects</label><input class="input-aewttr" id="ps-projects" value="${escapeHtml(proj.projects || "")}" placeholder="Related projects"></div>
+            <div class="form-row"><label>Related Projects</label><input class="input-aewttr" id="ps-projects" value="${escapeHtml(proj.projects || "")}" placeholder="Related projects"></div>
           </div>
-        </section>
+        </div>
 
-        <section class="ps-panel">
-          <div class="ps-panel-title">Scope &amp; objectives</div>
-          <div class="form-row"><label>Scope</label><textarea class="textarea-aewttr" id="ps-scope" rows="4" placeholder="What this project covers.">${escapeHtml(proj.scope || "")}</textarea></div>
-          <div class="form-row" style="margin-bottom:0;"><label>Objectives</label><textarea class="textarea-aewttr" id="ps-objectives" rows="4" placeholder="What this project is trying to achieve.">${escapeHtml(proj.objectives || "")}</textarea></div>
-        </section>
+        <div class="ps-tab-panel" data-pspanel="scope">
+          <div class="form-row"><label>Scope</label><textarea class="textarea-aewttr" id="ps-scope" rows="5" placeholder="What this project covers.">${escapeHtml(proj.scope || "")}</textarea></div>
+          <div class="form-row" style="margin-bottom:0;"><label>Objectives</label><textarea class="textarea-aewttr" id="ps-objectives" rows="5" placeholder="What this project is trying to achieve.">${escapeHtml(proj.objectives || "")}</textarea></div>
+        </div>
 
-        <section class="ps-panel">
-          <div class="ps-panel-title">Handoff</div>
-          <div class="form-row" style="margin-bottom:0;"><label>Handoff notes</label><textarea class="textarea-aewttr" id="ps-handoff" rows="4">${escapeHtml(extra.handoff)}</textarea></div>
-        </section>
-
-        <section class="ps-panel">
-          <div class="ps-panel-title">SharePoint</div>
-          <div class="form-row" style="margin-bottom:0;">
-            <label>Project SharePoint folder URL</label>
+        <div class="ps-tab-panel" data-pspanel="misc">
+          <div class="form-row">
+            <label>SharePoint folder URL</label>
             <input class="input-aewttr" id="ps-spo-folder" value="${escapeHtml(proj.sharepointFolderUrl || "")}" placeholder="https://tenant.sharepoint.com/sites/…/Shared Documents/…">
             <p class="form-hint" style="margin:5px 0 0;font-size:11.5px;color:var(--aewttr-muted);">Paste the URL to this project's SharePoint document folder. Shown in the Documents tab and used as the export destination.</p>
           </div>
-        </section>
+          <div class="form-row" style="margin-bottom:0;"><label>Handoff notes</label><textarea class="textarea-aewttr" id="ps-handoff" rows="5">${escapeHtml(extra.handoff)}</textarea></div>
+        </div>
       </div>
     </div>
   `;
+
+  // Tab switching
+  $all("[data-pstab]", body).forEach(tab => {
+    tab.addEventListener("click", () => {
+      $all("[data-pstab]", body).forEach(t => t.classList.remove("is-active"));
+      $all("[data-pspanel]", body).forEach(p => p.classList.remove("is-active"));
+      tab.classList.add("is-active");
+      const panel = $(`[data-pspanel="${tab.dataset.pstab}"]`, body);
+      if (panel) panel.classList.add("is-active");
+    });
+  });
 
   const statusEl = $("#ps-autosave-status", body);
   function setAutosaveState(state, message) {
