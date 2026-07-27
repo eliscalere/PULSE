@@ -541,7 +541,7 @@ PAGE_RENDERERS.overview = function () {
         <div class="overview-table-shell" style="margin:6px 0 12px;">
           <table class="aewttr-table">
             <thead>
-              <tr><th>Project</th><th>Parent</th><th>Status</th><th>Active</th><th>Risks</th><th>PM</th><th>Team</th><th>Portfolio</th><th>Funding</th><th>FY</th><th>Task Order</th></tr>
+              <tr><th>Project</th><th>Status</th><th>Active</th><th>Risks</th><th>PM</th><th>Team</th><th>Portfolio</th><th>Funding</th><th>FY</th><th>Task Order</th></tr>
             </thead>
             <tbody>
               ${filteredProjects.map(proj => {
@@ -551,7 +551,6 @@ PAGE_RENDERERS.overview = function () {
                 const portfolio = (proj.portfolios && proj.portfolios[0]) || "—";
                 return `<tr data-route="projects/${escapeHtml(proj.id)}/workspace">
                   <td><strong>${escapeHtml(proj.name || proj.id)}</strong><div class="overview-row-sub">${escapeHtml(proj.id)}</div></td>
-                  <td>${escapeHtml(parentProjectName(proj) || "—")}</td>
                   <td>${derivedStatusPill(derivedProjectStatus(proj))}</td>
                   <td>${pa}</td>
                   <td><span class="${pr > 0 ? "ov-risks-badge" : ""}">${pr || "—"}</span></td>
@@ -911,7 +910,7 @@ PAGE_RENDERERS.overview = function () {
       <div class="overview-table-shell">
         <table class="aewttr-table overview-table">
           <thead>
-            <tr><th>Project</th><th>Parent</th><th>End Item</th><th>Portfolio</th><th>PM</th><th>Team</th><th>Status</th><th>Active</th><th>Risks</th><th>Funding</th><th>FY</th><th>Task Order</th><th>Start</th><th>Due</th></tr>
+            <tr><th>Project</th><th>End Item</th><th>Portfolio</th><th>PM</th><th>Team</th><th>Status</th><th>Active</th><th>Risks</th><th>Funding</th><th>FY</th><th>Task Order</th><th>Start</th><th>Due</th></tr>
           </thead>
           <tbody>
             ${filtered.length ? filtered.map(proj => {
@@ -921,7 +920,6 @@ PAGE_RENDERERS.overview = function () {
               const portfolio = (proj.portfolios && proj.portfolios[0]) || "—";
               return `<tr data-route="projects/${escapeHtml(proj.id)}/workspace">
                 <td><strong>${escapeHtml(proj.name || proj.id)}</strong><div class="overview-row-sub">${escapeHtml(proj.id)}</div></td>
-                <td>${escapeHtml(parentProjectName(proj) || "—")}</td>
                 <td>${escapeHtml(projectEndItem(proj))}</td>
                 <td>${escapeHtml(portfolio)}</td>
                 <td>${escapeHtml(projectPMDisplayName(proj) || "—")}</td>
@@ -935,7 +933,7 @@ PAGE_RENDERERS.overview = function () {
                 <td>${proj.startDate ? fmtDate(proj.startDate) : "—"}</td>
                 <td>${proj.dueDate ? fmtDate(proj.dueDate) : "—"}</td>
               </tr>`;
-            }).join("") : `<tr><td colspan="15"><div class="empty-state" style="padding:20px 0;">No projects match these filters.</div></td></tr>`}
+            }).join("") : `<tr><td colspan="13"><div class="empty-state" style="padding:20px 0;">No projects match these filters.</div></td></tr>`}
           </tbody>
         </table>
       </div>`;
@@ -1504,13 +1502,12 @@ PAGE_RENDERERS.overview = function () {
     const xlsxBtn = $("#overview-export-xlsx");
     if (xlsxBtn) {
       xlsxBtn.onclick = async () => {
-        const columns = ["Project", "End Item", "Parent", "Portfolio", "PM", "Team", "Derived Status", "Active Tasks", "Open Risks", "Funding Type", "Fiscal Year", "Task Order", "Config End Item", "Start Date", "Due Date"];
+        const columns = ["Project", "End Item", "Portfolio", "PM", "Team", "Derived Status", "Active Tasks", "Open Risks", "Funding Type", "Fiscal Year", "Task Order", "Config End Item", "Start Date", "Due Date"];
         const dataRows = projects.map(proj => {
           const tasks = allProjectTasks(proj.id);
           return [
             proj.name || proj.id,
             projectEndItem(proj),
-            parentProjectName(proj),
             (proj.portfolios && proj.portfolios[0]) || "",
             projectPMDisplayName(proj),
             proj.team || "",

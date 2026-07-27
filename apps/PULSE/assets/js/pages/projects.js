@@ -678,7 +678,7 @@ function renderGroupDetail(groupName, groupType, projects) {
   }
 
   function drawGroupReportingTab(mount) {
-    const groupLabel = groupType === "portfolio" ? "Portfolio" : groupType === "program" ? "Program" : "End item configuration";
+    const groupLabel = groupType === "portfolio" ? "Portfolio" : groupType === "program" ? "Program Office" : "End item configuration";
 
     // focusedProjId = which project is shown in the editor (tracked separately from export scope)
     if (!exportCfg.focusedProjId || !projects.some(function(p) { return p.id === exportCfg.focusedProjId; })) {
@@ -879,7 +879,7 @@ function renderGroupDetail(groupName, groupType, projects) {
     const richStats = pGroupRichStats(projects);
     const openTaskCount = pGroupAllTasks(projects).filter(t => t.status !== "Done" && t.status !== "Cancelled").length;
     const openRiskCount = pGroupAllRisks(projects).filter(r => r.status !== "Closed").length;
-    const groupLabel = groupType === "portfolio" ? "Portfolio" : groupType === "program" ? "Program" : "End item configuration";
+    const groupLabel = groupType === "portfolio" ? "Portfolio" : groupType === "program" ? "Program Office" : "End item configuration";
     const healthLabel = richStats.worstHealth === "red" ? "Needs attention" : richStats.worstHealth === "amber" ? "Watch" : "On track";
     $("#page-content").innerHTML = `
       ${pGroupTopNavHtml(topNavActive)}
@@ -1526,11 +1526,8 @@ function renderProjectDetail(id, tab, boardId) {
 async function exportProjectXlsx(proj) {
   const all = window.AEWTTR.db.ganttTasks[proj.id] || [];
   const tasks = trackerPlainTasks(all);
-  const columns = ["Project ID", "Project Name", "Status", "Title", "Assignee", "Health", "Progress", "Start", "End", "Notes"];
+  const columns = ["Title", "Assignee", "Health", "Progress", "Start", "End", "Notes"];
   const dataRows = tasks.map((task) => [
-    proj.id,
-    proj.name,
-    computeProjectStatus(proj),
     task.title || "",
     task.assignee || "",
     task.health || "",
@@ -1546,6 +1543,8 @@ async function exportProjectXlsx(proj) {
     toast("Excel export is unavailable in this package.", "error");
     return;
   }
+  const pmName = typeof projectPMDisplayName === "function" ? projectPMDisplayName(proj) : "";
+  const status = computeProjectStatus(proj);
   const fileName = `project-${proj.id}-tracker.xlsx`;
   const popup = typeof service.reserveOpen === "function"
     ? service.reserveOpen(fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -1554,8 +1553,8 @@ async function exportProjectXlsx(proj) {
     const result = await service.exportXlsx(fileName, columns, dataRows, {
       popup,
       folderName: "Project Exports",
-      title: "PULSE Project Tracker",
-      subtitle: `${proj.id || "Project"} | ${proj.name || "Project"} | ${computeProjectStatus(proj)}`,
+      title: proj.name || "PULSE Project Tracker",
+      subtitle: [proj.id, pmName ? `POC: ${pmName}` : null, status ? `Status: ${status}` : null].filter(Boolean).join("  |  "),
       sectionLabel: "PROJECT TASK INVENTORY",
       footerLabel: "PULSE PROJECT TRACKER",
       sheetName: "Project Tracker"
@@ -2036,7 +2035,7 @@ function drawWorkspace(body, proj) {
           </div>
           <dl class="project-home-facts">
             <div><dt>Portfolio</dt><dd>${(projectPortfolios(proj) || []).length ? escapeHtml((projectPortfolios(proj)).join(", ")) : "—"}</dd></div>
-            <div><dt>Program</dt><dd>${escapeHtml(proj.program) || "—"}</dd></div>
+            <div><dt>Program Office</dt><dd>${escapeHtml(proj.program) || "—"}</dd></div>
             <div><dt>Contract</dt><dd>${escapeHtml(proj.contract) || "—"}</dd></div>
             <div><dt>Task order</dt><dd>${escapeHtml(proj.taskOrder) || "—"}</dd></div>
             <div><dt>Funding type</dt><dd>${escapeHtml(proj.fundingType) || "—"}</dd></div>
@@ -5921,7 +5920,7 @@ function openDividerSettingsModal(divider, proj, onDone, opts) {
     }
     if (sec === "program") {
       return `<div class="ds-view-grid">
-        ${dsViewField("Program", meta.program)}
+        ${dsViewField("Program Office", meta.program)}
         ${dsViewField("Contract", meta.contract)}
         ${dsViewField("Task Order", meta.taskOrder)}
         ${dsViewField("Funding Type", meta.fundingType)}
@@ -6003,7 +6002,7 @@ function openDividerSettingsModal(divider, proj, onDone, opts) {
       `)}
       ${sectionShell(SECTIONS[2], "Program &amp; funding", `
         <div class="divider-settings-grid">
-          <div class="form-row"><label>Program</label><input class="input-aewttr" id="div-program" value="${escapeHtml(meta.program || "")}"></div>
+          <div class="form-row"><label>Program Office</label><input class="input-aewttr" id="div-program" value="${escapeHtml(meta.program || "")}"></div>
           <div class="form-row"><label>Contract</label><input class="input-aewttr" id="div-contract" value="${escapeHtml(meta.contract || "")}"></div>
           <div class="form-row"><label>Task Order</label><input class="input-aewttr" id="div-taskorder" value="${escapeHtml(meta.taskOrder || "")}"></div>
           <div class="form-row"><label>Funding Type</label><input class="input-aewttr" id="div-fundingtype" value="${escapeHtml(meta.fundingType || "")}"></div>
@@ -9127,7 +9126,7 @@ function drawProjectSettings(body, proj) {
         <section class="ps-panel">
           <div class="ps-panel-title">Program &amp; funding</div>
           <div class="form-grid-2">
-            <div class="form-row"><label>Program ${glossaryTip("Program")}</label>${tagPickerHtml(Array.from(selectedProgram), "ps-program", { emptyText: "No program set.", placeholder: "Search or add program…", hint: "" })}</div>
+            <div class="form-row"><label>Program Office ${glossaryTip("Program")}</label>${tagPickerHtml(Array.from(selectedProgram), "ps-program", { emptyText: "No program office set.", placeholder: "Search or add program office…", hint: "" })}</div>
             <div class="form-row"><label>Contract ${glossaryTip("Contract")}</label><input class="input-aewttr" id="ps-contract" value="${escapeHtml(proj.contract)}"></div>
             <div class="form-row"><label>Task Order</label>${tagPickerHtml(Array.from(selectedTaskOrder), "ps-taskorder", { emptyText: "No task order set.", placeholder: "Search or add task order…", hint: "" })}</div>
             <div class="form-row"><label>Funding Type</label>${tagPickerHtml(Array.from(selectedFundingType), "ps-fundingtype", { emptyText: "No funding type set.", placeholder: "Search or add funding type…", hint: "" })}</div>

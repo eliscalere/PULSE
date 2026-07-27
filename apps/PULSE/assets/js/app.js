@@ -190,7 +190,7 @@ function ganttTip(text) {
 
 const GLOSSARY = {
   "Portfolio": "A named grouping of related projects sharing a common mission area, sponsor, or resource pool. Portfolios let you filter reports and status decks across multiple projects at once.",
-  "Program": "A higher-level initiative spanning multiple portfolios — e.g. EW, SHRAM. Used to aggregate projects in master status decks.",
+  "Program": "Program Office — a higher-level initiative or office sponsoring multiple portfolios (e.g. EW, SHRAM). Used to aggregate projects in master status decks.",
   "Contract": "The contract number or name under which this project is funded and executed.",
   "Lifecycle": "The current phase of a project: Planned → Awaiting Funding → Active → Paused → Complete.",
   "End-item config": "The hardware or software end-item this project delivers. Used to group related projects across programs for reporting.",

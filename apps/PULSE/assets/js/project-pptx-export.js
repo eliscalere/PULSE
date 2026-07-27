@@ -1457,7 +1457,7 @@
 
   function groupTypeLabel(groupType) {
     if (groupType === "portfolio") return "Portfolio";
-    if (groupType === "program") return "Program";
+    if (groupType === "program") return "Program Office";
     if (groupType === "eic") return "End Item Configuration";
     return "Project";
   }

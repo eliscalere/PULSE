@@ -19,6 +19,7 @@ function canManageSharePointSetup() {
 }
 
 const ADMIN_TOOLS = [
+  { key: "lists", title: "Lists", sub: "Manage selectable Portfolios and End Item Configs without opening a project.", icon: "bx-list-ul" },
   { key: "locations", title: "Locations", sub: "Manage the selectable list of ranges/locations projects can use.", icon: "bx-map-pin" },
   { key: "groups", title: "Groups", sub: "Create people groups used in pickers app-wide. Project members sync into a group named after the project.", icon: "bx-group" },
   { key: "spsetup", title: "SharePoint Setup", sub: "Check list/column status, pull the SharePoint people directory, and run setup.", icon: "bx-data" },
@@ -62,6 +63,7 @@ function renderAdminPage(sub, recordId) {
   $("#btn-back-admin").addEventListener("click", () => navigate(reviewingIssue ? "admin/issues" : "admin"));
   const body = $("#admin-body");
 
+  if (sub === "lists") return drawListsConfig(body);
   if (sub === "locations") return drawLocationConfig(body);
   if (sub === "groups") return drawGroupsConfig(body);
   if (sub === "meetingadmins") return drawMeetingAdminsConfig(body);
@@ -907,6 +909,111 @@ function openAdminGroupEditor(group, onDone) {
       toast((e && e.friendly) || (e && e.message) || "Could not save group.", "error");
       saveBtn.disabled = false;
     }
+  });
+}
+
+function drawListsConfig(body) {
+  const cfg = getLocationConfig();
+
+  function renderSection(id, title, hint, items, addLabel, onAdd, onRename, onRemove) {
+    return `
+      <div class="aewttr-card aewttr-card-pad" style="margin-bottom:16px;">
+        <div class="toolbar-row" style="margin-bottom:12px;">
+          <div>
+            <div class="side-panel-title" style="margin:0 0 4px;">${escapeHtml(title)}</div>
+            <div style="font-size:12px;color:var(--aewttr-muted);" data-help>${escapeHtml(hint)}</div>
+          </div>
+          <button class="btn-aewttr" data-lists-add="${id}"${tip(`Add a new ${escapeHtml(title)} entry`)}><i class="bx bx-plus"></i> ${escapeHtml(addLabel)}</button>
+        </div>
+        <table class="aewttr-table">
+          <thead><tr><th>Name</th><th></th></tr></thead>
+          <tbody>
+            ${items.length ? items.map((item, i) => `
+              <tr style="cursor:default;" data-lists-row="${id}-${i}">
+                <td><strong>${escapeHtml(item)}</strong></td>
+                <td style="text-align:right;">
+                  <button class="btn-aewttr-outline btn-aewttr-sm" data-lists-rename="${id}" data-lists-idx="${i}"${tip(`Rename ${escapeHtml(item)}`)}>Rename</button>
+                  <button class="btn-danger-outline btn-aewttr-sm" data-lists-remove="${id}" data-lists-idx="${i}"${tip(`Remove ${escapeHtml(item)}`)}>Remove</button>
+                </td>
+              </tr>`).join("") : `<tr style="cursor:default;"><td colspan="2"><div class="empty-state">No entries yet — add one to make it selectable on projects.</div></td></tr>`}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  body.innerHTML = requireAdmin(() => {
+    const portfolios = getKnownPortfolioNames ? getKnownPortfolioNames() : (cfg.portfolios || []);
+    const endItems = getKnownConfigEndItemNames ? getKnownConfigEndItemNames() : (cfg.configEndItems || []);
+    return `
+      ${renderSection("portfolios", "Portfolios", "These appear in the Portfolio picker when editing or creating a project.", portfolios, "Add Portfolio", null, null, null)}
+      ${renderSection("endItems", "End Item Configurations", "These appear in the Config End Item picker when editing a project.", endItems, "Add End Item", null, null, null)}
+    `;
+  });
+
+  if (!window.AEWTTR.db.user.isAdmin) return;
+
+  const saveAndRefresh = async () => {
+    if (typeof reanchorConfig === "function") reanchorConfig("locationConfig", cfg);
+    await Repo.save("locationConfig", cfg);
+    if (typeof notifyLocalDataChanged === "function") notifyLocalDataChanged("location-config");
+    drawListsConfig(body);
+  };
+
+  $all("[data-lists-add]", body).forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const section = btn.dataset.listsAdd;
+      if (section === "portfolios") {
+        const name = (await promptDialog({ title: "Add Portfolio", label: "Portfolio name", placeholder: "e.g. AEWTTR" }) || "").trim();
+        if (!name) return;
+        if ((cfg.portfolios || []).some((n) => n.toLowerCase() === name.toLowerCase())) { toast("That portfolio already exists.", "error"); return; }
+        cfg.portfolios = cfg.portfolios || [];
+        cfg.portfolios.push(name);
+        cfg.portfolios.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+        await saveAndRefresh();
+        toast("Portfolio added", "success");
+      } else if (section === "endItems") {
+        const name = (await promptDialog({ title: "Add End Item Config", label: "End item name", placeholder: "e.g. AN/ALQ-217" }) || "").trim();
+        if (!name) return;
+        if ((cfg.configEndItems || []).some((n) => n.toLowerCase() === name.toLowerCase())) { toast("That end item already exists.", "error"); return; }
+        cfg.configEndItems = cfg.configEndItems || [];
+        cfg.configEndItems.push(name);
+        cfg.configEndItems.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+        await saveAndRefresh();
+        toast("End item config added", "success");
+      }
+    });
+  });
+
+  $all("[data-lists-rename]", body).forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const section = btn.dataset.listsRename;
+      const idx = Number(btn.dataset.listsIdx);
+      const list = section === "portfolios" ? (cfg.portfolios || []) : (cfg.configEndItems || []);
+      const current = list[idx];
+      const title = section === "portfolios" ? "Rename Portfolio" : "Rename End Item Config";
+      const name = (await promptDialog({ title, label: "Name", value: current }) || "").trim();
+      if (!name || name === current) return;
+      if (list.some((n, i) => i !== idx && n.toLowerCase() === name.toLowerCase())) { toast("That name already exists.", "error"); return; }
+      list[idx] = name;
+      list.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+      await saveAndRefresh();
+      toast("Renamed", "success");
+    });
+  });
+
+  $all("[data-lists-remove]", body).forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const section = btn.dataset.listsRemove;
+      const idx = Number(btn.dataset.listsIdx);
+      const list = section === "portfolios" ? (cfg.portfolios || []) : (cfg.configEndItems || []);
+      const item = list[idx];
+      const title = section === "portfolios" ? "Remove Portfolio" : "Remove End Item Config";
+      const ok = await confirmDialog({ title, message: `Remove "${item}" from the selectable list? Projects that already use it keep it until edited.`, confirmLabel: "Remove", danger: true });
+      if (!ok) return;
+      list.splice(idx, 1);
+      await saveAndRefresh();
+      toast("Removed", "success");
+    });
   });
 }
 

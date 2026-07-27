@@ -466,7 +466,10 @@ function openMeetingAttendanceModal(scope, onDone) {
   const modal = openModal(`
     <div class="aewttr-modal-head">
       <div><h3 style="margin:0;">Attendance</h3><p style="margin:4px 0 0;font-size:12px;color:var(--aewttr-muted);">Mark who is in the meeting.</p></div>
-      <button class="aewttr-modal-close" type="button" aria-label="Close">&times;</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${canFacilitate && scope.type === "global" ? `<button class="btn-aewttr-ghost btn-aewttr-sm" id="mtg-attendance-add-guest"${tip("Add a guest or outside attendee")}><i class="bx bx-user-plus"></i> Guest</button>` : ""}
+        <button class="aewttr-modal-close" type="button" aria-label="Close">&times;</button>
+      </div>
     </div>
     <div class="aewttr-modal-body" id="mtg-attendance-list"></div>
   `, "aewttr-modal--sm");
@@ -510,6 +513,8 @@ function openMeetingAttendanceModal(scope, onDone) {
   renderList();
   const close = () => { closeModal(); if (typeof onDone === "function") onDone(); };
   $(".aewttr-modal-close", modal).addEventListener("click", close);
+  const addGuestBtn = $("#mtg-attendance-add-guest", modal);
+  if (addGuestBtn) addGuestBtn.addEventListener("click", () => openAddMeetingGuestModal(scope, () => renderList()));
 }
 function meetingViewState(scope) {
   if (!window.AEWTTR.state.meetingView) window.AEWTTR.state.meetingView = {};
