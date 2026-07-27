@@ -891,17 +891,18 @@ body.help-mode [data-help] { display: revert; }
    No effect at normal laptop/desktop widths since the cap sits well above
    them. The top nav bar intentionally stays full-bleed. */
 .aewttr-page-header {
-  padding: 14px 20px 10px;
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 10px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
   max-width: none; margin: 0; width: 100%; box-sizing: border-box;
-  flex-shrink: 0;
+  flex-shrink: 0; min-height: 52px;
+  border-bottom: 1px solid var(--aewttr-border);
 }
-.aewttr-page-header h1 { font-size: 17px; margin: 0; font-weight: 600; color: var(--aewttr-text); }
+.aewttr-page-header h1 { font-size: 16px; margin: 0; font-weight: 600; color: var(--aewttr-text); }
 .aewttr-page-header .subtitle { font-size: 12px; color: var(--aewttr-muted); margin-top: 2px; }
-.aewttr-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.aewttr-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 .aewttr-content {
-  flex: 1; min-height: 0; padding: 0 20px 24px; overflow-y: auto;
+  flex: 1; min-height: 0; padding: 18px 24px 40px; overflow-y: auto;
   max-width: none; margin: 0; width: 100%; box-sizing: border-box;
 }
 #page-content {
@@ -927,6 +928,7 @@ body.help-mode [data-help] { display: revert; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding-top: 0;
   padding-bottom: 16px;
 }
 /* Full-height page layouts (doc review, etc.) */
@@ -934,6 +936,7 @@ body.help-mode [data-help] { display: revert; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding-top: 0;
   padding-bottom: 0;
 }
 .docreview-page {
@@ -957,6 +960,7 @@ body.help-mode [data-help] { display: revert; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding-top: 12px;
   padding-bottom: 16px;
 }
 #users-body {
@@ -8701,9 +8705,9 @@ html[data-theme="dark"] .docreview-submit-note {
   .aewttr-report-issue span { display: none; }
   .aewttr-report-issue i { display: none; }
   .aewttr-report-issue::before { content: "!"; font-size: 14px; font-weight: 800; color: #FFFFFF; }
-  .aewttr-content { padding: 0 14px 24px; }
+  .aewttr-content { padding: 14px 14px 28px; }
   .aewttr-content:has(#overview-view-root) { padding: 26px 18px 48px; }
-  .aewttr-page-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .aewttr-page-header { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 14px; min-height: auto; }
   .aewttr-topbar-actions { width: 100%; }
   .aewttr-topnav-user .meta { display: none; }
   .pulse-brand-lockup.compact .pulse-brand-text { display: none; }
@@ -16398,7 +16402,7 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
    Portfolio and End Item Configuration, without changing project actions. */
 .projects-catalog { display: flex; flex-direction: column; gap: 18px; }
 .projects-catalog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; padding: 8px 2px 4px; }
-.projects-catalog-head h2 { margin: 0; color: var(--aewttr-text); font-size: 20px; font-weight: 700; text-wrap: balance; }
+.projects-catalog-head h2 { margin: 0; color: var(--aewttr-text); font-size: 14px; font-weight: 600; text-wrap: balance; }
 .projects-catalog-head p { margin: 6px 0 0; color: var(--aewttr-muted); font-size: 13px; }
 .projects-catalog-summary { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
 .projects-catalog-summary span { border: 1px solid var(--aewttr-border); border-radius: 999px; color: var(--aewttr-muted); font-size: 12px; font-weight: 600; padding: 6px 9px; white-space: nowrap; }
