@@ -36,12 +36,11 @@ function renderAdminLauncher() {
   $("#page-content").innerHTML = `
     <div class="tile-grid">
       ${ADMIN_TOOLS.map(t => `
-        <div class="app-tile" data-go="${t.key}"${t.externalRoute ? ` data-route="${t.externalRoute}"` : ""} role="button" tabindex="0"${tip(t.sub)}>
+        <div class="app-tile" data-go="${t.key}"${t.externalRoute ? ` data-route="${t.externalRoute}"` : ""}>
           <div class="tile-icon"><i class="bx ${t.icon}"></i></div>
-          <div class="app-tile-body">
-            <div class="tile-title">${t.title}</div>
-            <div class="tile-sub" data-help>${t.sub}</div>
-          </div>
+          <div class="tile-title">${t.title}</div>
+          <div class="tile-sub" data-help>${t.sub}</div>
+          <button class="btn-aewttr btn-aewttr-sm tile-open" data-go="${t.key}"${t.externalRoute ? ` data-route="${t.externalRoute}"` : ""}${tip(`Open ${t.title}`)}>Open →</button>
         </div>`).join("")}
     </div>
   `;
