@@ -909,6 +909,7 @@ function renderMeetingDocEditor(body, scope, session) {
   }
 
   const COMMANDS = [
+    { id: "task", label: "Assigned task", icon: "bx-user-check", desc: "@Name — task for project" },
     { id: "action", label: "Action item", icon: "bx-check-square", desc: "Task with complete button" },
     { id: "bullet", label: "Bullet point", icon: "bx-list-ul", desc: "• Unordered list item" },
     { id: "h2", label: "Heading", icon: "bx-heading", desc: "Section header" },
@@ -952,11 +953,24 @@ function renderMeetingDocEditor(body, scope, session) {
   palette.style.display = "none";
   document.body.appendChild(palette);
 
+  // @ mention menu
+  const existingAtMenu = document.getElementById("doc-at-menu");
+  if (existingAtMenu) existingAtMenu.remove();
+  const atMenu = document.createElement("div");
+  atMenu.id = "doc-at-menu";
+  atMenu.className = "doc-at-menu";
+  atMenu.style.display = "none";
+  document.body.appendChild(atMenu);
+
   let saveTimer = null;
   let cmdOpen = false;
   let cmdBlockId = null;
   let cmdFilter = "";
   let cmdActiveIdx = 0;
+  let atOpen = false;
+  let atFieldEl = null;
+  let atQuery = "";
+  let atActiveIdx = 0;
 
   function isEditorMounted() {
     return document.getElementById("meeting-doc-editor") === editor;
@@ -996,7 +1010,7 @@ function renderMeetingDocEditor(body, scope, session) {
 
   function updateDocMeta() {
     const blockCount = session.docBlocks.length;
-    const actionCount = session.docBlocks.filter(function(block) { return block.type === "action" && !block.done; }).length;
+    const actionCount = session.docBlocks.filter(function(block) { return (block.type === "action" || block.type === "task") && !block.done; }).length;
     const blockEl = document.getElementById("doc-block-count");
     const actionEl = document.getElementById("doc-action-count");
     if (blockEl) blockEl.textContent = `${blockCount} ${blockCount === 1 ? "block" : "blocks"}`;
@@ -1051,6 +1065,62 @@ function renderMeetingDocEditor(body, scope, session) {
     palette.style.display = "none";
   }
 
+  // @ mention menu helpers
+  function getAtPeople() {
+    const people = new Set();
+    meetingParticipants(scope).forEach(function(p) { if (p.name) people.add(p.name); });
+    const db = window.AEWTTR.db;
+    (db.projects || []).forEach(function(proj) {
+      ["pm", "engineer", "isso", "rangePoc"].forEach(function(k) {
+        if (proj[k]) String(proj[k]).split(",").map(function(n) { return n.trim(); }).filter(Boolean).forEach(function(n) { people.add(n); });
+      });
+      (proj.people || []).forEach(function(p2) { if (p2 && p2.name) people.add(p2.name); });
+    });
+    return Array.from(people).sort();
+  }
+  function atFilteredPeople() {
+    const q = (atQuery || "").toLowerCase();
+    const all = getAtPeople();
+    if (!q) return all.slice(0, 8);
+    return all.filter(function(n) { return n.toLowerCase().includes(q); }).slice(0, 8);
+  }
+  function renderAtMenu() {
+    const people = atFilteredPeople();
+    if (!people.length) { closeAtMenu(); return; }
+    atActiveIdx = Math.max(0, Math.min(atActiveIdx, people.length - 1));
+    atMenu.innerHTML = people.map(function(name, i) {
+      return `<div class="doc-at-item${i === atActiveIdx ? " active" : ""}" data-at-name="${escapeHtml(name)}">${escapeHtml(name)}</div>`;
+    }).join("");
+    $all(".doc-at-item", atMenu).forEach(function(item, i) {
+      item.addEventListener("mousedown", function(e) { e.preventDefault(); applyAtItem(people[i]); });
+    });
+  }
+  function openAtMenu(fieldEl, query) {
+    atOpen = true;
+    atFieldEl = fieldEl;
+    atQuery = query || "";
+    atActiveIdx = 0;
+    const rect = fieldEl.getBoundingClientRect();
+    atMenu.style.top = (rect.bottom + 4) + "px";
+    atMenu.style.left = Math.max(8, rect.left) + "px";
+    atMenu.style.display = "block";
+    renderAtMenu();
+  }
+  function closeAtMenu() {
+    atOpen = false;
+    atFieldEl = null;
+    atQuery = "";
+    atMenu.style.display = "none";
+  }
+  function applyAtItem(name) {
+    if (!atFieldEl) return;
+    const field = atFieldEl;
+    closeAtMenu();
+    field.textContent = name;
+    placeCursorAtEnd(field);
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
   function applyCommand(cmd) {
     const prevBlockId = cmdBlockId;
     closePalette();
@@ -1062,7 +1132,9 @@ function renderMeetingDocEditor(body, scope, session) {
     const newRow = buildBlockRow(block);
     if (oldRow) { oldRow.parentNode.replaceChild(newRow, oldRow); } else { editor.appendChild(newRow); }
     wireBlock(newRow, block);
-    const c = newRow.querySelector(".doc-block-content");
+    const c = block.type === "task"
+      ? newRow.querySelector(".doc-task-field[data-field='assignee']")
+      : newRow.querySelector(".doc-block-content");
     if (c) c.focus();
     updateDocMeta();
     schedSave();
@@ -1128,7 +1200,85 @@ function renderMeetingDocEditor(body, scope, session) {
     return r;
   }
 
+  function wireTaskBlock(row, block) {
+    const fields = $all(".doc-task-field", row);
+    function syncContent() {
+      const vals = fields.map(function(f) { return f.textContent; });
+      const newContent = vals.join("\t");
+      const hidden = row.querySelector(".doc-block-content");
+      if (hidden) hidden.textContent = newContent;
+      const b = session.docBlocks.find(function(x) { return x.id === block.id; });
+      if (b) b.content = newContent;
+    }
+    fields.forEach(function(field, idx) {
+      field.addEventListener("input", function() {
+        const text = field.textContent;
+        if (field.dataset.field === "assignee") {
+          if (text === "@" || (text.startsWith("@") && text.length > 0)) {
+            openAtMenu(field, text.replace(/^@/, ""));
+          } else if (atOpen && atFieldEl === field) {
+            closeAtMenu();
+          }
+        }
+        syncContent();
+        schedSave();
+      });
+      field.addEventListener("keydown", function(e) {
+        if (atOpen && atFieldEl === field) {
+          if (e.key === "ArrowDown") { e.preventDefault(); atActiveIdx = Math.min(atActiveIdx + 1, atFilteredPeople().length - 1); renderAtMenu(); return; }
+          if (e.key === "ArrowUp") { e.preventDefault(); atActiveIdx = Math.max(0, atActiveIdx - 1); renderAtMenu(); return; }
+          if (e.key === "Enter") { e.preventDefault(); const people = atFilteredPeople(); if (people[atActiveIdx]) applyAtItem(people[atActiveIdx]); return; }
+          if (e.key === "Escape") { e.preventDefault(); closeAtMenu(); return; }
+        }
+        if (e.key === "Tab") {
+          e.preventDefault();
+          const nextIdx = e.shiftKey ? idx - 1 : idx + 1;
+          if (nextIdx >= 0 && nextIdx < fields.length) {
+            fields[nextIdx].focus();
+            placeCursorAtEnd(fields[nextIdx]);
+          } else if (!e.shiftKey) {
+            syncContent();
+            addBlockAfter("task", block.id);
+          }
+          return;
+        }
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          if (idx < fields.length - 1) {
+            fields[idx + 1].focus();
+            placeCursorAtEnd(fields[idx + 1]);
+          } else {
+            syncContent();
+            addBlockAfter("task", block.id);
+          }
+          return;
+        }
+        if (e.key === "Backspace" && !field.textContent.trim() && idx === 0 && session.docBlocks.length > 1) {
+          e.preventDefault();
+          deleteBlock(block.id);
+          return;
+        }
+      });
+    });
+    const checkBtn = row.querySelector(".doc-action-check");
+    if (checkBtn) {
+      checkBtn.addEventListener("click", function() {
+        const b = session.docBlocks.find(function(x) { return x.id === block.id; });
+        if (!b) return;
+        b.done = !b.done;
+        row.dataset.done = b.done ? "true" : "false";
+        row.classList.toggle("doc-block--done", b.done);
+        checkBtn.setAttribute("aria-pressed", b.done ? "true" : "false");
+        const icon = checkBtn.querySelector("i");
+        if (icon) icon.className = "bx " + (b.done ? "bxs-check-square" : "bx-checkbox");
+        updateDocMeta();
+        schedSave();
+      });
+    }
+  }
+
   function wireBlock(row, block) {
+    if (block.type === "task") { wireTaskBlock(row, block); return; }
     const contentEl = row.querySelector(".doc-block-content");
     if (!contentEl) return;
 
@@ -1241,6 +1391,33 @@ function renderMeetingDocEditor(body, scope, session) {
   }
 
   function buildBlockRow(block) {
+    if (block.type === "task") {
+      const done = !!block.done;
+      const parts = (block.content || "").split("\t");
+      const assignee = parts[0] || "";
+      const taskText = parts[1] || "";
+      const projectName = parts[2] || "";
+      const row = document.createElement("div");
+      row.className = "doc-block doc-block--task" + (done ? " doc-block--done" : "");
+      row.dataset.blockId = block.id;
+      row.dataset.blockType = "task";
+      row.dataset.done = done ? "true" : "false";
+      row.innerHTML = `
+        <div class="doc-block-gutter">
+          <button type="button" class="doc-action-check" aria-label="${done ? "Mark incomplete" : "Mark complete"}" aria-pressed="${done}"><i class="bx ${done ? "bxs-check-square" : "bx-checkbox"}"></i></button>
+        </div>
+        <div class="doc-task-body">
+          <span class="doc-task-field" contenteditable="true" data-field="assignee" data-placeholder="@name" spellcheck="false">${escapeHtml(assignee)}</span>
+          <span class="doc-task-sep"> — assigned task:</span>
+          <span class="doc-task-field" contenteditable="true" data-field="task" data-placeholder="describe the task" spellcheck="true">${escapeHtml(taskText)}</span>
+          <span class="doc-task-sep"> for project:</span>
+          <span class="doc-task-field" contenteditable="true" data-field="project" data-placeholder="project" spellcheck="false">${escapeHtml(projectName)}</span>
+        </div>
+        <span class="doc-block-content" style="display:none">${escapeHtml(block.content || "")}</span>
+      `;
+      return row;
+    }
+
     const done = !!(block.done && block.type === "action");
     const row = document.createElement("div");
     row.className = "doc-block doc-block--" + block.type + (done ? " doc-block--done" : "");
@@ -1296,10 +1473,18 @@ function renderMeetingDocEditor(body, scope, session) {
     }
   });
 
-  // Close palette when clicking outside
+  // Close palette and @ menu when clicking outside
   function onDocClick(e) {
-    if (!isEditorMounted()) { document.removeEventListener("click", onDocClick); if (!document.getElementById("meeting-doc-editor")) { const p = document.getElementById("doc-cmd-palette"); if (p) p.remove(); } return; }
+    if (!isEditorMounted()) {
+      document.removeEventListener("click", onDocClick);
+      if (!document.getElementById("meeting-doc-editor")) {
+        const p = document.getElementById("doc-cmd-palette"); if (p) p.remove();
+        const am = document.getElementById("doc-at-menu"); if (am) am.remove();
+      }
+      return;
+    }
     if (cmdOpen && !palette.contains(e.target)) closePalette();
+    if (atOpen && !atMenu.contains(e.target)) closeAtMenu();
   }
   document.addEventListener("click", onDocClick);
 
@@ -1339,8 +1524,15 @@ function renderMeetingIdleState(body, scope) {
   const me = currentMeetingParticipant(scope);
   const planning = meetingData(scope).currentSession && meetingData(scope).currentSession.sessionStatus === "planned" ? meetingData(scope).currentSession : null;
   if (planning) {
-    renderMeetingDocEditor(body, scope, planning);
-    body.insertAdjacentHTML("afterbegin", `<div class="meeting-prep-head"><div><div class="side-panel-title">Upcoming meeting</div><p>Add notes and agenda items before the meeting starts.</p></div>${canFacilitate ? `<button class="btn-aewttr" id="mtg-start"${tip("Start the meeting with this agenda")}><i class="bx bx-play"></i> Start Meeting</button>` : ""}</div>`);
+    body.className = "meeting-live-body meeting-live-body--doc";
+    body.innerHTML = "";
+    const prepHead = document.createElement("div");
+    prepHead.className = "meeting-prep-head";
+    prepHead.innerHTML = `<div><div class="side-panel-title">Upcoming meeting</div><p>Add notes and agenda items before the meeting starts.</p></div>${canFacilitate ? `<button class="btn-aewttr" id="mtg-start"${tip("Start the meeting with this agenda")}><i class="bx bx-play"></i> Start Meeting</button>` : ""}`;
+    body.appendChild(prepHead);
+    const editorMount = document.createElement("div");
+    body.appendChild(editorMount);
+    renderMeetingDocEditor(editorMount, scope, planning);
     const startBtn = $("#mtg-start", body);
     if (startBtn) startBtn.addEventListener("click", () => startMeeting(scope, () => renderMeetingApp($("#page-content"), scope)));
     return;
