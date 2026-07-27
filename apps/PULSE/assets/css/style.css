@@ -17112,6 +17112,33 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
   user-select: none;
 }
 .doc-block--done .doc-task-body { text-decoration: line-through; opacity: 0.5; }
+/* Task "ready" state — all 3 fields filled */
+.doc-block--task-ready .doc-task-field { border-bottom-color: transparent; }
+.doc-block--task-ready { background: rgba(59,130,246,.04); border-radius: var(--aewttr-radius-sm); }
+/* Task delete X button */
+.doc-task-del {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0 4px;
+  cursor: pointer;
+  color: var(--aewttr-muted);
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s;
+  align-self: center;
+}
+.doc-block--task:hover .doc-task-del,
+.doc-block--task:focus-within .doc-task-del { opacity: 1; }
+.doc-task-del:hover { color: var(--aewttr-red); }
+/* Sub-bullet (tab-indented paste) */
+.doc-block--bullet-sub { padding-left: 28px; }
+.doc-block--bullet-sub .doc-gutter-bullet { width: 4px; height: 4px; border: 1.5px solid currentColor; background: transparent; border-radius: 50%; }
+/* Ctrl+A select-all state */
+.doc-block.is-selected { background: rgba(59,130,246,.1) !important; outline: 1px solid rgba(59,130,246,.25); outline-offset: -1px; }
+/* Project search menu (reuses doc-at-menu styles, scoped via id) */
+#doc-proj-menu .doc-at-item::before { content: "⬡ "; font-size: 10px; color: var(--aewttr-muted); }
 /* @ mention autocomplete */
 .doc-at-menu {
   position: fixed;

@@ -962,6 +962,12 @@ function renderMeetingDocEditor(body, scope, session) {
   atMenu.style.display = "none";
   document.body.appendChild(atMenu);
 
+  const projMenu = document.createElement("div");
+  projMenu.id = "doc-proj-menu";
+  projMenu.className = "doc-at-menu";
+  projMenu.style.display = "none";
+  document.body.appendChild(projMenu);
+
   let saveTimer = null;
   let cmdOpen = false;
   let cmdBlockId = null;
@@ -971,6 +977,11 @@ function renderMeetingDocEditor(body, scope, session) {
   let atFieldEl = null;
   let atQuery = "";
   let atActiveIdx = 0;
+  let projOpen = false;
+  let projFieldEl = null;
+  let projQuery = "";
+  let projActiveIdx = 0;
+  let docAllSelected = false;
 
   function isEditorMounted() {
     return document.getElementById("meeting-doc-editor") === editor;
@@ -1121,6 +1132,65 @@ function renderMeetingDocEditor(body, scope, session) {
     field.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
+  // Project search menu helpers
+  function getProjects() {
+    const db = window.AEWTTR.db;
+    return (db.projects || []).map(function(p) { return p.name || p.title || ""; }).filter(Boolean).sort();
+  }
+  function projFiltered() {
+    const q = (projQuery || "").toLowerCase();
+    const all = getProjects();
+    if (!q) return all.slice(0, 8);
+    return all.filter(function(n) { return n.toLowerCase().includes(q); }).slice(0, 8);
+  }
+  function renderProjMenu() {
+    const projects = projFiltered();
+    if (!projects.length) { closeProjMenu(); return; }
+    projActiveIdx = Math.max(0, Math.min(projActiveIdx, projects.length - 1));
+    projMenu.innerHTML = projects.map(function(name, i) {
+      return `<div class="doc-at-item${i === projActiveIdx ? " active" : ""}" data-proj-name="${escapeHtml(name)}">${escapeHtml(name)}</div>`;
+    }).join("");
+    $all(".doc-at-item", projMenu).forEach(function(item, i) {
+      item.addEventListener("mousedown", function(e) { e.preventDefault(); applyProjItem(projects[i]); });
+    });
+  }
+  function openProjMenu(fieldEl, query) {
+    projOpen = true;
+    projFieldEl = fieldEl;
+    projQuery = query || "";
+    projActiveIdx = 0;
+    const rect = fieldEl.getBoundingClientRect();
+    projMenu.style.top = (rect.bottom + 4) + "px";
+    projMenu.style.left = Math.max(8, rect.left) + "px";
+    projMenu.style.display = "block";
+    renderProjMenu();
+  }
+  function closeProjMenu() {
+    projOpen = false;
+    projFieldEl = null;
+    projQuery = "";
+    projMenu.style.display = "none";
+  }
+  function applyProjItem(name) {
+    if (!projFieldEl) return;
+    const field = projFieldEl;
+    closeProjMenu();
+    field.textContent = name;
+    placeCursorAtEnd(field);
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  function clearAllBlocks() {
+    docAllSelected = false;
+    $all(".doc-block", editor).forEach(function(r) { r.classList.remove("is-selected"); });
+    session.docBlocks = [{ id: uid("db"), type: "para", content: "", done: false }];
+    renderAllBlocks();
+    const firstEl = editor.querySelector(".doc-block-content");
+    if (firstEl) firstEl.focus();
+    updateDocMeta();
+    schedSave();
+  }
+
   function applyCommand(cmd) {
     const prevBlockId = cmdBlockId;
     closePalette();
@@ -1209,8 +1279,15 @@ function renderMeetingDocEditor(body, scope, session) {
       if (hidden) hidden.textContent = newContent;
       const b = session.docBlocks.find(function(x) { return x.id === block.id; });
       if (b) b.content = newContent;
+      const allFilled = vals.every(function(v) { return v.trim(); });
+      row.classList.toggle("doc-block--task-ready", allFilled);
     }
     fields.forEach(function(field, idx) {
+      field.addEventListener("focus", function() {
+        if (field.dataset.field === "project") {
+          openProjMenu(field, field.textContent);
+        }
+      });
       field.addEventListener("input", function() {
         const text = field.textContent;
         if (field.dataset.field === "assignee") {
@@ -1220,8 +1297,21 @@ function renderMeetingDocEditor(body, scope, session) {
             closeAtMenu();
           }
         }
+        if (field.dataset.field === "project") {
+          projQuery = text;
+          if (text.length > 0) {
+            openProjMenu(field, text);
+          } else {
+            closeProjMenu();
+          }
+        }
         syncContent();
         schedSave();
+      });
+      field.addEventListener("blur", function() {
+        if (field.dataset.field === "project") {
+          setTimeout(function() { if (projFieldEl === field) closeProjMenu(); }, 150);
+        }
       });
       field.addEventListener("keydown", function(e) {
         if (atOpen && atFieldEl === field) {
@@ -1230,8 +1320,15 @@ function renderMeetingDocEditor(body, scope, session) {
           if (e.key === "Enter") { e.preventDefault(); const people = atFilteredPeople(); if (people[atActiveIdx]) applyAtItem(people[atActiveIdx]); return; }
           if (e.key === "Escape") { e.preventDefault(); closeAtMenu(); return; }
         }
+        if (projOpen && projFieldEl === field) {
+          if (e.key === "ArrowDown") { e.preventDefault(); projActiveIdx = Math.min(projActiveIdx + 1, projFiltered().length - 1); renderProjMenu(); return; }
+          if (e.key === "ArrowUp") { e.preventDefault(); projActiveIdx = Math.max(0, projActiveIdx - 1); renderProjMenu(); return; }
+          if (e.key === "Enter") { e.preventDefault(); const projs = projFiltered(); if (projs[projActiveIdx]) applyProjItem(projs[projActiveIdx]); return; }
+          if (e.key === "Escape") { e.preventDefault(); closeProjMenu(); return; }
+        }
         if (e.key === "Tab") {
           e.preventDefault();
+          closeProjMenu(); closeAtMenu();
           const nextIdx = e.shiftKey ? idx - 1 : idx + 1;
           if (nextIdx >= 0 && nextIdx < fields.length) {
             fields[nextIdx].focus();
@@ -1244,6 +1341,7 @@ function renderMeetingDocEditor(body, scope, session) {
         }
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
+          closeProjMenu(); closeAtMenu();
           if (idx < fields.length - 1) {
             fields[idx + 1].focus();
             placeCursorAtEnd(fields[idx + 1]);
@@ -1260,6 +1358,10 @@ function renderMeetingDocEditor(body, scope, session) {
         }
       });
     });
+    const delBtn = row.querySelector(".doc-task-del");
+    if (delBtn) {
+      delBtn.addEventListener("click", function() { deleteBlock(block.id); });
+    }
     const checkBtn = row.querySelector(".doc-action-check");
     if (checkBtn) {
       checkBtn.addEventListener("click", function() {
@@ -1275,6 +1377,9 @@ function renderMeetingDocEditor(body, scope, session) {
         schedSave();
       });
     }
+    // set initial ready state
+    const initVals = fields.map(function(f) { return f.textContent.trim(); });
+    row.classList.toggle("doc-block--task-ready", initVals.every(Boolean));
   }
 
   function wireBlock(row, block) {
@@ -1331,30 +1436,43 @@ function renderMeetingDocEditor(body, scope, session) {
       e.preventDefault();
       const htmlContent = e.clipboardData && e.clipboardData.getData("text/html");
       const plainText = (e.clipboardData && e.clipboardData.getData("text/plain")) || "";
-      var lines = [];
+      // Preserve raw lines to detect indentation, then classify each
+      var rawLines = [];
       if (htmlContent) {
         const tmp = document.createElement("div");
         tmp.innerHTML = htmlContent;
+        var htmlLines = [];
         tmp.querySelectorAll("li, p, h1, h2, h3, h4").forEach(function(el) {
+          const isNested = el.tagName === "LI" && el.parentElement && el.parentElement.closest("ul ul, ol ol, ul ol, ol ul");
           const t = el.textContent.trim();
-          if (t) lines.push(t);
+          if (t) htmlLines.push({ text: t, indent: !!isNested });
         });
-        if (!lines.length) lines = plainText.split("\n").map(function(s) { return s.trim(); }).filter(Boolean);
+        if (htmlLines.length) {
+          rawLines = htmlLines;
+        } else {
+          rawLines = plainText.split("\n").map(function(s) {
+            const indent = /^[\t]/.test(s) || /^ {2,}/.test(s);
+            return { text: s.trim(), indent: indent };
+          }).filter(function(l) { return l.text; });
+        }
       } else {
-        lines = plainText.split("\n").map(function(s) { return s.trim(); }).filter(Boolean);
+        rawLines = plainText.split("\n").map(function(s) {
+          const indent = /^[\t]/.test(s) || /^ {2,}/.test(s);
+          return { text: s.trim(), indent: indent };
+        }).filter(function(l) { return l.text; });
       }
-      if (!lines.length) return;
+      if (!rawLines.length) return;
       const cur = contentEl.textContent;
-      const firstText = cur + lines[0];
+      const firstText = cur + rawLines[0].text;
       contentEl.textContent = firstText;
       const b = session.docBlocks.find(function(x) { return x.id === block.id; });
       if (b) b.content = firstText;
       placeCursorAtEnd(contentEl);
-      if (lines.length > 1) {
+      if (rawLines.length > 1) {
         var afterId = block.id;
-        const pasteType = (block.type === "h2" || block.type === "para") ? "bullet" : block.type;
-        lines.slice(1).forEach(function(line) {
-          const nb = { id: uid("db"), type: pasteType, content: line, done: false };
+        rawLines.slice(1).forEach(function(lineObj) {
+          const lineType = lineObj.indent ? "bullet-sub" : "bullet";
+          const nb = { id: uid("db"), type: lineType, content: lineObj.text, done: false };
           const idx2 = session.docBlocks.findIndex(function(x) { return x.id === afterId; });
           if (idx2 >= 0) session.docBlocks.splice(idx2 + 1, 0, nb);
           else session.docBlocks.push(nb);
@@ -1365,7 +1483,7 @@ function renderMeetingDocEditor(body, scope, session) {
           else editor.appendChild(newRow2);
           wireBlock(newRow2, nb);
           const nc = newRow2.querySelector(".doc-block-content");
-          if (nc) nc.textContent = line;
+          if (nc) nc.textContent = lineObj.text;
           afterId = nb.id;
         });
       }
@@ -1411,8 +1529,9 @@ function renderMeetingDocEditor(body, scope, session) {
           <span class="doc-task-sep"> — assigned task:</span>
           <span class="doc-task-field" contenteditable="true" data-field="task" data-placeholder="describe the task" spellcheck="true">${escapeHtml(taskText)}</span>
           <span class="doc-task-sep"> for project:</span>
-          <span class="doc-task-field" contenteditable="true" data-field="project" data-placeholder="project" spellcheck="false">${escapeHtml(projectName)}</span>
+          <span class="doc-task-field" contenteditable="true" data-field="project" data-placeholder="search projects…" spellcheck="false">${escapeHtml(projectName)}</span>
         </div>
+        <button type="button" class="doc-task-del" aria-label="Delete task" tabindex="-1">×</button>
         <span class="doc-block-content" style="display:none">${escapeHtml(block.content || "")}</span>
       `;
       return row;
@@ -1426,13 +1545,13 @@ function renderMeetingDocEditor(body, scope, session) {
     row.dataset.done = done ? "true" : "false";
 
     let gutterHtml = "";
-    if (block.type === "bullet") {
+    if (block.type === "bullet" || block.type === "bullet-sub") {
       gutterHtml = `<span class="doc-gutter-bullet" aria-hidden="true"></span>`;
     } else if (block.type === "action") {
       gutterHtml = `<button type="button" class="doc-action-check" aria-label="${done ? "Mark incomplete" : "Mark complete"}" aria-pressed="${done}"><i class="bx ${done ? "bxs-check-square" : "bx-checkbox"}"></i></button>`;
     }
 
-    const phMap = { h2: "Heading…", action: "Action item…", bullet: "List item…", para: "Type, or / for commands…" };
+    const phMap = { h2: "Heading…", action: "Action item…", bullet: "List item…", "bullet-sub": "Sub-item…", para: "Type, or / for commands…" };
     const ph = phMap[block.type] || "Type…";
 
     row.innerHTML = `<div class="doc-block-gutter">${gutterHtml}</div><div class="doc-block-content doc-block-content--${block.type}" contenteditable="true" data-placeholder="${ph}" spellcheck="true">${escapeHtml(block.content)}</div>`;
@@ -1451,6 +1570,29 @@ function renderMeetingDocEditor(body, scope, session) {
 
   renderAllBlocks();
   updateDocMeta();
+
+  // Ctrl+A: select all blocks for bulk delete
+  editor.addEventListener("keydown", function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+      e.preventDefault();
+      docAllSelected = true;
+      $all(".doc-block", editor).forEach(function(r) { r.classList.add("is-selected"); });
+    } else if (docAllSelected) {
+      if (e.key === "Backspace" || e.key === "Delete") {
+        e.preventDefault();
+        clearAllBlocks();
+      } else if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) {
+        // typing a character replaces all
+        clearAllBlocks();
+        const firstEl = editor.querySelector(".doc-block-content");
+        if (firstEl) { firstEl.focus(); firstEl.textContent = e.key; placeCursorAtEnd(firstEl); }
+        e.preventDefault();
+      } else {
+        docAllSelected = false;
+        $all(".doc-block", editor).forEach(function(r) { r.classList.remove("is-selected"); });
+      }
+    }
+  }, true);
 
   const addActionBtn = $("#doc-add-action", body);
   const addBulletBtn = $("#doc-add-bullet", body);
@@ -1473,18 +1615,24 @@ function renderMeetingDocEditor(body, scope, session) {
     }
   });
 
-  // Close palette and @ menu when clicking outside
+  // Close palette / menus and deselect when clicking outside
   function onDocClick(e) {
     if (!isEditorMounted()) {
       document.removeEventListener("click", onDocClick);
       if (!document.getElementById("meeting-doc-editor")) {
         const p = document.getElementById("doc-cmd-palette"); if (p) p.remove();
         const am = document.getElementById("doc-at-menu"); if (am) am.remove();
+        const pm = document.getElementById("doc-proj-menu"); if (pm) pm.remove();
       }
       return;
     }
     if (cmdOpen && !palette.contains(e.target)) closePalette();
     if (atOpen && !atMenu.contains(e.target)) closeAtMenu();
+    if (projOpen && !projMenu.contains(e.target)) closeProjMenu();
+    if (docAllSelected && !editor.contains(e.target)) {
+      docAllSelected = false;
+      $all(".doc-block", editor).forEach(function(r) { r.classList.remove("is-selected"); });
+    }
   }
   document.addEventListener("click", onDocClick);
 
