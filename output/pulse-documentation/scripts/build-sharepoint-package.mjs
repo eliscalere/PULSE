@@ -238,8 +238,9 @@ function bundleClient(html, manifestFiles) {
   });
   const bundle = result.outputFiles[0].text;
   manifestFiles.push({ kind: "js", path: `assets/${entryMatch[1]}`, external: false, hash: hash(bundle) });
+  const inlined = `<script id="_R_" type="module">\n${escapeScript(bundle)}\n</script>`;
   return {
-    html: html.replace(entryMatch[0], `<script id="_R_" type="module">\n${escapeScript(bundle)}\n<\/script>`),
+    html: html.replace(entryMatch[0], () => inlined),
     bundle,
   };
 }
@@ -282,10 +283,8 @@ async function buildPackage() {
   html = inlineHtmlAssetTags(html, assetUrls);
 
   const bundled = bundleClient(html, manifestFiles);
-  html = bundled.html.replace(
-    /<script\s+id=["']_R_["']/i,
-    `<script>\n${escapeScript(createAssetRuntime(sourceText, assetUrls))}\n<\/script>\n<script id="_R_"`,
-  );
+  const runtimeBlock = `<script>\n${escapeScript(createAssetRuntime(sourceText, assetUrls))}\n</script>\n<script id="_R_"`;
+  html = bundled.html.replace(/<script\s+id=["']_R_["']/i, () => runtimeBlock);
 
   const manifest = {
     version: 1,
