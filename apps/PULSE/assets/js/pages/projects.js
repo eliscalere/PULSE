@@ -9141,6 +9141,27 @@ function drawProjectSettings(body, proj) {
         </section>
 
         <section class="ps-panel">
+          <div class="ps-panel-title">Classification</div>
+          <div class="form-grid-2">
+            <div class="form-row"><label>Project Type</label>
+              <select class="select-aewttr" id="ps-project-type">
+                <option value="" ${!proj.projectType ? "selected" : ""}>Not set</option>
+                <option value="Development" ${proj.projectType === "Development" ? "selected" : ""}>Development</option>
+                <option value="Sustainment" ${proj.projectType === "Sustainment" ? "selected" : ""}>Sustainment</option>
+                <option value="Development &amp; Sustainment" ${proj.projectType === "Development & Sustainment" ? "selected" : ""}>Development &amp; Sustainment</option>
+                <option value="Other" ${proj.projectType === "Other" ? "selected" : ""}>Other</option>
+              </select>
+            </div>
+            <div class="form-row"><label>ATO</label><input class="input-aewttr" id="ps-ato" value="${escapeHtml(proj.ato || "")}" placeholder="e.g. ATO reference or expiration date"></div>
+            <div class="form-row">
+              <label>Aqu Only</label>
+              <div class="travel-choice-row">${travelChoiceGroup("ps-aquonly", ["Yes", "No"], proj.aquOnly ? "Yes" : "No")}</div>
+            </div>
+            <div class="form-row"><label>Projects</label><input class="input-aewttr" id="ps-projects" value="${escapeHtml(proj.projects || "")}" placeholder="Related projects"></div>
+          </div>
+        </section>
+
+        <section class="ps-panel">
           <div class="ps-panel-title">Scope &amp; objectives</div>
           <div class="form-row"><label>Scope</label><textarea class="textarea-aewttr" id="ps-scope" rows="4" placeholder="What this project covers.">${escapeHtml(proj.scope || "")}</textarea></div>
           <div class="form-row" style="margin-bottom:0;"><label>Objectives</label><textarea class="textarea-aewttr" id="ps-objectives" rows="4" placeholder="What this project is trying to achieve.">${escapeHtml(proj.objectives || "")}</textarea></div>
@@ -9212,6 +9233,14 @@ function drawProjectSettings(body, proj) {
     extra.handoff = $("#ps-handoff", body).value;
     const spoFolderEl = $("#ps-spo-folder", body);
     if (spoFolderEl) proj.sharepointFolderUrl = spoFolderEl.value.trim();
+    const projTypeEl = $("#ps-project-type", body);
+    if (projTypeEl) proj.projectType = projTypeEl.value;
+    const atoEl = $("#ps-ato", body);
+    if (atoEl) proj.ato = atoEl.value.trim();
+    const aquOnlyChecked = $(`input[name="ps-aquonly"]:checked`, body);
+    proj.aquOnly = !!aquOnlyChecked && aquOnlyChecked.value === "Yes";
+    const projectsEl = $("#ps-projects", body);
+    if (projectsEl) proj.projects = projectsEl.value.trim();
     if (fromCover || pendingCoverFile || pendingCover !== (proj.coverImage || "")) {
       try {
         proj.coverImage = await persistProjectCoverImage(proj, pendingCover, pendingCoverFile);

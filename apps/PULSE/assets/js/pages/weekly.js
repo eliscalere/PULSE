@@ -910,7 +910,6 @@ function renderMeetingDocEditor(body, scope, session) {
     { id: "para", label: "Text", icon: "bx-text", desc: "Plain paragraph" },
   ];
 
-  body.className = "";
   body.innerHTML = `
     <div class="meeting-doc-shell">
       <div class="meeting-doc-head">
@@ -926,6 +925,7 @@ function renderMeetingDocEditor(body, scope, session) {
           <div class="meeting-doc-quick-actions" aria-label="Add a note block">
             <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="doc-add-bullet"><i class="bx bx-list-ul" aria-hidden="true"></i> Bullet</button>
             <button type="button" class="btn-aewttr btn-aewttr-sm" id="doc-add-action"><i class="bx bx-check-square" aria-hidden="true"></i> Action</button>
+            <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="doc-add-task-template" title="Add action item template with name and task fields"><i class="bx bx-user-check" aria-hidden="true"></i> Task</button>
           </div>
           <span class="doc-save-status" id="doc-save-status" aria-live="polite"></span>
         </div>
@@ -1172,6 +1172,52 @@ function renderMeetingDocEditor(body, scope, session) {
       schedSave();
     });
 
+    contentEl.addEventListener("paste", function(e) {
+      e.preventDefault();
+      const htmlContent = e.clipboardData && e.clipboardData.getData("text/html");
+      const plainText = (e.clipboardData && e.clipboardData.getData("text/plain")) || "";
+      var lines = [];
+      if (htmlContent) {
+        const tmp = document.createElement("div");
+        tmp.innerHTML = htmlContent;
+        tmp.querySelectorAll("li, p, h1, h2, h3, h4").forEach(function(el) {
+          const t = el.textContent.trim();
+          if (t) lines.push(t);
+        });
+        if (!lines.length) lines = plainText.split("\n").map(function(s) { return s.trim(); }).filter(Boolean);
+      } else {
+        lines = plainText.split("\n").map(function(s) { return s.trim(); }).filter(Boolean);
+      }
+      if (!lines.length) return;
+      const cur = contentEl.textContent;
+      const firstText = cur + lines[0];
+      contentEl.textContent = firstText;
+      const b = session.docBlocks.find(function(x) { return x.id === block.id; });
+      if (b) b.content = firstText;
+      placeCursorAtEnd(contentEl);
+      if (lines.length > 1) {
+        var afterId = block.id;
+        const pasteType = (block.type === "h2" || block.type === "para") ? "bullet" : block.type;
+        lines.slice(1).forEach(function(line) {
+          const nb = { id: uid("db"), type: pasteType, content: line, done: false };
+          const idx2 = session.docBlocks.findIndex(function(x) { return x.id === afterId; });
+          if (idx2 >= 0) session.docBlocks.splice(idx2 + 1, 0, nb);
+          else session.docBlocks.push(nb);
+          const afterRow2 = editor.querySelector(`.doc-block[data-block-id="${afterId}"]`);
+          const newRow2 = buildBlockRow(nb);
+          if (afterRow2 && afterRow2.nextSibling) editor.insertBefore(newRow2, afterRow2.nextSibling);
+          else if (afterRow2) editor.appendChild(newRow2);
+          else editor.appendChild(newRow2);
+          wireBlock(newRow2, nb);
+          const nc = newRow2.querySelector(".doc-block-content");
+          if (nc) nc.textContent = line;
+          afterId = nb.id;
+        });
+      }
+      updateDocMeta();
+      schedSave();
+    });
+
     const checkBtn = row.querySelector(".doc-action-check");
     if (checkBtn) {
       checkBtn.addEventListener("click", function() {
@@ -1233,6 +1279,16 @@ function renderMeetingDocEditor(body, scope, session) {
   if (addBulletBtn) addBulletBtn.addEventListener("click", function() {
     const lastBlock = session.docBlocks[session.docBlocks.length - 1];
     addBlockAfter("bullet", lastBlock && lastBlock.id);
+  });
+  const addTaskTemplateBtn = $("#doc-add-task-template", body);
+  if (addTaskTemplateBtn) addTaskTemplateBtn.addEventListener("click", function() {
+    const lastBlock = session.docBlocks[session.docBlocks.length - 1];
+    const nb = addBlockAfter("action", lastBlock && lastBlock.id);
+    if (nb) {
+      nb.content = "Name: ";
+      const newEl = editor.querySelector(`.doc-block[data-block-id="${nb.id}"] .doc-block-content`);
+      if (newEl) { newEl.textContent = "Name: "; placeCursorAtEnd(newEl); }
+    }
   });
 
   // Close palette when clicking outside
@@ -1335,7 +1391,7 @@ function renderMeetingLive(body, scope) {
   const queueMode = liveTab === "project" ? "project" : "person";
 
   if (liveTab === "notes") {
-    body.className = "";
+    body.className = "meeting-live-body--doc";
     return renderMeetingDocEditor(body, scope, session);
   }
 
