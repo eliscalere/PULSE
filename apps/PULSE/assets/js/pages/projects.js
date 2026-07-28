@@ -9158,6 +9158,8 @@ function drawProjectSettings(body, proj) {
   const selectedFiscalYear = new Set(); if (proj.fiscalYear) String(proj.fiscalYear).split(",").forEach(p => { const v = normalizeFiscalYearName(p.trim()); if (v) selectedFiscalYear.add(v); });
   const selectedFundingStatus = new Set(); if (proj.fundingStatus) String(proj.fundingStatus).split(",").forEach(p => { const v = normalizeFundingStatusName(p.trim()); if (v) selectedFundingStatus.add(v); });
   const selectedAto = new Set(); if (proj.ato) { const v = normalizeAtoName(proj.ato.trim()); if (v) selectedAto.add(v); }
+  const selectedRelatedProjects = new Set();
+  (Array.isArray(proj.relatedProjects) ? proj.relatedProjects : (proj.projects ? String(proj.projects).split(",").map(s => s.trim()).filter(Boolean) : [])).forEach(v => { if (v) selectedRelatedProjects.add(v); });
 
   let pendingCover = proj.coverImage || "";
   let pendingCoverFile = null;
@@ -9293,7 +9295,7 @@ function drawProjectSettings(body, proj) {
                 <option value="Other" ${proj.projectType === "Other" ? "selected" : ""}>Other</option>
               </select>
             </div>
-            <div class="form-row"><label>Related Projects</label><input class="input-aewttr" id="ps-projects" value="${escapeHtml(proj.projects || "")}" placeholder="Related project names or codes"></div>
+            <div class="form-row"><label>Related Projects</label>${tagPickerHtml(Array.from(selectedRelatedProjects), "ps-relprojects", { emptyText: "No related projects.", placeholder: "Search or add project…", hint: "" })}</div>
           </div>
           <div class="form-row" style="margin-bottom:0;"><label>ATO</label>${tagPickerHtml(Array.from(selectedAto), "ps-ato", { emptyText: "No ATO set.", placeholder: "Search or select ATO…", hint: "" })}</div>
         </div>
@@ -9444,8 +9446,8 @@ function drawProjectSettings(body, proj) {
     if (projTypeEl) proj.projectType = projTypeEl.value;
     proj.ato = Array.from(selectedAto)[0] || "";
     if (proj.ato) rememberAtoNames([proj.ato]);
-    const projectsEl = $("#ps-projects", body);
-    if (projectsEl) proj.projects = projectsEl.value.trim();
+    proj.relatedProjects = Array.from(selectedRelatedProjects);
+    proj.projects = proj.relatedProjects.join(", ");
     if (fromCover || pendingCoverFile || pendingCover !== (proj.coverImage || "")) {
       try {
         proj.coverImage = await persistProjectCoverImage(proj, pendingCover, pendingCoverFile);
@@ -9507,8 +9509,9 @@ function drawProjectSettings(body, proj) {
   wireTagPicker(body, selectedFiscalYear, "ps-fiscalyear", { normalize: normalizeFiscalYearName, getKnown: getKnownFiscalYearNames, remember: rememberFiscalYearNames, singleSelect: false, onChange: () => scheduleAutosave() });
   wireTagPicker(body, selectedFundingStatus, "ps-fundingstatus", { normalize: normalizeFundingStatusName, getKnown: getKnownFundingStatusNames, remember: rememberFundingStatusNames, singleSelect: false, onChange: () => scheduleAutosave() });
   wireTagPicker(body, selectedAto, "ps-ato", { normalize: normalizeAtoName, getKnown: getKnownAtoNames, remember: rememberAtoNames, singleSelect: true, onChange: () => scheduleAutosave() });
+  wireTagPicker(body, selectedRelatedProjects, "ps-relprojects", { normalize: v => (v || "").trim(), getKnown: () => (db.projects || []).filter(p => p.id !== proj.id).map(p => p.name || p.id).filter(Boolean).sort(), remember: () => {}, singleSelect: false, onChange: () => scheduleAutosave() });
 
-  ["ps-name", "ps-desc", "ps-contract", "ps-scope", "ps-handoff", "ps-funded-amount", "ps-reimb-amount", "ps-fundingnotes", "ps-projects", "ps-spo-folder"].forEach((id) => {
+  ["ps-name", "ps-desc", "ps-contract", "ps-scope", "ps-handoff", "ps-funded-amount", "ps-reimb-amount", "ps-fundingnotes", "ps-spo-folder"].forEach((id) => {
     const field = $(`#${id}`, body);
     if (!field) return;
     field.addEventListener("input", () => scheduleAutosave());
