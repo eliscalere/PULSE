@@ -24,9 +24,15 @@ const packages = [
     releaseOutput: "../../releases/PULSE-Travel-Calendar-v1.0.0.html"
   },
   {
+    name: "Tickets",
+    entry: "tickets.html",
+    output: "FS packages/Tickets-v1.0.0.html",
+    releaseOutput: "../../releases/PULSE-Tickets-v1.0.0.html"
+  },
+  {
     name: "Main PULSE Application",
     entry: "index.html",
-    output: "FS packages/AEWTTR-PULSE_v.20260727.html",
+    output: "FS packages/AEWTTR-PULSE_v.20260728.html",
     releaseOutput: "../../releases/PULSE-v1.0.0.html"
   }
 ];
