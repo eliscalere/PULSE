@@ -4513,6 +4513,11 @@ async function bootSharePointMode(siteUrl) {
       bootLog("Loading SharePoint-backed app data...");
       const loadedDb = await loadAllFromSharePoint(siteUrl);
       loadedDb.user = bootUser;
+      // Merge local-only fields (tickets) so they survive a fresh SP load.
+      const localSnapshot = typeof aewttrLoadStore === "function" ? aewttrLoadStore() : null;
+      if (localSnapshot && Array.isArray(localSnapshot.tickets) && localSnapshot.tickets.length > 0) {
+        loadedDb.tickets = localSnapshot.tickets;
+      }
       window.AEWTTR.db = normalizeStoreShape(loadedDb);
       window.AEWTTR.dbHydratedFromCache = false;
       persistSpDbCache(siteUrl, window.AEWTTR.db);
@@ -4695,11 +4700,17 @@ async function refreshSharePointData(reason) {
     // while we were fetching; swapping now would orphan closed-over refs.
     if (isBackgroundDataSwapBlocked()) return false;
     if (typeof Repo !== "undefined" && Repo.hasPendingChanges && Repo.hasPendingChanges()) return false;
-    const previousUser = window.AEWTTR.db && window.AEWTTR.db.user;
+    const previousDb = window.AEWTTR.db;
+    const previousUser = previousDb && previousDb.user;
     const refreshed = await loadAllFromSharePoint(window.AEWTTR.siteUrl, { fast: true });
     if (isBackgroundDataSwapBlocked()) return false;
     if (typeof Repo !== "undefined" && Repo.hasPendingChanges && Repo.hasPendingChanges()) return false;
     refreshed.user = previousUser || refreshed.user;
+    // Preserve local-only fields not backed by any SharePoint list so they
+    // are not wiped by the background refresh (tickets live in pulse-local-db).
+    if (previousDb && Array.isArray(previousDb.tickets) && previousDb.tickets.length > 0) {
+      refreshed.tickets = previousDb.tickets;
+    }
     window.AEWTTR.db = normalizeStoreShape(refreshed);
     window.AEWTTR.lastSharePointRefreshAt = Date.now();
     window.AEWTTR.dbHydratedFromCache = false;
@@ -4770,6 +4781,9 @@ function startPulseApplication() {
       bootLog("Detecting SharePoint site...");
       const siteUrl = await sharePointAdapter.detectSharePointSite();
       if (siteUrl) {
+        // Share the detected site URL with standalone tools (Tickets, My Travel, etc.)
+        // so they can connect to the same SharePoint site without needing _spPageContextInfo.
+        try { localStorage.setItem("pulse_sp_site_url", siteUrl); } catch (e) { /* sandboxed */ }
         await bootSharePointMode(siteUrl);
       } else {
         bootLog("SharePoint site not detected. Falling back to local mode.", "error");

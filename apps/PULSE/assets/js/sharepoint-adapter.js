@@ -97,6 +97,16 @@ const sharePointAdapter = (function () {
       recordDiagnostics({ detectedSiteUrl: siteUrl, detectedSiteUrlMethod: "origin+webServerRelativeUrl (unverified guess)" });
       return siteUrl;
     }
+    // Last resort: use the site URL saved by a previously successful PULSE boot on this
+    // browser. This lets standalone tools (Tickets, My Travel, etc.) share the same
+    // SharePoint connection as the main PULSE app without needing their own page context.
+    try {
+      const saved = localStorage.getItem("pulse_sp_site_url");
+      if (saved) {
+        recordDiagnostics({ detectedSiteUrl: saved, detectedSiteUrlMethod: "localStorage-shared" });
+        return saved;
+      }
+    } catch (e) { /* sandboxed */ }
     recordDiagnostics({ detectedSiteUrl: "", detectedSiteUrlMethod: "none" });
     return "";
   }
