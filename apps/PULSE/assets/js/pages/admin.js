@@ -913,29 +913,23 @@ function openAdminGroupEditor(group, onDone) {
 function drawListsConfig(body) {
   const cfg = getLocationConfig();
 
-  function renderSection(id, title, hint, items, addLabel) {
+  function renderSection(id, title, hint, items) {
     return `
-      <div class="aewttr-card aewttr-card-pad" style="margin-bottom:16px;">
-        <div class="toolbar-row" style="margin-bottom:12px;">
-          <div>
-            <div class="side-panel-title" style="margin:0 0 4px;">${escapeHtml(title)}</div>
-            <div style="font-size:12px;color:var(--aewttr-muted);" data-help>${escapeHtml(hint)}</div>
-          </div>
-          <button class="btn-aewttr" data-lists-add="${id}"${tip(`Add a new ${escapeHtml(title)} entry`)}><i class="bx bx-plus"></i> ${escapeHtml(addLabel)}</button>
+      <div class="al-card">
+        <div class="al-card-head">
+          <span class="al-card-title">${escapeHtml(title)}<span class="al-badge">${items.length}</span></span>
+          <button class="btn-aewttr-ghost btn-aewttr-sm" data-lists-add="${id}"${tip(`Add a new ${escapeHtml(title)} entry`)}><i class="bx bx-plus"></i> Add</button>
         </div>
-        <table class="aewttr-table">
-          <thead><tr><th>Name</th><th></th></tr></thead>
-          <tbody>
-            ${items.length ? items.map((item, i) => `
-              <tr style="cursor:default;" data-lists-row="${id}-${i}">
-                <td><strong>${escapeHtml(item)}</strong></td>
-                <td style="text-align:right;">
-                  <button class="btn-aewttr-outline btn-aewttr-sm" data-lists-rename="${id}" data-lists-idx="${i}"${tip(`Rename ${escapeHtml(item)}`)}>Rename</button>
-                  <button class="btn-danger-outline btn-aewttr-sm" data-lists-remove="${id}" data-lists-idx="${i}"${tip(`Remove ${escapeHtml(item)}`)}>Remove</button>
-                </td>
-              </tr>`).join("") : `<tr style="cursor:default;"><td colspan="2"><div class="empty-state">No entries yet — add one to make it selectable on projects.</div></td></tr>`}
-          </tbody>
-        </table>
+        <div class="al-items">
+          ${items.length ? items.map((item, i) => `
+            <div class="al-item" data-lists-row="${id}-${i}">
+              <span class="al-item-name">${escapeHtml(item)}</span>
+              <div class="al-item-actions">
+                <button class="btn-aewttr-ghost btn-aewttr-sm" data-lists-rename="${id}" data-lists-idx="${i}"${tip(`Rename ${escapeHtml(item)}`)}><i class="bx bx-pencil"></i></button>
+                <button class="btn-danger-outline btn-aewttr-sm" data-lists-remove="${id}" data-lists-idx="${i}"${tip(`Remove ${escapeHtml(item)}`)}><i class="bx bx-trash"></i></button>
+              </div>
+            </div>`).join("") : `<div class="al-empty">No entries yet.</div>`}
+        </div>
       </div>`;
   }
 
@@ -949,17 +943,17 @@ function drawListsConfig(body) {
     const fundingTypes  = cfg.fundingTypes || [];
     const fiscalYears   = cfg.fiscalYears || [];
     const fundingStatuses = cfg.fundingStatuses || [];
-    return `
-      ${renderSection("portfolios",     "Portfolios",       "Appear in the Portfolio picker when editing or creating a project.",               portfolios,      "Add Portfolio")}
-      ${renderSection("endItems",       "End Item Configs",  "Appear in the Config End Item picker when editing a project.",                    endItems,        "Add End Item")}
-      ${renderSection("atos",           "ATO Values",        "Appear in the ATO picker in project classification settings.",                    atos,            "Add ATO")}
-      ${renderSection("programs",       "Program Offices",   "Appear in the Program Office picker when editing a project.",                     programs,        "Add Program Office")}
-      ${renderSection("locations",      "Ranges / Locations","Appear in the Location picker when editing a project.",                           locations,       "Add Location")}
-      ${renderSection("taskOrders",     "Task Orders",       "Appear in the Task Order picker in project funding settings.",                    taskOrders,      "Add Task Order")}
-      ${renderSection("fundingTypes",   "Funding Types",     "Appear in the Funding Type picker in project funding settings.",                  fundingTypes,    "Add Funding Type")}
-      ${renderSection("fiscalYears",    "Fiscal Years",      "Appear in the Fiscal Year picker in project funding settings.",                   fiscalYears,     "Add Fiscal Year")}
-      ${renderSection("fundingStatuses","Funding Statuses",  "Appear in the Funding Status picker in project funding settings.",                fundingStatuses, "Add Funding Status")}
-    `;
+    return `<div class="al-grid">
+      ${renderSection("portfolios",      "Portfolios",        "Portfolio picker on projects.",          portfolios)}
+      ${renderSection("endItems",        "End Item Configs",  "Config End Item picker on projects.",    endItems)}
+      ${renderSection("atos",            "ATO Values",        "ATO picker, classification tab.",        atos)}
+      ${renderSection("programs",        "Program Offices",   "Program Office picker, funding tab.",    programs)}
+      ${renderSection("locations",       "Ranges / Locations","Location picker on projects.",           locations)}
+      ${renderSection("taskOrders",      "Task Orders",       "Task Order picker, funding tab.",        taskOrders)}
+      ${renderSection("fundingTypes",    "Funding Types",     "Funding Type picker, funding tab.",      fundingTypes)}
+      ${renderSection("fiscalYears",     "Fiscal Years",      "Fiscal Year picker, funding tab.",       fiscalYears)}
+      ${renderSection("fundingStatuses", "Funding Statuses",  "Funding Status picker, funding tab.",    fundingStatuses)}
+    </div>`;
   });
 
   if (!window.AEWTTR.db.user.isAdmin) return;

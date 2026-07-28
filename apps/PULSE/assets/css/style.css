@@ -1128,6 +1128,20 @@ a.btn-travel-action {
 }
 .aewttr-card-pad { padding: 18px 20px; }
 
+/* Admin Lists compact grid */
+.al-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.al-card { background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: var(--aewttr-radius-md); padding: 12px 14px; }
+.al-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.al-card-title { font-size: 12.5px; font-weight: 700; color: var(--aewttr-text); display: flex; align-items: center; gap: 6px; }
+.al-badge { font-size: 10px; font-weight: 600; background: var(--aewttr-surface-3); color: var(--aewttr-muted); border-radius: 10px; padding: 1px 7px; line-height: 16px; }
+.al-items { display: flex; flex-direction: column; gap: 1px; }
+.al-item { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; border-radius: var(--aewttr-radius-sm); font-size: 12.5px; color: var(--aewttr-text); }
+.al-item:hover { background: var(--aewttr-surface-2); }
+.al-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.al-item-actions { display: flex; gap: 2px; opacity: 0; flex-shrink: 0; }
+.al-item:hover .al-item-actions { opacity: 1; }
+.al-empty { font-size: 11.5px; color: var(--aewttr-muted); padding: 6px 6px; }
+
 .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
 .stat-card { background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: var(--aewttr-radius-lg); padding: 16px 18px; }
 .stat-card .label { font-size: 13px; color: var(--aewttr-muted); font-weight: 600; }
