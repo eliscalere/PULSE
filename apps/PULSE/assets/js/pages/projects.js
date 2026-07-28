@@ -9157,6 +9157,7 @@ function drawProjectSettings(body, proj) {
   const selectedFundingType = new Set(); if (proj.fundingType) String(proj.fundingType).split(",").forEach(p => { const v = normalizeFundingTypeName(p.trim()); if (v) selectedFundingType.add(v); });
   const selectedFiscalYear = new Set(); if (proj.fiscalYear) String(proj.fiscalYear).split(",").forEach(p => { const v = normalizeFiscalYearName(p.trim()); if (v) selectedFiscalYear.add(v); });
   const selectedFundingStatus = new Set(); if (proj.fundingStatus) String(proj.fundingStatus).split(",").forEach(p => { const v = normalizeFundingStatusName(p.trim()); if (v) selectedFundingStatus.add(v); });
+  const selectedAto = new Set(); if (proj.ato) { const v = normalizeAtoName(proj.ato.trim()); if (v) selectedAto.add(v); }
 
   let pendingCover = proj.coverImage || "";
   let pendingCoverFile = null;
@@ -9292,12 +9293,9 @@ function drawProjectSettings(body, proj) {
                 <option value="Other" ${proj.projectType === "Other" ? "selected" : ""}>Other</option>
               </select>
             </div>
-            <div class="form-row"><label>ATO</label>
-              <input class="input-aewttr" id="ps-ato" list="ps-ato-list" value="${escapeHtml(proj.ato || "")}" placeholder="Select or type ATO value" autocomplete="off">
-              <datalist id="ps-ato-list">${(getLocationConfig().atos || []).map(a => `<option value="${escapeHtml(a)}"></option>`).join("")}</datalist>
-            </div>
-            <div class="form-row"><label>Related Projects</label><input class="input-aewttr" id="ps-projects" value="${escapeHtml(proj.projects || "")}" placeholder="Related projects"></div>
+            <div class="form-row"><label>Related Projects</label><input class="input-aewttr" id="ps-projects" value="${escapeHtml(proj.projects || "")}" placeholder="Related project names or codes"></div>
           </div>
+          <div class="form-row" style="margin-bottom:0;"><label>ATO</label>${tagPickerHtml(Array.from(selectedAto), "ps-ato", { emptyText: "No ATO set.", placeholder: "Search or select ATO…", hint: "" })}</div>
         </div>
 
         <div class="ps-tab-panel ${activeSettingsTab === "scope" ? "is-active" : ""}" id="ps-panel-scope" data-pspanel="scope" role="tabpanel" aria-labelledby="ps-tab-scope" ${activeSettingsTab === "scope" ? "" : "hidden"}>
@@ -9444,8 +9442,8 @@ function drawProjectSettings(body, proj) {
     if (spoFolderEl) proj.sharepointFolderUrl = spoFolderEl.value.trim();
     const projTypeEl = $("#ps-project-type", body);
     if (projTypeEl) proj.projectType = projTypeEl.value;
-    const atoEl = $("#ps-ato", body);
-    if (atoEl) proj.ato = atoEl.value.trim();
+    proj.ato = Array.from(selectedAto)[0] || "";
+    if (proj.ato) rememberAtoNames([proj.ato]);
     const projectsEl = $("#ps-projects", body);
     if (projectsEl) proj.projects = projectsEl.value.trim();
     if (fromCover || pendingCoverFile || pendingCover !== (proj.coverImage || "")) {
@@ -9508,8 +9506,9 @@ function drawProjectSettings(body, proj) {
   wireTagPicker(body, selectedFundingType, "ps-fundingtype", { normalize: normalizeFundingTypeName, getKnown: getKnownFundingTypeNames, remember: rememberFundingTypeNames, singleSelect: false, onChange: () => scheduleAutosave() });
   wireTagPicker(body, selectedFiscalYear, "ps-fiscalyear", { normalize: normalizeFiscalYearName, getKnown: getKnownFiscalYearNames, remember: rememberFiscalYearNames, singleSelect: false, onChange: () => scheduleAutosave() });
   wireTagPicker(body, selectedFundingStatus, "ps-fundingstatus", { normalize: normalizeFundingStatusName, getKnown: getKnownFundingStatusNames, remember: rememberFundingStatusNames, singleSelect: false, onChange: () => scheduleAutosave() });
+  wireTagPicker(body, selectedAto, "ps-ato", { normalize: normalizeAtoName, getKnown: getKnownAtoNames, remember: rememberAtoNames, singleSelect: true, onChange: () => scheduleAutosave() });
 
-  ["ps-name", "ps-desc", "ps-contract", "ps-scope", "ps-handoff", "ps-funded-amount", "ps-reimb-amount", "ps-fundingnotes", "ps-ato", "ps-projects", "ps-spo-folder"].forEach((id) => {
+  ["ps-name", "ps-desc", "ps-contract", "ps-scope", "ps-handoff", "ps-funded-amount", "ps-reimb-amount", "ps-fundingnotes", "ps-projects", "ps-spo-folder"].forEach((id) => {
     const field = $(`#${id}`, body);
     if (!field) return;
     field.addEventListener("input", () => scheduleAutosave());
@@ -9520,7 +9519,6 @@ function drawProjectSettings(body, proj) {
     if (field) field.addEventListener("change", () => scheduleAutosave());
   });
   $all(`input[name="ps-crr"]`, body).forEach((input) => input.addEventListener("change", () => scheduleAutosave()));
-  $all(`input[name="ps-aquonly"]`, body).forEach((input) => input.addEventListener("change", () => scheduleAutosave()));
 
   $("#ps-cover-pick", body).addEventListener("click", () => $("#ps-cover-file", body).click());
   $("#ps-cover-file", body).addEventListener("change", (e) => {

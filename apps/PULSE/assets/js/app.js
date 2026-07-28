@@ -525,6 +525,19 @@ function projectPortfolios(proj) {
   });
   return out;
 }
+
+/* Project deliverables are stored as a small ordered list. Older project
+   records used a free-form Objectives field; read it once as a backwards-
+   compatible source so existing text appears in the new editor. */
+function projectDeliverables(proj) {
+  if (!proj) return [];
+  const raw = Array.isArray(proj.deliverables)
+    ? proj.deliverables
+    : String(proj.deliverables || proj.objectives || "").split(/\r?\n/);
+  return raw
+    .map((item) => String(item == null ? "" : item).replace(/^\s*[-*•]\s*/, "").trim())
+    .filter(Boolean);
+}
 function getKnownPortfolioNames() {
   const names = new Set();
   const cfg = getLocationConfig();
@@ -774,6 +787,11 @@ function rememberTaskOrderNames(ns)    { return _taskOrderHelpers.remember(ns); 
 function normalizeProgramName(n)       { return _programHelpers.norm(n); }
 function getKnownProgramNames()        { return _programHelpers.getKnown(); }
 function rememberProgramNames(ns)      { return _programHelpers.remember(ns); }
+
+const _atoHelpers = _makeFieldHelpers("atos", "ato");
+function normalizeAtoName(n)           { return _atoHelpers.norm(n); }
+function getKnownAtoNames()            { return _atoHelpers.getKnown(); }
+function rememberAtoNames(ns)          { return _atoHelpers.remember(ns); }
 
 /* % of a project's tracker tasks marked Done. Null (not 0) when the
    project has no tasks yet, so callers can distinguish "no data" from
@@ -4699,6 +4717,10 @@ function startPulseApplication() {
         bootLog("SharePoint site not detected. Falling back to local mode.", "error");
         window.AEWTTR.mode = "local";
         window.AEWTTR.db = aewttrLoadStore();
+        // Local builds are a complete product sandbox. Keep the local identity
+        // administrative even when an older localStorage snapshot said Member.
+        window.AEWTTR.db.user.role = "Admin";
+        window.AEWTTR.db.user.isAdmin = true;
       }
       await waitForBootMinimum(bootVisualStartedAt);
       bootLog("Rendering application shell...");
