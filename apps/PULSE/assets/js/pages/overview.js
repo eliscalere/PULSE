@@ -4,7 +4,7 @@ PAGE_RENDERERS.overview = function () {
   if (!window.AEWTTR.state.overviewWorkloadSort) window.AEWTTR.state.overviewWorkloadSort = "active";
   if (!window.AEWTTR.state.overviewTeamTab) window.AEWTTR.state.overviewTeamTab = "portfolio";
   if (!window.AEWTTR.state.overviewFilters) {
-    window.AEWTTR.state.overviewFilters = { search: "", team: "All", status: "All", fundingType: "All" };
+    window.AEWTTR.state.overviewFilters = { search: "", team: "All", status: "All", fundingType: "All", portfolio: "All", endItem: "All", ato: "All" };
   }
 
   const db = window.AEWTTR.db;
@@ -157,7 +157,7 @@ PAGE_RENDERERS.overview = function () {
       allProjectTasks(proj.id).forEach(task => {
         const isMe = (member && typeof memberMatchesAssignee === "function" && memberMatchesAssignee(member, task.assignee)) ||
           (user.name && task.assignee === user.name);
-        if (isMe) allMyTasks.push({ ...task, projectId: proj.id, projectName: proj.name || proj.id, proj });
+        if (isMe) allMyTasks.push({ ...task, projectId: proj.id, projectName: proj.name || "Untitled project", proj });
       });
     });
 
@@ -352,7 +352,7 @@ PAGE_RENDERERS.overview = function () {
             const risks  = projectRiskCount(proj.id);
             return `<button class="overview-spotlight-row" data-route="projects/${escapeHtml(proj.id)}/workspace">
               <div>
-                <strong>${escapeHtml(proj.name || proj.id)}</strong>
+                <strong>${escapeHtml(proj.name || "Untitled project")}</strong>
                 <span>${escapeHtml(myRoleOnProject(proj) || "Member")} · ${escapeHtml(proj.team || "—")}</span>
               </div>
               <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
@@ -414,32 +414,35 @@ PAGE_RENDERERS.overview = function () {
     const activeTab = window.AEWTTR.state.overviewTeamTab || "portfolio";
 
     let tabContent = "";
-    if (activeTab === "portfolio")  tabContent = renderEndItemAnalysis(projects) + renderAllProjectsTable(projects);
+    if (activeTab === "portfolio")  tabContent = renderPortfolioTab(projects);
     else if (activeTab === "workload")  tabContent = renderTeamWorkload(projects);
     else if (activeTab === "resources") tabContent = renderResourcesGraph(projects);
     else if (activeTab === "operations") tabContent = renderOperationsQueues();
 
     return `<div class="overview-grid overview-team-overview">
 
-      <section class="overview-hero overview-hero--team">
-        <div class="overview-hero-copy">
-          <div class="overview-kicker">Portfolio Overview</div>
-          <h2>Mission work at a glance</h2>
-          <p>${metrics.activeProjects} active project${metrics.activeProjects === 1 ? "" : "s"} and ${metrics.activeTasks} open tasks across the portfolio. Updated ${asOfLabel()}.</p>
-          <div class="overview-hero-actions">
-            <button class="btn-aewttr-outline btn-aewttr-sm" data-route="projects">All Projects</button>
-            <button class="btn-aewttr-outline btn-aewttr-sm" data-route="people">Team Members</button>
-          </div>
+      <section class="ov-team-stats-bar">
+        <div class="ov-team-stat${metrics.activeProjects > 0 ? " ov-stat-accent" : ""}" ${tip("Projects with at least one active task")}>
+          <strong>${metrics.activeProjects}</strong><span>Active projects</span><small>${metrics.totalProjects} total</small>
         </div>
-        <div class="overview-hero-stats">
-          <div class="overview-metric-grid">
-            <article class="overview-metric-card" ${tip("Projects with at least one active task")}><span>Active Projects</span><strong>${metrics.activeProjects}</strong><small>${metrics.totalProjects} total</small></article>
-            <article class="overview-metric-card" ${tip("Tasks across all projects not yet complete")}><span>Open Tasks</span><strong>${metrics.activeTasks}</strong></article>
-            <article class="overview-metric-card${metrics.blockedTasks > 0 ? " ov-metric-alert" : ""}" ${tip("Tasks currently blocked or on hold")}><span>Blocked Tasks</span><strong>${metrics.blockedTasks}</strong></article>
-            <article class="overview-metric-card${metrics.openRisks > 0 ? " ov-metric-warn" : ""}" ${tip("Open risks across all projects (not Closed/Resolved)")}><span>Open Risks</span><strong>${metrics.openRisks}</strong></article>
-            <article class="overview-metric-card" ${tip("Document review records not yet complete")}><span>Docs in Review</span><strong>${metrics.docsInReview}</strong></article>
-            <article class="overview-metric-card" ${tip("Travel requests pending action or approval")}><span>Pending Travel</span><strong>${metrics.pendingTravel}</strong></article>
-          </div>
+        <div class="ov-team-stat" ${tip("Tasks across all projects not yet complete")}>
+          <strong>${metrics.activeTasks}</strong><span>Open tasks</span>
+        </div>
+        <div class="ov-team-stat${metrics.blockedTasks > 0 ? " ov-stat-alert" : ""}" ${tip("Tasks currently blocked or on hold")}>
+          <strong>${metrics.blockedTasks}</strong><span>Blocked</span>
+        </div>
+        <div class="ov-team-stat${metrics.openRisks > 0 ? " ov-stat-warn" : ""}" ${tip("Open risks across all projects (not Closed/Resolved)")}>
+          <strong>${metrics.openRisks}</strong><span>Open risks</span>
+        </div>
+        <div class="ov-team-stat" ${tip("Document review records not yet complete")}>
+          <strong>${metrics.docsInReview}</strong><span>Docs in review</span>
+        </div>
+        <div class="ov-team-stat" ${tip("Travel requests pending action or approval")}>
+          <strong>${metrics.pendingTravel}</strong><span>Pending travel</span>
+        </div>
+        <div class="ov-team-stats-actions">
+          <button class="btn-aewttr-outline btn-aewttr-sm" data-route="projects"><i class="bx bx-briefcase"></i> All Projects</button>
+          <button class="btn-aewttr-outline btn-aewttr-sm" data-route="people"><i class="bx bx-group"></i> Team Members</button>
         </div>
       </section>
 
@@ -460,13 +463,159 @@ PAGE_RENDERERS.overview = function () {
     if (!f) return true;
     if (f.search) {
       const q = f.search.toLowerCase();
-      const hay = [proj.id, proj.name, proj.team, proj.program, proj.configEndItem, projectPMDisplayName(proj)].join(" ").toLowerCase();
+      const hay = [proj.id, proj.name, proj.team, proj.program, proj.configEndItem, proj.ato, projectPMDisplayName(proj)].join(" ").toLowerCase();
       if (!hay.includes(q)) return false;
     }
     if (f.team && f.team !== "All" && proj.team !== f.team) return false;
     if (f.status && f.status !== "All" && derivedProjectStatus(proj) !== f.status) return false;
     if (f.fundingType && f.fundingType !== "All" && proj.fundingType !== f.fundingType) return false;
+    if (f.portfolio && f.portfolio !== "All") {
+      const portfolios = Array.isArray(proj.portfolios) ? proj.portfolios : (proj.portfolios ? [proj.portfolios] : []);
+      if (!portfolios.some(p => p === f.portfolio)) return false;
+    }
+    if (f.endItem && f.endItem !== "All" && (proj.configEndItem || "") !== f.endItem) return false;
+    if (f.ato && f.ato !== "All" && (proj.ato || "") !== f.ato) return false;
     return true;
+  }
+
+  function donutChartSvg(segments, { size = 130, strokeW = 22, centerLabel = "", centerSub = "" } = {}) {
+    const total = segments.reduce((s, x) => s + x.value, 0);
+    if (!total) return `<div class="ov-donut-empty">No data</div>`;
+    const r = size / 2 - strokeW / 2 - 1;
+    const circ = 2 * Math.PI * r;
+    const cx = size / 2, cy = size / 2;
+    let cum = 0;
+    const arcs = segments.filter(s => s.value > 0).map(({ value, color }) => {
+      const pct = value / total;
+      const dash = (pct * circ).toFixed(2);
+      const gap = (circ - pct * circ).toFixed(2);
+      const offset = (-(cum / total) * circ).toFixed(2);
+      cum += value;
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    });
+    const labelY = centerSub ? cy - 2 : cy + 6;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true" style="flex-shrink:0;">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--aewttr-border)" stroke-width="${strokeW}"/>
+      ${arcs.join("")}
+      <text x="${cx}" y="${labelY}" text-anchor="middle" font-size="18" font-weight="700" fill="var(--aewttr-text)">${escapeHtml(String(centerLabel))}</text>
+      ${centerSub ? `<text x="${cx}" y="${cy + 16}" text-anchor="middle" font-size="10" fill="var(--aewttr-muted)">${escapeHtml(centerSub)}</text>` : ""}
+    </svg>`;
+  }
+
+  function renderPortfolioTab(projects) {
+    const f = window.AEWTTR.state.overviewFilters || {};
+    const filtered = projects.filter(p => matchesFilter(p, f));
+
+    const portfolioOptions = Array.from(new Set(projects.flatMap(p => Array.isArray(p.portfolios) ? p.portfolios : []).filter(Boolean))).sort();
+    const endItemOptions = Array.from(new Set(projects.map(p => p.configEndItem).filter(Boolean))).sort();
+    const atoOptions = Array.from(new Set(projects.map(p => p.ato).filter(Boolean))).sort();
+    const teamOptions = Array.from(new Set(projects.map(p => p.team).filter(Boolean))).sort();
+    const hasFilter = !!(f.search || (f.team && f.team !== "All") || (f.status && f.status !== "All") || (f.fundingType && f.fundingType !== "All") || (f.portfolio && f.portfolio !== "All") || (f.endItem && f.endItem !== "All") || (f.ato && f.ato !== "All"));
+
+    const PALETTE = ["#3b6bcc","#e05f2b","#2b9e6a","#9b59b6","#c0392b","#16a085","#d35400","#2980b9","#8e44ad","#27ae60","#e74c3c","#1abc9c","#f39c12","#6c5ce7","#00b894"];
+    const STATUS_COLORS = { "Active": "#2b9e6a", "Needs Attention": "#e05f2b", "No Active Work": "#9ca3af", "Completed": "#3b6bcc" };
+
+    const statusCount = {};
+    filtered.forEach(p => { const s = derivedProjectStatus(p); statusCount[s] = (statusCount[s] || 0) + 1; });
+    const statusSegments = Object.entries(statusCount).filter(([, v]) => v > 0).map(([k, v]) => ({ label: k, value: v, color: STATUS_COLORS[k] || "#9ca3af" }));
+
+    const endItemCount = {};
+    filtered.forEach(p => { const k = projectEndItem(p); endItemCount[k] = (endItemCount[k] || 0) + 1; });
+    const endItemSegments = Object.entries(endItemCount).sort((a, b) => b[1] - a[1]).map(([k, v], i) => ({ label: k, value: v, color: PALETTE[i % PALETTE.length] }));
+
+    const portfolioCount = {};
+    filtered.forEach(p => { const k = (Array.isArray(p.portfolios) && p.portfolios[0]) || "Unclassified"; portfolioCount[k] = (portfolioCount[k] || 0) + 1; });
+    const portfolioSegments = Object.entries(portfolioCount).sort((a, b) => b[1] - a[1]).map(([k, v], i) => ({ label: k, value: v, color: PALETTE[(i + 5) % PALETTE.length] }));
+
+    function legendHtml(segments) {
+      return `<div class="ov-chart-legend">${segments.map(s => `
+        <div class="ov-chart-legend-item">
+          <span class="ov-chart-legend-dot" style="background:${s.color}"></span>
+          <span class="ov-chart-legend-label">${escapeHtml(s.label)}</span>
+          <strong class="ov-chart-legend-count">${s.value}</strong>
+        </div>`).join("")}</div>`;
+    }
+
+    return `
+      <div class="overview-filters" style="margin-bottom:16px;">
+        <div class="search-box overview-filter-search"><i class="bx bx-search" aria-hidden="true"></i><input class="input-aewttr" id="ov-sys-search" placeholder="Search name, PM, team…" value="${escapeHtml(f.search || "")}"></div>
+        ${portfolioOptions.length ? `<select class="select-aewttr" id="ov-sys-portfolio">
+          <option value="All">All Portfolios</option>
+          ${portfolioOptions.map(o => `<option value="${escapeHtml(o)}"${f.portfolio === o ? " selected" : ""}>${escapeHtml(o)}</option>`).join("")}
+        </select>` : ""}
+        ${endItemOptions.length ? `<select class="select-aewttr" id="ov-sys-enditem">
+          <option value="All">All End Items</option>
+          ${endItemOptions.map(o => `<option value="${escapeHtml(o)}"${f.endItem === o ? " selected" : ""}>${escapeHtml(o)}</option>`).join("")}
+        </select>` : ""}
+        ${atoOptions.length ? `<select class="select-aewttr" id="ov-sys-ato">
+          <option value="All">All ATOs</option>
+          ${atoOptions.map(o => `<option value="${escapeHtml(o)}"${f.ato === o ? " selected" : ""}>${escapeHtml(o)}</option>`).join("")}
+        </select>` : ""}
+        <select class="select-aewttr" id="ov-sys-status">
+          <option value="All"${(!f.status || f.status === "All") ? " selected" : ""}>All Statuses</option>
+          ${["Active","Needs Attention","No Active Work","Completed"].map(s => `<option value="${escapeHtml(s)}"${f.status === s ? " selected" : ""}>${escapeHtml(s)}</option>`).join("")}
+        </select>
+        ${teamOptions.length ? `<select class="select-aewttr" id="ov-sys-team">
+          <option value="All"${(!f.team || f.team === "All") ? " selected" : ""}>All Teams</option>
+          ${teamOptions.map(t => `<option value="${escapeHtml(t)}"${f.team === t ? " selected" : ""}>${escapeHtml(t)}</option>`).join("")}
+        </select>` : ""}
+        ${hasFilter ? `<button class="btn-aewttr-ghost btn-aewttr-sm" id="ov-sys-clear"><i class="bx bx-x"></i> Clear</button>` : ""}
+      </div>
+
+      <div class="ov-charts-row">
+        <div class="ov-chart-card">
+          <div class="ov-chart-title">Project Status</div>
+          <div class="ov-chart-body">
+            ${donutChartSvg(statusSegments, { centerLabel: filtered.length, centerSub: "projects" })}
+            ${legendHtml(statusSegments)}
+          </div>
+        </div>
+        ${endItemSegments.length > 1 ? `<div class="ov-chart-card">
+          <div class="ov-chart-title">End Item Config</div>
+          <div class="ov-chart-body">
+            ${donutChartSvg(endItemSegments, { centerLabel: endItemSegments.length, centerSub: "items" })}
+            ${legendHtml(endItemSegments)}
+          </div>
+        </div>` : ""}
+        ${portfolioSegments.length > 1 ? `<div class="ov-chart-card">
+          <div class="ov-chart-title">Portfolio</div>
+          <div class="ov-chart-body">
+            ${donutChartSvg(portfolioSegments, { centerLabel: portfolioSegments.length, centerSub: "portfolios" })}
+            ${legendHtml(portfolioSegments)}
+          </div>
+        </div>` : ""}
+      </div>
+
+      <div class="ov-table-head">
+        <div class="side-panel-title">${filtered.length} Project${filtered.length !== 1 ? "s" : ""}</div>
+      </div>
+      <div class="overview-table-shell">
+        <table class="aewttr-table overview-table">
+          <thead><tr>
+            <th>Project</th><th>Status</th><th>Active</th><th>Risks</th><th>PM</th><th>End Item</th><th>Portfolio</th><th>ATO</th><th>Funding</th><th>Due</th>
+          </tr></thead>
+          <tbody>
+            ${filtered.length ? filtered.map(proj => {
+              const tasks = allProjectTasks(proj.id);
+              const active = tasks.filter(taskIsActive).length;
+              const risks = projectRiskCount(proj.id);
+              const portfolio = (Array.isArray(proj.portfolios) && proj.portfolios[0]) || "—";
+              return `<tr data-route="projects/${escapeHtml(proj.id)}/workspace">
+                <td><strong>${escapeHtml(proj.name || "Untitled project")}</strong></td>
+                <td>${derivedStatusPill(derivedProjectStatus(proj))}</td>
+                <td>${active || "—"}</td>
+                <td><span class="${risks > 0 ? "ov-risks-badge" : ""}">${risks || "—"}</span></td>
+                <td>${escapeHtml(projectPMDisplayName(proj) || "—")}</td>
+                <td>${escapeHtml(proj.configEndItem || "—")}</td>
+                <td>${escapeHtml(portfolio)}</td>
+                <td>${escapeHtml(proj.ato || "—")}</td>
+                <td>${escapeHtml(proj.fundingType || "—")}</td>
+                <td>${proj.dueDate ? fmtDate(proj.dueDate) : "—"}</td>
+              </tr>`;
+            }).join("") : `<tr><td colspan="10"><div class="empty-state" style="padding:20px 0;">No projects match these filters.</div></td></tr>`}
+          </tbody>
+        </table>
+      </div>`;
   }
 
   function renderEndItemAnalysis(projects) {
@@ -550,7 +699,7 @@ PAGE_RENDERERS.overview = function () {
                 const pr = projectRiskCount(proj.id);
                 const portfolio = (proj.portfolios && proj.portfolios[0]) || "—";
                 return `<tr data-route="projects/${escapeHtml(proj.id)}/workspace">
-                  <td><strong>${escapeHtml(proj.name || proj.id)}</strong><div class="overview-row-sub">${escapeHtml(proj.id)}</div></td>
+                  <td><strong>${escapeHtml(proj.name || "Untitled project")}</strong></td>
                   <td>${derivedStatusPill(derivedProjectStatus(proj))}</td>
                   <td>${pa}</td>
                   <td><span class="${pr > 0 ? "ov-risks-badge" : ""}">${pr || "—"}</span></td>
@@ -770,7 +919,7 @@ PAGE_RENDERERS.overview = function () {
       const x = LEFT_W + MID_GAP;
       return `<g class="ov-res-proj-node" data-proj-id="${escapeHtml(proj.id)}" style="cursor:pointer;">
         <rect x="${x}" y="${cy - 16}" width="10" height="32" rx="3" fill="${color}" opacity="0.8"/>
-        <text x="${x + 18}" y="${cy - 3}" font-size="12" font-weight="600" fill="var(--aewttr-text)">${escapeHtml((proj.name || proj.id).substring(0, 28))}</text>
+        <text x="${x + 18}" y="${cy - 3}" font-size="12" font-weight="600" fill="var(--aewttr-text)">${escapeHtml((proj.name || "Untitled project").substring(0, 28))}</text>
         <text x="${x + 18}" y="${cy + 11}" font-size="10" fill="var(--aewttr-muted)">${tasks} active${risks ? ` · ${risks} risk${risks !== 1 ? "s" : ""}` : ""}</text>
       </g>`;
     });
@@ -783,7 +932,7 @@ PAGE_RENDERERS.overview = function () {
       </div>
       <div class="ov-resources-graph-wrap">
         <div class="ov-resources-legend">
-          ${activeProjects.map(p => `<span class="ov-res-legend-item"><span class="ov-res-legend-dot" style="background:${projColorMap[p.id]}"></span>${escapeHtml(p.name || p.id)}</span>`).join("")}
+          ${activeProjects.map(p => `<span class="ov-res-legend-item"><span class="ov-res-legend-dot" style="background:${projColorMap[p.id]}"></span>${escapeHtml(p.name || "Untitled project")}</span>`).join("")}
         </div>
         <div class="ov-resources-labels">
           <span>Team Members</span>
@@ -919,7 +1068,7 @@ PAGE_RENDERERS.overview = function () {
               const risks = projectRiskCount(proj.id);
               const portfolio = (proj.portfolios && proj.portfolios[0]) || "—";
               return `<tr data-route="projects/${escapeHtml(proj.id)}/workspace">
-                <td><strong>${escapeHtml(proj.name || proj.id)}</strong><div class="overview-row-sub">${escapeHtml(proj.id)}</div></td>
+                <td><strong>${escapeHtml(proj.name || "Untitled project")}</strong></td>
                 <td>${escapeHtml(projectEndItem(proj))}</td>
                 <td>${escapeHtml(portfolio)}</td>
                 <td>${escapeHtml(projectPMDisplayName(proj) || "—")}</td>
@@ -1155,7 +1304,10 @@ PAGE_RENDERERS.overview = function () {
         filters.search ? `Search: ${filters.search}` : "",
         filters.team && filters.team !== "All" ? `Team: ${filters.team}` : "",
         filters.status && filters.status !== "All" ? `Status: ${filters.status}` : "",
-        filters.fundingType && filters.fundingType !== "All" ? `Funding: ${filters.fundingType}` : ""
+        filters.fundingType && filters.fundingType !== "All" ? `Funding: ${filters.fundingType}` : "",
+        filters.portfolio && filters.portfolio !== "All" ? `Portfolio: ${filters.portfolio}` : "",
+        filters.endItem && filters.endItem !== "All" ? `End Item: ${filters.endItem}` : "",
+        filters.ato && filters.ato !== "All" ? `ATO: ${filters.ato}` : ""
       ].filter(Boolean);
       sections.push({
         title: "Portfolio by End Item",
@@ -1437,23 +1589,16 @@ PAGE_RENDERERS.overview = function () {
     if (sysStatus) sysStatus.addEventListener("change", e => { window.AEWTTR.state.overviewFilters.status = e.target.value; render(); });
     const sysFunding = $("#ov-sys-funding");
     if (sysFunding) sysFunding.addEventListener("change", e => { window.AEWTTR.state.overviewFilters.fundingType = e.target.value; render(); });
+    const sysPortfolio = $("#ov-sys-portfolio");
+    if (sysPortfolio) sysPortfolio.addEventListener("change", e => { window.AEWTTR.state.overviewFilters.portfolio = e.target.value; render(); });
+    const sysEndItem = $("#ov-sys-enditem");
+    if (sysEndItem) sysEndItem.addEventListener("change", e => { window.AEWTTR.state.overviewFilters.endItem = e.target.value; render(); });
+    const sysAto = $("#ov-sys-ato");
+    if (sysAto) sysAto.addEventListener("change", e => { window.AEWTTR.state.overviewFilters.ato = e.target.value; render(); });
     const sysClear = $("#ov-sys-clear");
     if (sysClear) sysClear.addEventListener("click", () => {
-      window.AEWTTR.state.overviewFilters = { search: "", team: "All", status: "All", fundingType: "All" };
+      window.AEWTTR.state.overviewFilters = { search: "", team: "All", status: "All", fundingType: "All", portfolio: "All", endItem: "All", ato: "All" };
       render();
-    });
-
-    /* Expandable end item groups */
-    $all("[data-expand-sys]", $("#page-content")).forEach(btn => {
-      btn.addEventListener("click", () => {
-        const body = document.getElementById(btn.dataset.expandSys);
-        if (!body) return;
-        const nowExpanded = body.hidden;
-        body.hidden = !nowExpanded;
-        btn.setAttribute("aria-expanded", String(nowExpanded));
-        const icon = btn.querySelector(".ov-expand-icon");
-        if (icon) icon.className = `bx ${nowExpanded ? "bx-chevron-down" : "bx-chevron-right"} ov-expand-icon`;
-      });
     });
 
     /* PPTX briefing deck export */
@@ -1506,7 +1651,7 @@ PAGE_RENDERERS.overview = function () {
         const dataRows = projects.map(proj => {
           const tasks = allProjectTasks(proj.id);
           return [
-            proj.name || proj.id,
+            proj.name || "Untitled project",
             projectEndItem(proj),
             (proj.portfolios && proj.portfolios[0]) || "",
             projectPMDisplayName(proj),
