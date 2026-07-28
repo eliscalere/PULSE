@@ -444,7 +444,15 @@ function normalizeStoreShape(db) {
       capturedNotes: (session && Array.isArray(session.capturedNotes)) ? session.capturedNotes : [],
       ganttChanges: (session && Array.isArray(session.ganttChanges)) ? session.ganttChanges : [],
       minutesLog: (session && Array.isArray(session.minutesLog)) ? session.minutesLog : [],
-      guestAttendees: (session && Array.isArray(session.guestAttendees)) ? session.guestAttendees : []
+      guestAttendees: (session && Array.isArray(session.guestAttendees)) ? session.guestAttendees : [],
+      docHtml: (session && typeof session.docHtml === "string") ? session.docHtml : "",
+      _spId: (session && session._spId) || undefined,
+      _projectCode: (session && session._projectCode) || "",
+      scheduledTitle: (session && session.scheduledTitle) || null,
+      scheduledTime: (session && session.scheduledTime) || null,
+      agendaText: (session && session.agendaText) || null,
+      createdBy: (session && session.createdBy) || null,
+      createdAt: (session && session.createdAt) || null
     };
     if (rawDocBlocks !== null) {
       const blockTypes = ["action", "bullet", "h2", "para"];

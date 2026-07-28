@@ -223,7 +223,7 @@ Relevant files:
 What we learned:
 - the real SharePoint-shipped app is a flat HTML file with `WFC-MANIFEST`
 - the best reference shipped file is:
-  `/Users/eliscalere/Downloads/AEWTTR PAS/apps/PULSE/releases/reference-packages/PULSE-IPT - Only Secure in FS Sharepoint-current.html`
+  `/Users/eliscalere/Downloads/AEWTTR PAS/apps/PULSE/releases/reference-packages/PULSE - Only Secure in FS Sharepoint-current.html`
 
 That shipped file is the reason `build-sharepoint-package.js` is the preferred packaging script now.
 

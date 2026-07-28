@@ -89,13 +89,14 @@ function pulseBrandLockup(opts) {
 
 function wirePulseBrandHome(node) {
   if (!node) return;
+  const targetRoute = (window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.defaultRoute) || "dashboard";
   node.addEventListener("click", () => {
-    if (typeof navigate === "function") navigate("dashboard");
+    if (typeof navigate === "function") navigate(targetRoute);
   });
   node.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      if (typeof navigate === "function") navigate("dashboard");
+      if (typeof navigate === "function") navigate(targetRoute);
     }
   });
 }
@@ -787,6 +788,11 @@ function rememberTaskOrderNames(ns)    { return _taskOrderHelpers.remember(ns); 
 function normalizeProgramName(n)       { return _programHelpers.norm(n); }
 function getKnownProgramNames()        { return _programHelpers.getKnown(); }
 function rememberProgramNames(ns)      { return _programHelpers.remember(ns); }
+
+const _contractHelpers     = _makeFieldHelpers("contracts",     "contract");
+function normalizeContractName(n)      { return _contractHelpers.norm(n); }
+function getKnownContractNames()       { return _contractHelpers.getKnown(); }
+function rememberContractNames(ns)     { return _contractHelpers.remember(ns); }
 
 const _atoHelpers = _makeFieldHelpers("atos", "ato");
 function normalizeAtoName(n)           { return _atoHelpers.norm(n); }
@@ -1581,8 +1587,24 @@ function isViewerRole() {
   return role === "Viewer" || role === "Guest";
 }
 
+function isMemberRole() {
+  const role = currentAppRole();
+  return role === "Member";
+}
+
 function canCurrentUserEdit() {
-  return !isViewerRole();
+  const role = currentAppRole();
+  if (role === "Member" || role === "Viewer" || role === "Guest") return false;
+  return true;
+}
+
+function canCreateProject() {
+  const user = window.AEWTTR.db && window.AEWTTR.db.user;
+  if (!user) return false;
+  if (user.isAdmin) return true;
+  const role = currentAppRole();
+  if (role === "Member" || role === "Viewer" || role === "Guest") return false;
+  return true;
 }
 
 function canCurrentUserAccessAdmin() {
@@ -1611,6 +1633,8 @@ function canEditProject(proj) {
   const user = window.AEWTTR.db && window.AEWTTR.db.user;
   if (!user) return false;
   if (user.isAdmin) return true;
+  const role = currentAppRole();
+  if (role === "Member" || role === "Viewer" || role === "Guest") return false;
   const db = window.AEWTTR.db;
   const roster = (db.projectPeople && db.projectPeople[proj && proj.id]) || [];
   const email = String(user.email || user.loginName || "").trim().toLowerCase();
@@ -1621,6 +1645,16 @@ function canEditProject(proj) {
     const pn = String(p.label || "").trim().toLowerCase();
     return (email && pe && email === pe) || (name && pn && name === pn);
   });
+}
+
+function canSubmitForms() {
+  const role = currentAppRole();
+  return role !== "Viewer" && role !== "Guest";
+}
+
+function canUseDocReview() {
+  const role = currentAppRole();
+  return role !== "Viewer" && role !== "Guest";
 }
 
 function canApproveTravelRequests() {
@@ -2522,11 +2556,15 @@ function renderShell() {
     <div class="aewttr-shell">
       ${cuiTop}
       <header class="aewttr-topnav">
-        <button type="button" class="aewttr-topnav-brand" id="pulse-home-btn" aria-label="Go to dashboard">
+        <button type="button" class="aewttr-topnav-brand" id="pulse-home-btn" aria-label="Go to home">
           <img class="pulse-nav-dots-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACb0lEQVR42q2YTWtTQRSG33MTYtUgCCrdSBA3imCV6s9wI1rostD2V9Tf4j+w1C7FhRs3CgbBj40NrkqxdBH8aJPePG7OlPF6k9yvA2HuwNw5z8yd8545MbkBJklmBtCS9EDSbUkLkn5I6pvZNx/bMrNUTVlw7s/rQB9I+deGwAtgOUA05hxIgAvAdsZpCpxmYMbAZmMQQMshdtzBKGf1ABN3PvH+SpMQaz7pCfMtdYgj4JrDWx3nHeCzT5xSzMbePvM52lX9J5LuS7olybxfxEwSkh55P60DcCeasMx7JqkHdD10rSrAgjunwvsd/6nODhz6asqsIMAOJf2qC/BO0p+Sn2HiYz+a2YkrI5UAzGwg6ZUDlDlMJul59FxLCZemqF6ejbx94wqa1FZCbzcycR4EZxLBhfgfANeDjM9YWDGRiiBWgYM5O/Aa6Pn4ZIq0t3Jg2jNhIohFYAt4C+wDh8CeJ6qn0fgk836So7CXgW6en5kQUb/rk3TmOEui5ycOu+fw+76YLWCxCETuduVtbewc6PnnmWUHwGrhLDrvIHkUmB/IQXSAT3MO8TgC2WgklYcw9JCMQ3RWKg9wS3XTeNvbx5kUXTSVv2xKP3aj21IRC5/lN3AjqaqeZpYC5yTdrXiXOC/pYT0ZlS5KulQhH4T0f6UuwMh/ZS2k/+NKAOEGZGY/JX331UxKAiDpU50dCDG8W/Eu8VXSh7pp3PxqfhQJzjwLV/+1Rooab1emFC9ZEQpCtePwrSYhNjNaMO2Cs+1lYFJLCadALHsBO8xZfR9Y/68ab7DCPivZgZuS7km6KulY0hdJ7128zv4GkKS/w3S3ykLv268AAAAASUVORK5CYII=" width="32" height="32" alt="" aria-hidden="true">
+          ${window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.brandLabel ? `<span class="pulse-brand-port-tag">${escapeHtml(window.PULSE_PORT_CONFIG.brandLabel)}</span>` : ""}
         </button>
         <nav class="aewttr-nav" id="aewttr-nav"></nav>
         <div class="aewttr-topnav-right">
+          <div class="save-indicator" id="save-indicator" aria-live="polite" aria-label="Saving changes" role="status">
+            <span class="save-indicator__dot"></span><span class="save-indicator__dot"></span>
+          </div>
           <button type="button" class="aewttr-report-issue" id="report-issue-btn"${tip("Report a problem with the current page")}>
             <i class="bx bx-message-error"></i><span>Report issue</span>
           </button>
@@ -2914,7 +2952,8 @@ function renderNav() {
   const { app } = currentRoute();
   const nav = $("#aewttr-nav");
   if (!nav) return;
-  const visibleItems = NAV_ITEMS.filter((i) => {
+  const navList = (window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.navItems) ? window.PULSE_PORT_CONFIG.navItems : NAV_ITEMS;
+  const visibleItems = navList.filter((i) => {
     if (i.adminOnly && !canCurrentUserAccessAdmin()) return false;
     if (i.route === "admin" && !canCurrentUserAccessAdmin()) return false;
     return true;
@@ -2992,7 +3031,26 @@ function maybeProactiveRefreshOnNavigate() {
   refreshSharePointData("navigate");
 }
 
-function renderPage() {
+function showSaveIndicator() {
+  const el = document.getElementById("save-indicator");
+  if (el) el.classList.add("is-active");
+}
+function hideSaveIndicator() {
+  const el = document.getElementById("save-indicator");
+  if (el) el.classList.remove("is-active");
+}
+
+async function renderPage() {
+  // If there are pending saves (doc editor debounce or repo queue), flush them
+  // now and show a two-dot indicator. Only shown when the user navigates away.
+  const hasPendingLocal = typeof window.AEWTTR._flushDocSave === "function";
+  const hasPendingRepo = typeof Repo !== "undefined" && Repo.hasPendingChanges();
+  if (hasPendingLocal || hasPendingRepo) {
+    showSaveIndicator();
+    try { if (hasPendingLocal) await window.AEWTTR._flushDocSave(); } catch (e) {}
+    try { if (typeof Repo !== "undefined") await Repo.flush(); } catch (e) {}
+    hideSaveIndicator();
+  }
   try {
     const pc = document.getElementById("page-content");
     if (pc) pc.classList.remove("meeting-app--live");
@@ -3006,7 +3064,7 @@ function renderPage() {
       toast("That page is only available to app admins.", "error");
       return;
     }
-    const fn = PAGE_RENDERERS[app] || PAGE_RENDERERS.dashboard;
+    const fn = PAGE_RENDERERS[app] || (window.PULSE_PORT_CONFIG && PAGE_RENDERERS.travel) || PAGE_RENDERERS.dashboard;
     if (typeof fn !== "function") {
       console.error("PULSE: missing page renderer for", app);
       toast("This page is not available yet.", "error");
@@ -4733,7 +4791,8 @@ function startPulseApplication() {
         if (window.PULSELoader) window.PULSELoader.finish();
         const bootUrl = new URL(location.href);
         if (!bootUrl.searchParams.get("page") && !location.hash) {
-          navigate("dashboard");
+          const defaultRoute = (window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.defaultRoute) || "dashboard";
+          navigate(defaultRoute);
         } else {
           renderPage();
         }

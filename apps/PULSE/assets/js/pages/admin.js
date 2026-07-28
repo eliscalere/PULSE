@@ -68,6 +68,7 @@ function renderAdminPage(sub, recordId) {
   if (sub === "issues") return reviewingIssue ? drawIssueReviewPage(body, decodeURIComponent(recordId)) : drawIssueReports(body);
   if (sub === "settings") return drawAppSettings(body);
   if (sub === "spsetup") return drawSpSetup(body);
+  if (sub === "releases") return drawReleases(body);
 }
 
 function drawIssueReports(body) {
@@ -913,48 +914,88 @@ function openAdminGroupEditor(group, onDone) {
 function drawListsConfig(body) {
   const cfg = getLocationConfig();
 
-  function renderSection(id, title, hint, items) {
+  const SECTIONS = [
+    { id: "portfolios",      title: "Portfolios",         hint: "Shown in the Portfolio picker on projects.",              icon: "bx-briefcase",      list: () => cfg.portfolios      || (cfg.portfolios      = []) },
+    { id: "contractors",     title: "Contractors",        hint: "Contractor company picker on projects.",                  icon: "bx-buildings",      list: () => cfg.contractors     || (cfg.contractors     = []) },
+    { id: "contracts",       title: "Contracts",          hint: "Contract number/name picker on the funding tab.",         icon: "bx-file-blank",     list: () => cfg.contracts       || (cfg.contracts       = []) },
+    { id: "endItems",        title: "End Item Configs",   hint: "Config End Item picker on projects.",                     icon: "bx-chip",           list: () => cfg.configEndItems  || (cfg.configEndItems  = []) },
+    { id: "programs",        title: "Program Offices",    hint: "Program Office picker on the funding tab.",               icon: "bx-buildings",      list: () => cfg.programs        || (cfg.programs        = []), useKnown: typeof getKnownProgramNames === "function" ? getKnownProgramNames : null },
+    { id: "atos",            title: "ATO Values",         hint: "ATO picker on the classification tab.",                   icon: "bx-shield-alt-2",   list: () => cfg.atos            || (cfg.atos            = []), useKnown: typeof getKnownAtoNames === "function" ? getKnownAtoNames : null },
+    { id: "locations",       title: "Ranges / Locations", hint: "Location picker on projects.",                            icon: "bx-map-pin",        list: () => cfg.locations       || (cfg.locations       = []) },
+    { id: "taskOrders",      title: "Task Orders",        hint: "Task Order picker on the funding tab.",                   icon: "bx-list-check",     list: () => cfg.taskOrders      || (cfg.taskOrders      = []), useKnown: typeof getKnownTaskOrderNames === "function" ? getKnownTaskOrderNames : null },
+    { id: "fundingTypes",    title: "Funding Types",      hint: "Funding Type picker on the funding tab.",                 icon: "bx-dollar-circle",  list: () => cfg.fundingTypes    || (cfg.fundingTypes    = []), useKnown: typeof getKnownFundingTypeNames === "function" ? getKnownFundingTypeNames : null },
+    { id: "fiscalYears",     title: "Fiscal Years",       hint: "Fiscal Year picker on the funding tab.",                  icon: "bx-calendar",       list: () => cfg.fiscalYears     || (cfg.fiscalYears     = []), useKnown: typeof getKnownFiscalYearNames === "function" ? getKnownFiscalYearNames : null },
+    { id: "fundingStatuses", title: "Funding Statuses",   hint: "Funding Status picker on the funding tab.",               icon: "bx-trending-up",    list: () => cfg.fundingStatuses || (cfg.fundingStatuses = []), useKnown: typeof getKnownFundingStatusNames === "function" ? getKnownFundingStatusNames : null },
+  ];
+
+  const SECTION_META = {};
+  const SINGULAR = {
+    portfolios: "Portfolio", contractors: "Contractor Company", contracts: "Contract",
+    endItems: "End Item Config", programs: "Program Office", atos: "ATO", locations: "Location",
+    taskOrders: "Task Order", fundingTypes: "Funding Type", fiscalYears: "Fiscal Year", fundingStatuses: "Funding Status",
+  };
+  const PLACEHOLDER = {
+    portfolios: "e.g. AEWTTR", contractors: "e.g. Harbor Systems LLC", contracts: "e.g. N00024-26-C-0440",
+    endItems: "e.g. AN/ALQ-217", programs: "e.g. PEO IEWS", atos: "e.g. ATO-2024-001",
+    locations: "e.g. White Sands Missile Range", taskOrders: "e.g. TO-2024-001",
+    fundingTypes: "e.g. RDT&E", fiscalYears: "e.g. FY26", fundingStatuses: "e.g. Fully Funded",
+  };
+  SECTIONS.forEach(s => {
+    SECTION_META[s.id] = { singular: SINGULAR[s.id], label: `${SINGULAR[s.id]} name`, placeholder: PLACEHOLDER[s.id], list: s.list };
+  });
+
+  let activeSection = window.AEWTTR.state && window.AEWTTR.state.adminListsSection || SECTIONS[0].id;
+
+  function getItems(s) {
+    return s.useKnown ? s.useKnown() : (s.list() || []);
+  }
+
+  function renderPanel(sectionId) {
+    const s = SECTIONS.find(x => x.id === sectionId) || SECTIONS[0];
+    const items = getItems(s);
     return `
-      <div class="al-card">
-        <div class="al-card-head">
-          <span class="al-card-title">${escapeHtml(title)}<span class="al-badge">${items.length}</span></span>
-          <button class="btn-aewttr-ghost btn-aewttr-sm" data-lists-add="${id}"${tip(`Add a new ${escapeHtml(title)} entry`)}><i class="bx bx-plus"></i> Add</button>
+      <div class="al-panel-header">
+        <div>
+          <div class="al-panel-title"><i class="bx ${escapeHtml(s.icon)}"></i> ${escapeHtml(s.title)}</div>
+          <div class="al-panel-hint">${escapeHtml(s.hint)}</div>
         </div>
-        <div class="al-items">
-          ${items.length ? items.map((item, i) => `
-            <div class="al-item" data-lists-row="${id}-${i}">
-              <span class="al-item-name">${escapeHtml(item)}</span>
-              <div class="al-item-actions">
-                <button class="btn-aewttr-ghost btn-aewttr-sm" data-lists-rename="${id}" data-lists-idx="${i}"${tip(`Rename ${escapeHtml(item)}`)}><i class="bx bx-pencil"></i></button>
-                <button class="btn-danger-outline btn-aewttr-sm" data-lists-remove="${id}" data-lists-idx="${i}"${tip(`Remove ${escapeHtml(item)}`)}><i class="bx bx-trash"></i></button>
-              </div>
-            </div>`).join("") : `<div class="al-empty">No entries yet.</div>`}
-        </div>
+        <button class="btn-aewttr btn-aewttr-sm" data-lists-add="${escapeHtml(s.id)}"><i class="bx bx-plus"></i> Add ${escapeHtml(SINGULAR[s.id] || s.title)}</button>
+      </div>
+      <div class="al-panel-list">
+        ${items.length ? items.map((item, i) => `
+          <div class="al-row">
+            <div class="al-row-icon"><i class="bx bx-tag-alt"></i></div>
+            <span class="al-row-name">${escapeHtml(item)}</span>
+            <div class="al-row-actions">
+              <button class="btn-aewttr-ghost btn-aewttr-sm" data-lists-rename="${escapeHtml(s.id)}" data-lists-idx="${i}"><i class="bx bx-pencil"></i> Rename</button>
+              <button class="btn-danger-outline btn-aewttr-sm" data-lists-remove="${escapeHtml(s.id)}" data-lists-idx="${i}"><i class="bx bx-trash"></i></button>
+            </div>
+          </div>`).join("") : `
+          <div class="al-empty-state">
+            <i class="bx bx-inbox" style="font-size:28px;color:var(--aewttr-muted);"></i>
+            <p>No ${escapeHtml(s.title.toLowerCase())} yet.</p>
+            <button class="btn-aewttr-outline btn-aewttr-sm" data-lists-add="${escapeHtml(s.id)}"><i class="bx bx-plus"></i> Add first entry</button>
+          </div>`}
       </div>`;
   }
 
-  body.innerHTML = requireAdmin(() => {
-    const portfolios    = cfg.portfolios || [];
-    const endItems      = cfg.configEndItems || [];
-    const atos          = typeof getKnownAtoNames === "function" ? getKnownAtoNames() : (cfg.atos || []);
-    const programs      = typeof getKnownProgramNames === "function" ? getKnownProgramNames() : (cfg.programs || []);
-    const locations     = cfg.locations || [];
-    const taskOrders    = typeof getKnownTaskOrderNames === "function" ? getKnownTaskOrderNames() : (cfg.taskOrders || []);
-    const fundingTypes  = typeof getKnownFundingTypeNames === "function" ? getKnownFundingTypeNames() : (cfg.fundingTypes || []);
-    const fiscalYears   = typeof getKnownFiscalYearNames === "function" ? getKnownFiscalYearNames() : (cfg.fiscalYears || []);
-    const fundingStatuses = typeof getKnownFundingStatusNames === "function" ? getKnownFundingStatusNames() : (cfg.fundingStatuses || []);
-    return `<div class="al-grid">
-      ${renderSection("portfolios",      "Portfolios",        "Portfolio picker on projects.",          portfolios)}
-      ${renderSection("endItems",        "End Item Configs",  "Config End Item picker on projects.",    endItems)}
-      ${renderSection("atos",            "ATO Values",        "ATO picker, classification tab.",        atos)}
-      ${renderSection("programs",        "Program Offices",   "Program Office picker, funding tab.",    programs)}
-      ${renderSection("locations",       "Ranges / Locations","Location picker on projects.",           locations)}
-      ${renderSection("taskOrders",      "Task Orders",       "Task Order picker, funding tab.",        taskOrders)}
-      ${renderSection("fundingTypes",    "Funding Types",     "Funding Type picker, funding tab.",      fundingTypes)}
-      ${renderSection("fiscalYears",     "Fiscal Years",      "Fiscal Year picker, funding tab.",       fiscalYears)}
-      ${renderSection("fundingStatuses", "Funding Statuses",  "Funding Status picker, funding tab.",    fundingStatuses)}
-    </div>`;
-  });
+  body.innerHTML = requireAdmin(() => `
+    <div class="al-shell">
+      <nav class="al-nav">
+        ${SECTIONS.map(s => {
+          const count = getItems(s).length;
+          return `<button type="button" class="al-nav-item${s.id === activeSection ? " is-active" : ""}" data-al-section="${escapeHtml(s.id)}">
+            <i class="bx ${escapeHtml(s.icon)} al-nav-icon"></i>
+            <span class="al-nav-label">${escapeHtml(s.title)}</span>
+            <span class="al-nav-count">${count}</span>
+          </button>`;
+        }).join("")}
+      </nav>
+      <div class="al-panel" id="al-panel">
+        ${renderPanel(activeSection)}
+      </div>
+    </div>
+  `);
 
   if (!window.AEWTTR.db.user.isAdmin) return;
 
@@ -965,64 +1006,68 @@ function drawListsConfig(body) {
     drawListsConfig(body);
   };
 
-  const SECTION_META = {
-    portfolios:      { singular: "Portfolio",       label: "Portfolio name",         placeholder: "e.g. AEWTTR",                    list: () => cfg.portfolios      || (cfg.portfolios      = []) },
-    endItems:        { singular: "End Item Config",  label: "End item name",          placeholder: "e.g. AN/ALQ-217",                list: () => cfg.configEndItems  || (cfg.configEndItems  = []) },
-    atos:            { singular: "ATO",              label: "ATO value",              placeholder: "e.g. ATO-2024-001",              list: () => cfg.atos            || (cfg.atos            = []) },
-    programs:        { singular: "Program Office",   label: "Program office name",    placeholder: "e.g. PEO IEWS",                  list: () => cfg.programs        || (cfg.programs        = []) },
-    locations:       { singular: "Location",         label: "Location name",          placeholder: "e.g. White Sands Missile Range", list: () => cfg.locations       || (cfg.locations       = []) },
-    taskOrders:      { singular: "Task Order",       label: "Task order number/name", placeholder: "e.g. TO-2024-001",               list: () => cfg.taskOrders      || (cfg.taskOrders      = []) },
-    fundingTypes:    { singular: "Funding Type",     label: "Funding type name",      placeholder: "e.g. RDT&E",                     list: () => cfg.fundingTypes    || (cfg.fundingTypes    = []) },
-    fiscalYears:     { singular: "Fiscal Year",      label: "Fiscal year",            placeholder: "e.g. FY26",                      list: () => cfg.fiscalYears     || (cfg.fiscalYears     = []) },
-    fundingStatuses: { singular: "Funding Status",   label: "Funding status",         placeholder: "e.g. Fully Funded",              list: () => cfg.fundingStatuses || (cfg.fundingStatuses = []) },
-  };
-
-  $all("[data-lists-add]", body).forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const meta = SECTION_META[btn.dataset.listsAdd];
-      if (!meta) return;
-      const name = (await promptDialog({ title: `Add ${meta.singular}`, label: meta.label, placeholder: meta.placeholder }) || "").trim();
-      if (!name) return;
-      const list = meta.list();
-      if (list.some((n) => n.toLowerCase() === name.toLowerCase())) { toast(`That ${meta.singular.toLowerCase()} already exists.`, "error"); return; }
-      list.push(name);
-      list.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-      await saveAndRefresh();
-      toast(`${meta.singular} added`, "success");
+  // nav switching — re-render panel in-place without full redraw
+  $all("[data-al-section]", body).forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeSection = btn.dataset.alSection;
+      if (window.AEWTTR.state) window.AEWTTR.state.adminListsSection = activeSection;
+      $all("[data-al-section]", body).forEach(b => b.classList.toggle("is-active", b.dataset.alSection === activeSection));
+      const panel = $("#al-panel", body);
+      if (panel) panel.innerHTML = renderPanel(activeSection);
+      wireListEvents();
     });
   });
 
-  $all("[data-lists-rename]", body).forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const meta = SECTION_META[btn.dataset.listsRename];
-      if (!meta) return;
-      const idx = Number(btn.dataset.listsIdx);
-      const list = meta.list();
-      const current = list[idx];
-      const name = (await promptDialog({ title: `Rename ${meta.singular}`, label: "Name", value: current }) || "").trim();
-      if (!name || name === current) return;
-      if (list.some((n, i) => i !== idx && n.toLowerCase() === name.toLowerCase())) { toast("That name already exists.", "error"); return; }
-      list[idx] = name;
-      list.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-      await saveAndRefresh();
-      toast("Renamed", "success");
+  function wireListEvents() {
+    $all("[data-lists-add]", body).forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const meta = SECTION_META[btn.dataset.listsAdd];
+        if (!meta) return;
+        const name = (await promptDialog({ title: `Add ${meta.singular}`, label: meta.label, placeholder: meta.placeholder }) || "").trim();
+        if (!name) return;
+        const list = meta.list();
+        if (list.some((n) => n.toLowerCase() === name.toLowerCase())) { toast(`That ${meta.singular.toLowerCase()} already exists.`, "error"); return; }
+        list.push(name);
+        list.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+        await saveAndRefresh();
+        toast(`${meta.singular} added`, "success");
+      });
     });
-  });
 
-  $all("[data-lists-remove]", body).forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const meta = SECTION_META[btn.dataset.listsRemove];
-      if (!meta) return;
-      const idx = Number(btn.dataset.listsIdx);
-      const list = meta.list();
-      const item = list[idx];
-      const ok = await confirmDialog({ title: `Remove ${meta.singular}`, message: `Remove "${item}" from the selectable list? Projects that already use it keep it until edited.`, confirmLabel: "Remove", danger: true });
-      if (!ok) return;
-      list.splice(idx, 1);
-      await saveAndRefresh();
-      toast("Removed", "success");
+    $all("[data-lists-rename]", body).forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const meta = SECTION_META[btn.dataset.listsRename];
+        if (!meta) return;
+        const idx = Number(btn.dataset.listsIdx);
+        const list = meta.list();
+        const current = list[idx];
+        const name = (await promptDialog({ title: `Rename ${meta.singular}`, label: "Name", value: current }) || "").trim();
+        if (!name || name === current) return;
+        if (list.some((n, i) => i !== idx && n.toLowerCase() === name.toLowerCase())) { toast("That name already exists.", "error"); return; }
+        list[idx] = name;
+        list.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+        await saveAndRefresh();
+        toast("Renamed", "success");
+      });
     });
-  });
+
+    $all("[data-lists-remove]", body).forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const meta = SECTION_META[btn.dataset.listsRemove];
+        if (!meta) return;
+        const idx = Number(btn.dataset.listsIdx);
+        const list = meta.list();
+        const item = list[idx];
+        const ok = await confirmDialog({ title: `Remove ${meta.singular}`, message: `Remove "${item}" from the selectable list? Projects that already use it keep it until edited.`, confirmLabel: "Remove", danger: true });
+        if (!ok) return;
+        list.splice(idx, 1);
+        await saveAndRefresh();
+        toast("Removed", "success");
+      });
+    });
+  }
+
+  wireListEvents();
 }
 
 function drawLocationConfig(body) {
@@ -1366,3 +1411,153 @@ function drawApprovalQueue(body) {
   if (!window.AEWTTR.db.user.isAdmin) return;
   $all("[data-goto-travel]", body).forEach(b => b.addEventListener("click", () => navigate("travel/approve", { tr: b.dataset.gotoTravel })));
 }
+
+function drawReleases(body) {
+  if (!canCurrentUserAccessAdmin()) {
+    body.innerHTML = requireAdmin(() => "");
+    return;
+  }
+
+  const releases = [
+    {
+      id: "pulse-main",
+      name: "Main PULSE Application",
+      version: "v1.0.0",
+      filename: "PULSE-v1.0.0.html",
+      fsFilename: "AEWTTR-PULSE_v.20260727.html",
+      badge: "Production Ready",
+      badgeClass: "kc-badge",
+      icon: "bx-rocket",
+      description: "Full IPT operational workspace incorporating project management, travel tracking, weekly meeting notes with OneNote/DOCX import, document review workflows, and system setup.",
+      command: "node apps/PULSE/scripts/build-travel-packages.js"
+    },
+    {
+      id: "travel-mytravel",
+      name: "PULSE Travel — My Travel",
+      version: "v1.0.0",
+      filename: "PULSE-Travel-MyTravel-v1.0.0.html",
+      fsFilename: "Travel-MyTravel-v1.0.0.html",
+      badge: "Portal Package",
+      badgeClass: "kc-badge",
+      icon: "bx-briefcase-alt-2",
+      description: "Dedicated end-user travel portal for tracking individual trip requests, monitoring approval status, and submitting travel debriefs.",
+      command: "node apps/PULSE/scripts/build-travel-packages.js"
+    },
+    {
+      id: "travel-forms",
+      name: "PULSE Travel — Request Forms",
+      version: "v1.0.0",
+      filename: "PULSE-Travel-Request-Forms-v1.0.0.html",
+      fsFilename: "Travel-Request-Forms-v1.0.0.html",
+      badge: "Form Package",
+      badgeClass: "kc-badge",
+      icon: "bx-file",
+      description: "Streamlined single-purpose web part for filing new TDY, local travel, and leave requests directly within SharePoint.",
+      command: "node apps/PULSE/scripts/build-travel-packages.js"
+    },
+    {
+      id: "travel-calendar",
+      name: "PULSE Travel — Calendar",
+      version: "v1.0.0",
+      filename: "PULSE-Travel-Calendar-v1.0.0.html",
+      fsFilename: "Travel-Calendar-v1.0.0.html",
+      badge: "Calendar Package",
+      badgeClass: "kc-badge",
+      icon: "bx-calendar",
+      description: "Shared organizational travel and leave calendar workspace powered by FullCalendar and SharePoint list sync.",
+      command: "node apps/PULSE/scripts/build-travel-packages.js"
+    },
+    {
+      id: "pulse-code",
+      name: "PULSE CODE",
+      version: "v1.0.0",
+      filename: "PULSE-CODE-v1.0.0.html",
+      fsFilename: "PULSE-CODE-v1.0.0.html",
+      badge: "Utility Package",
+      badgeClass: "kc-badge",
+      icon: "bx-code-alt",
+      description: "In-browser code editor and file manager for SharePoint site assets and embedded web parts.",
+      command: "node apps/PULSE-CODE/scripts/build-sharepoint-package.js"
+    },
+    {
+      id: "pulse-tickets",
+      name: "PULSE Tickets",
+      version: "v1.0.0",
+      filename: "PULSE-Tickets-v1.0.0.html",
+      fsFilename: "PULSE-Tickets-v1.0.0.html",
+      badge: "Support Package",
+      badgeClass: "kc-badge",
+      icon: "bx-support",
+      description: "Standalone issue tracking and user support ticket management web part.",
+      command: "node apps/PULSE-TICKETS/scripts/build-sharepoint-package.js"
+    },
+    {
+      id: "pulse-docs",
+      name: "PULSE Documentation",
+      version: "v1.0.0",
+      filename: "PULSE-Documentation-v1.0.0.html",
+      fsFilename: "PULSE-Documentation-v1.0.0.html",
+      badge: "Docs Package",
+      badgeClass: "kc-badge",
+      icon: "bx-book-open",
+      description: "Interactive technical handoff, SOPs, architectural reference, and user guide application.",
+      command: "node output/pulse-documentation/scripts/build-sharepoint-package.mjs"
+    }
+  ];
+
+  body.innerHTML = `
+    <div class="aewttr-card aewttr-card-pad">
+      <div class="side-panel-title">App Releases &amp; SharePoint Firepit Packages</div>
+      <p style="font-size:13px;color:var(--aewttr-muted);margin:4px 0 16px;">
+        PULSE packages are compiled as standalone, single-file HTML web parts with zero external network dependencies. All scripts, stylesheets, fonts, and images are bundled directly for SharePoint deployment.
+      </p>
+
+      <div class="spsetup-status-strip" style="margin-bottom:20px;">
+        <div class="spsetup-status-item"><span class="k">Total Releases</span><span class="v">7 Packages</span></div>
+        <div class="spsetup-status-item"><span class="k">Target Host</span><span class="v"><span class="kc-badge">SharePoint Firepit</span></span></div>
+        <div class="spsetup-status-item"><span class="k">Packaging Format</span><span class="v">Single-File HTML Bundle</span></div>
+        <div class="spsetup-status-item"><span class="k">Build Status</span><span class="v" style="color:var(--aewttr-success,#27ae60);"><i class="bx bx-check-circle"></i> Verified Clean</span></div>
+      </div>
+
+      <div class="release-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));gap:16px;">
+        ${releases.map((rel) => `
+          <div class="aewttr-card aewttr-card-pad" style="background:var(--aewttr-bg-card,#fff);border:1px solid var(--aewttr-border,#e2e8f0);border-radius:8px;display:flex;flex-direction:column;justify-content:space-between;padding:16px;">
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <i class="bx ${rel.icon}" style="font-size:20px;color:var(--aewttr-primary,#1d4ed8);"></i>
+                  <strong style="font-size:14.5px;color:var(--aewttr-fg,#0f172a);">${escapeHtml(rel.name)}</strong>
+                </div>
+                <span class="${rel.badgeClass}" style="font-size:11px;">${escapeHtml(rel.version)}</span>
+              </div>
+              <p style="font-size:12.5px;color:var(--aewttr-muted,#64748b);line-height:1.45;margin-bottom:12px;">${escapeHtml(rel.description)}</p>
+            </div>
+            <div>
+              <div style="font-size:11.5px;color:var(--aewttr-muted,#64748b);background:var(--aewttr-bg-subtle,#f8fafc);padding:6px 10px;border-radius:4px;font-family:monospace;margin-bottom:10px;word-break:break-all;">
+                <div><i class="bx bx-file"></i> releases/${escapeHtml(rel.filename)}</div>
+                ${rel.fsFilename !== rel.filename ? `<div style="margin-top:2px;"><i class="bx bx-folder"></i> FS packages/${escapeHtml(rel.fsFilename)}</div>` : ""}
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <button type="button" class="btn-aewttr-outline btn-aewttr-sm btn-copy-cmd" data-cmd="${escapeHtml(rel.command)}" style="width:100%;justify-content:center;"><i class="bx bx-copy"></i> Copy build command</button>
+              </div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+
+  $all(".btn-copy-cmd", body).forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const cmd = btn.dataset.cmd;
+      if (cmd && navigator.clipboard) {
+        navigator.clipboard.writeText(cmd).then(() => {
+          if (typeof toast === "function") toast("Build command copied to clipboard!", "success");
+        }).catch(() => {
+          if (typeof toast === "function") toast(`Build command: ${cmd}`, "info");
+        });
+      }
+    });
+  });
+}
+

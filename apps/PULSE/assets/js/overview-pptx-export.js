@@ -186,7 +186,7 @@
       fontFace: FONT,
       margin: 0,
       breakLine: false,
-      fit: "shrink",
+      shrinkText: true,
       ...options
     });
   }
@@ -198,7 +198,7 @@
   function addRule(slide, box, color, width) {
     slide.addShape("line", {
       ...box,
-      line: { color: color || C.line, width: width || 0.7 }
+      line: { color: color || C.line, pt: width || 0.7 }
     });
   }
 
@@ -339,7 +339,7 @@
       fontSize: 9.4,
       color: C.ink,
       bullet: { indent: 13 },
-      paraSpaceAfterPt: 4,
+      paraSpaceAfter: 4,
       breakLine: true,
       valign: "top"
     });
@@ -1223,12 +1223,6 @@
     prs.subject = "PULSE Overview";
     prs.title = isTeam ? "PULSE Team Overview" : "PULSE My Overview";
     prs.lang = "en-US";
-    prs.theme = {
-      headFontFace: FONT,
-      bodyFontFace: FONT,
-      lang: "en-US"
-    };
-
     const assets = await loadTemplateAssets();
     const model = isTeam ? buildTeamModel(db, visibleProjects) : buildMyModel(db);
     addCoverSlide(prs, model, assets);

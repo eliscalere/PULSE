@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<!--
+  PULSE Travel — Calendar Package
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  (function () {
+    try {
+      var savedTheme = String(localStorage.getItem("aewttr_theme") || "").toLowerCase();
+      var resolvedTheme = savedTheme === "dark" || savedTheme === "light"
+        ? savedTheme
+        : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", resolvedTheme);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+    document.documentElement.setAttribute("data-theme-ready", "true");
+  }());
+
+  window.PULSE_PORT_CONFIG = {
+    mode: "travel-calendar",
+    appTitle: "PULSE — Travel Calendar",
+    brandLabel: "Travel Calendar",
+    defaultRoute: "travel/calendar",
+    navItems: [
+      { route: "travel/calendar", icon: "bx-calendar", label: "Calendar" }
+    ],
+    sidebarTitle: "Calendar",
+    sidebarSubtitle: "Schedule & team events",
+    sidebarTools: [
+      { key: "calendar", title: "Travel Calendar", navLabel: "Travel Calendar", sub: "See approved travel on a monthly calendar.", icon: "bx-calendar" },
+      { key: "events", title: "Team Events", navLabel: "Team Events", sub: "Schedule and manage non-travel team events.", icon: "bx-calendar-event" }
+    ]
+  };
+</script>
+  <title>PULSE — Travel Calendar</title>
+  <link rel="icon" type="image/png" href="assets/images/PULSE_logo_black_transparent_4x.png">
+
+<link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="vendor/boxicons/css/boxicons.min.css">
+<link rel="stylesheet" href="vendor/fullcalendar/css/main.min.css">
+<link rel="stylesheet" href="vendor/flatpickr/flatpickr.min.css">
+<link rel="stylesheet" href="assets/css/style.css?v=20260727a">
+<link rel="stylesheet" href="assets/css/dropdowns.css">
+<link rel="stylesheet" href="assets/css/pulse-system.css?v=20260727d">
+</head>
+<body>
+
+<!-- Boot loader lives outside #aewttr-root so renderShell() can't wipe it -->
+<div id="pulse-boot-loader" role="status" aria-label="Loading PULSE Travel Calendar">
+  <div class="pulse-svgl-wrap">
+    <svg class="pulse-svgl" viewBox="0 0 960 360" aria-hidden="true">
+      <g class="pulse-svgl-wordmark">
+        <text class="pulse-svgl-letter pulse-svgl-letter--p" x="120" y="180">P</text>
+        <text class="pulse-svgl-letter pulse-svgl-letter--u" x="300" y="180">U</text>
+        <text class="pulse-svgl-letter pulse-svgl-letter--l" x="480" y="180">L</text>
+        <text class="pulse-svgl-letter pulse-svgl-letter--s" x="660" y="180">S</text>
+        <text class="pulse-svgl-letter pulse-svgl-letter--e" x="840" y="180">E</text>
+      </g>
+      <circle class="pulse-svgl-dot pulse-svgl-dot--upper" cx="300" cy="76" r="14" />
+      <circle class="pulse-svgl-dot pulse-svgl-dot--lower" cx="660" cy="258" r="14" />
+    </svg>
+  </div>
+</div>
+
+<script>
+  window.PULSELoader = {
+    finish: function () {
+      setTimeout(function () {
+        var el = document.getElementById('pulse-boot-loader');
+        if (!el) return;
+        el.animate(
+          [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.985)' }],
+          { duration: 360, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }
+        ).onfinish = function () { el.remove(); };
+      }, 1000);
+    }
+  };
+</script>
+
+<div id="aewttr-root"></div>
+
+<script src="vendor/fullcalendar/js/main.min.js"></script>
+<script src="vendor/flatpickr/flatpickr.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+
+<script src="assets/js/app-config.js"></script>
+<script src="assets/js/sharepoint-adapter.js?v=20260722b"></script>
+<script src="assets/js/sharepoint-schema.js?v=20260727a"></script>
+<script src="assets/js/sharepoint-repo.js?v=20260727a"></script>
+<script src="assets/js/data.js?v=20260727a"></script>
+<script src="assets/js/issue-reporting.js?v=20260724a"></script>
+<script src="assets/js/export.js?v=20260725b"></script>
+<script src="vendor/pptxgenjs/pptxgen.browser.js"></script>
+<script src="assets/js/office-desktop.js?v=20260726d"></script>
+<script src="assets/js/project-pptx-export.js?v=20260727a"></script>
+<script src="assets/js/app.js?v=20260727a"></script>
+<script src="assets/js/audit-log.js"></script>
+<script src="assets/js/notify.js"></script>
+<script src="assets/js/travel-docx-template.js?v=20260726a"></script>
+<script src="assets/js/pages/travel.js?v=20260726j"></script>
+<script src="assets/js/sample-project-seed.js"></script>
+</body>
+</html>

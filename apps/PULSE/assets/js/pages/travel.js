@@ -1,6 +1,6 @@
 PAGE_RENDERERS.travel = function (parts) {
   if (!parts || !parts.length) {
-    navigate(canAccessTravelApprovals() ? "travel/all" : "travel/mine");
+    navigate("travel/mine");
     return;
   }
   renderTravelPage(parts);
@@ -93,18 +93,26 @@ function travelTileAlertCount(key) {
 }
 
 function renderTravelSidebar(activeSub) {
-  const visibleTools = TRAVEL_TOOLS.filter((t) => !t.approverOnly || canAccessTravelApprovals());
+  const tools = (window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.sidebarTools)
+    ? window.PULSE_PORT_CONFIG.sidebarTools
+    : TRAVEL_TOOLS;
+  const visibleTools = tools.filter((t) => !t.approverOnly || canAccessTravelApprovals());
+  const currentHashRoute = String(location.hash || "").replace(/^#\/?/, "");
+
   return `
     <aside class="project-spo-nav travel-spo-nav">
       <div class="project-spo-nav-head travel-spo-nav-head">
-        <div class="project-spo-id">Travel</div>
-        <div class="project-spo-name">Requests &amp; calendar</div>
+        <div class="project-spo-id">${escapeHtml((window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.sidebarTitle) || "Travel")}</div>
+        <div class="project-spo-name">${escapeHtml((window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.sidebarSubtitle) || "Requests & calendar")}</div>
       </div>
       <nav class="project-spo-menu travel-spo-menu" aria-label="Travel sections">
         ${visibleTools.map((tool) => {
           const count = travelTileAlertCount(tool.key);
+          const isSubActive = tool.routeOverride
+            ? currentHashRoute === tool.routeOverride || (activeSub === tool.key && !currentHashRoute.includes("/"))
+            : activeSub === tool.key;
           return `
-            <button type="button" class="project-spo-link travel-spo-link ${activeSub === tool.key ? "active" : ""}" data-travel-sub="${tool.key}">
+            <button type="button" class="project-spo-link travel-spo-link ${isSubActive ? "active" : ""}" data-travel-sub="${tool.key}" ${tool.routeOverride ? `data-route-override="${escapeHtml(tool.routeOverride)}"` : ""}>
               <i class="bx ${tool.icon}"></i>
               <span>${escapeHtml(tool.navLabel || tool.title)}</span>
               ${count ? `<em class="project-spo-badge">${count}</em>` : ""}
@@ -117,7 +125,13 @@ function renderTravelSidebar(activeSub) {
 function wireTravelSidebar(mount) {
   if (!mount) return;
   $all("[data-travel-sub]", mount).forEach((link) => {
-    link.addEventListener("click", () => navigate(`travel/${link.dataset.travelSub}`));
+    link.addEventListener("click", () => {
+      if (link.dataset.routeOverride) {
+        navigate(link.dataset.routeOverride);
+      } else {
+        navigate(`travel/${link.dataset.travelSub}`);
+      }
+    });
   });
 }
 
@@ -265,6 +279,7 @@ function canRequesterManagePendingTravel(r) {
 }
 
 function canRequesterEditTravel(r) {
+  if (typeof canSubmitForms === "function" && !canSubmitForms()) return false;
   if (!isCurrentUserTravelRequester(r)) return false;
   return r && (r.status === "Submitted" || r.status === "Completed");
 }
@@ -488,6 +503,7 @@ function drawTravelList(body, forcedView) {
             !isAll && iAmRequester && canRequesterWithdrawTravel(r) ? travelActionBtn("revoke", r.id, { tone: "danger", tip: "Withdraw this request" }) : "",
             !isAll && canCancelTravelRequest(r) && !canRequesterWithdrawTravel(r) ? travelActionBtn("cancel", r.id, { tone: "danger", tip: "Cancel this travel request" }) : "",
             !isAll && r.exportFileUrl ? travelActionBtn("open-export", r.id, { label: "Open Document", icon: "bx-desktop", tip: "Open travel document in Word" }) : "",
+            !isAll && r.start ? `<a class="btn-travel-action" href="data:text/calendar;charset=utf-8,${encodeURIComponent(buildTravelIcsContent(r))}" download="${escapeHtml(r.id)}.ics" title="Download .ics" aria-label="Download calendar event"><i class="bx bx-calendar-plus"></i><span>Add to Calendar</span></a>` : "",
             isAll && r.status === "Submitted" && needsConcurrence && canRecordConcurrence() ? travelActionBtn("concur", r.id, { tone: "primary", tip: isLeave ? "Record customer concurrence for this leave request" : "Record customer concurrence" }) : "",
             isAll && r.status === "Submitted" && r.chargeObjectStatus === "Pending" && !isLeave && canAssignTravelCo() ? travelActionBtn("assign-co", r.id, { tone: "primary", tip: "Enter charge object number" }) : "",
             isAll && canAdminCancelTravel(r) ? travelActionBtn("cancel", r.id, { tone: "danger", tip: "Cancel this travel request" }) : "",
@@ -2193,6 +2209,165 @@ async function saveTravelExportToSharePoint(request, opts) {
   return result;
 }
 
+/* ---------- calendar invite helpers ---------- */
+
+function _icsEscape(str) {
+  return String(str || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+}
+
+function buildTravelIcsContent(req) {
+  const isAllDay = travelRequestIsAllDay(req);
+  const isLeave = travelCategory(req) === "Leave";
+  const title = _icsEscape(req.tripTitle || (isLeave ? `Leave — ${req.requester}` : `TDY — ${req.destination || "Travel"}`));
+  const uid = `PULSE-${req.id}@aewttr.pulse`;
+  const stamp = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15) + "Z";
+
+  function padDate(iso) { return iso ? iso.replace(/-/g, "") : ""; }
+  function padTime(t) { return t ? t.replace(/:/g, "").slice(0, 4).padEnd(6, "0") : "000000"; }
+
+  let dtStart, dtEnd;
+  if (isAllDay) {
+    dtStart = `DTSTART;VALUE=DATE:${padDate(req.start)}`;
+    const endDay = req.end ? new Date(req.end + "T12:00:00Z") : new Date((req.start || req.end) + "T12:00:00Z");
+    endDay.setUTCDate(endDay.getUTCDate() + 1);
+    dtEnd = `DTEND;VALUE=DATE:${endDay.toISOString().slice(0, 10).replace(/-/g, "")}`;
+  } else {
+    dtStart = `DTSTART;TZID=America/New_York:${padDate(req.start)}T${padTime(req.startTime)}`;
+    dtEnd = `DTEND;TZID=America/New_York:${padDate(req.end)}T${padTime(req.endTime)}`;
+  }
+
+  const descLines = [
+    `Travel Request: ${req.id}`,
+    req.purpose ? `Purpose: ${req.purpose}` : "",
+    req.destination ? `Destination: ${req.destination}` : "",
+    req.chargeObject ? `Charge Object: ${req.chargeObject}` : ""
+  ].filter(Boolean);
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//AEWTTR PULSE//Travel//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${stamp}`,
+    dtStart,
+    dtEnd,
+    `SUMMARY:${title}`,
+    req.destination ? `LOCATION:${_icsEscape(req.destination)}` : "",
+    `DESCRIPTION:${_icsEscape(descLines.join("\n"))}`,
+    "STATUS:CONFIRMED",
+    "TRANSP:OPAQUE",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].filter(Boolean).join("\r\n");
+}
+
+function buildTravelOwaLink(req) {
+  const isLeave = travelCategory(req) === "Leave";
+  const title = req.tripTitle || (isLeave ? `Leave — ${req.requester}` : `TDY — ${req.destination || "Travel"}`);
+  const start = req.start && req.startTime ? `${req.start}T${req.startTime}:00` : (req.start || "");
+  const end = req.end && req.endTime ? `${req.end}T${req.endTime}:00` : (req.end || "");
+  const bodyText = [
+    `Travel Request: ${req.id}`,
+    req.purpose ? `Purpose: ${req.purpose}` : "",
+    req.destination ? `Destination: ${req.destination}` : ""
+  ].filter(Boolean).join("\n");
+  const params = new URLSearchParams();
+  if (start) params.set("startdt", start);
+  if (end) params.set("enddt", end);
+  params.set("subject", title);
+  if (bodyText) params.set("body", bodyText);
+  if (req.destination) params.set("location", req.destination);
+  if (travelRequestIsAllDay(req)) params.set("allday", "true");
+  const attendeeEmails = new Set();
+  if (req.requesterEmail) attendeeEmails.add(String(req.requesterEmail).trim().toLowerCase());
+  (req.travelers || []).forEach((t) => { if (t.email && t.email.trim()) attendeeEmails.add(t.email.trim().toLowerCase()); });
+  if (attendeeEmails.size) params.set("to", Array.from(attendeeEmails).join(";"));
+  return `https://outlook.office.com/calendar/action/compose?${params.toString()}`;
+}
+
+function downloadTravelIcs(req) {
+  const content = buildTravelIcsContent(req);
+  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${req.id}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+function _travelIsoWithOffset(dateStr, timeStr) {
+  if (!dateStr) return "";
+  const time = timeStr || "08:00";
+  const dt = new Date(`${dateStr}T${time}:00`);
+  const off = -dt.getTimezoneOffset();
+  const sign = off >= 0 ? "+" : "-";
+  const h = String(Math.floor(Math.abs(off) / 60)).padStart(2, "0");
+  const m = String(Math.abs(off) % 60).padStart(2, "0");
+  return `${dateStr}T${time}:00${sign}${h}:${m}`;
+}
+
+function openTravelInTeams(req) {
+  const isLeave = travelCategory(req) === "Leave";
+  const subject = isLeave
+    ? `${req.requester || "Leave"} — Leave (${req.id})`
+    : `${req.tripTitle || req.destination || "Travel"} — ${req.id}`;
+  const startTime = _travelIsoWithOffset(req.start, req.startTime || "08:00");
+  const endTime = _travelIsoWithOffset(req.end || req.start, req.endTime || "17:00");
+  const content = isLeave
+    ? `Leave request ${req.id}${req.purpose ? ` — ${req.purpose}` : ""}`
+    : `Travel request ${req.id} — ${req.destination || ""}${req.purpose ? ` | ${req.purpose}` : ""}`;
+  const attendeeEmails = new Set();
+  if (req.requesterEmail) attendeeEmails.add(String(req.requesterEmail).trim().toLowerCase());
+  (req.travelers || []).forEach((t) => { if (t.email && t.email.trim()) attendeeEmails.add(t.email.trim().toLowerCase()); });
+  const enc = encodeURIComponent;
+  const parts = [`subject=${enc(subject)}`];
+  if (startTime) parts.push(`startTime=${enc(startTime)}`);
+  if (endTime) parts.push(`endTime=${enc(endTime)}`);
+  if (content) parts.push(`content=${enc(content)}`);
+  if (attendeeEmails.size) parts.push(`attendees=${Array.from(attendeeEmails).map(enc).join(",")}`);
+  window.open(`https://teams.microsoft.com/l/meeting/new?${parts.join("&")}`, "_blank", "noopener,noreferrer");
+}
+
+async function notifyRequesterTravelSubmitted(req) {
+  if (!isSharePointMode()) return;
+  const isLeave = travelCategory(req) === "Leave";
+  const recipients = new Set();
+  if (req.requesterEmail) recipients.add(String(req.requesterEmail).trim().toLowerCase());
+  (req.travelers || []).forEach((t) => {
+    if (t.email && t.email.trim()) recipients.add(t.email.trim().toLowerCase());
+  });
+  const emails = Array.from(recipients).filter(Boolean);
+  if (!emails.length) return;
+
+  const subject = isLeave
+    ? `PULSE Leave: ${req.id} submitted`
+    : `PULSE Travel: ${req.id} submitted — ${req.destination || ""}`;
+  const preview = isLeave
+    ? `Your leave request has been submitted and is pending review.`
+    : `Your travel request to ${req.destination || "your destination"} has been submitted and is pending approval.`;
+
+  try {
+    await notifyUsers({
+      to: emails,
+      subject,
+      area: "Travel",
+      kind: "success",
+      preview,
+      facts: travelNotificationFacts(req),
+      actionUrl: travelDeepLinkActionUrl("travel/mine", req.id),
+      actionTitle: "View request"
+    });
+  } catch (e) {
+    console.warn("PULSE: travel submission confirmation failed.", e);
+  }
+}
+
 async function notifyFinanceAdminsOfTravelRequest(req) {
   if (!isSharePointMode()) return;
   const db = window.AEWTTR.db;
@@ -2943,6 +3118,7 @@ async function submitTravelRequest(body, formMode, travelers, db, editing) {
   markTravelRequestStatusSeen(req.id, req.status);
   if (!editing) notifyAdminsOfTravelRequest(req);
   if (!editing && formMode !== "Leave") notifyFinanceAdminsOfTravelRequest(req);
+  if (!editing) notifyRequesterTravelSubmitted(req);
   refreshTravelNotifications();
 
   if (editing && hasCo && req.docReviewId && isSharePointMode()) {
@@ -2996,11 +3172,40 @@ async function submitTravelRequest(body, formMode, travelers, db, editing) {
     })();
   }
 
-  toast(editing ? `${req.id} updated` : `${req.id} submitted`, "success");
-  navigate("travel/mine");
+  if (editing) {
+    toast(`${req.id} updated`, "success");
+    navigate("travel/mine");
+  } else {
+    const isLeave = travelCategory(req) === "Leave";
+    body.innerHTML = `<div class="travel-confirm-wrap">
+      <div class="travel-confirm-card">
+        <div class="travel-confirm-icon"><i class="bx bx-check-circle"></i></div>
+        <h2 class="travel-confirm-title">${isLeave ? "Leave request submitted" : "Travel request submitted"}</h2>
+        <p class="travel-confirm-id">${escapeHtml(req.id)}</p>
+        ${!isLeave && req.destination ? `<p class="travel-confirm-dest">${escapeHtml(req.destination)}</p>` : ""}
+        <p class="travel-confirm-msg">Your request has been submitted and is pending review. You'll receive a confirmation email shortly.</p>
+        <div class="travel-confirm-actions">
+          <a href="data:text/calendar;charset=utf-8,${encodeURIComponent(buildTravelIcsContent(req))}" download="${escapeHtml(req.id)}.ics" class="btn-aewttr btn-aewttr-secondary travel-confirm-teams-btn">
+            <i class="bx bx-calendar-plus"></i>&ensp;Add to Calendar
+          </a>
+          <button class="btn-aewttr" onclick="navigate('travel/mine')">View My Travel</button>
+        </div>
+      </div>
+    </div>`;
+  }
 }
 
 function drawSubmitRequest(body, initialMode, editId) {
+  if (typeof canSubmitForms === "function" && !canSubmitForms()) {
+    body.innerHTML = `
+      <div class="lock-block" style="padding:48px 24px;text-align:center;">
+        <i class="bx bx-lock-alt" style="font-size:48px;color:var(--aewttr-muted);margin-bottom:12px;"></i>
+        <h3>Viewer Access Only</h3>
+        <p>The Viewer role has read-only access and cannot submit or edit travel requests or forms.</p>
+        <button class="btn-aewttr btn-aewttr-sm" onclick="location.hash='#/travel/mine'" style="margin-top:16px;">View Travel Requests</button>
+      </div>`;
+    return;
+  }
   const db = window.AEWTTR.db;
   const editing = editId ? db.travelRequests.find((r) => r.id === editId) : null;
   if (editId && (!editing || !canRequesterEditTravel(editing))) {

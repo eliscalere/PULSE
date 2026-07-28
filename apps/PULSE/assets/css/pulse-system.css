@@ -96,11 +96,8 @@
   padding: 24px var(--pulse-content-gutter) 48px;
 }
 
-.aewttr-content:not(:has(#overview-view-root)) > * {
+.aewttr-content > * {
   width: 100%;
-  max-width: 1540px;
-  margin-right: auto;
-  margin-left: auto;
 }
 
 .aewttr-content:has(#overview-view-root) {
@@ -125,6 +122,19 @@
   margin-right: 6px;
   padding: 0 14px 0 4px;
   border-right-color: rgba(255, 255, 255, .16);
+}
+
+.pulse-brand-port-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.22);
+  white-space: nowrap;
 }
 
 .aewttr-nav-item {
@@ -2925,4 +2935,28 @@ html[data-theme="dark"] .docreview-submit-card.docreview-submit-upload {
   .ps-tab {
     transition: none;
   }
+}
+
+/* Save indicator — two-dot animation shown during navigation flush */
+.save-indicator {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  margin-right: 4px;
+}
+.save-indicator.is-active { display: flex; }
+.save-indicator__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  animation: save-dot-pulse 0.9s ease-in-out infinite;
+}
+.save-indicator__dot:nth-child(2) { animation-delay: 0.22s; }
+@keyframes save-dot-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.7); }
+  50%       { opacity: 1;    transform: scale(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .save-indicator__dot { animation: none; opacity: 0.7; }
 }

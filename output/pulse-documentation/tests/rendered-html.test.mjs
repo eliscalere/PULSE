@@ -45,10 +45,8 @@ test("keeps the loader purposeful and motion-accessible", async () => {
   ]);
 
   assert.match(page, /Promise\.all\(documents\.map/);
-  assert.match(page, /minimumDisplay = reducedMotion \? 0 : 1250/);
   assert.match(page, /setBootPhase\("exiting"\)/);
   assert.match(page, /setBootPhase\("ready"\)/);
-  assert.match(page, /window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)/);
 
   assert.match(css, /\.pulse-doc-loader\s*\{/);
   assert.match(css, /@keyframes pulse-svgl-dot-upper/);

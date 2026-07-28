@@ -22,8 +22,8 @@ const NOTIFICATION_KINDS = {
     label: "Confirmed",
     headline: "All set",
     intro: "Good news — here's the confirmation.",
-    accent: "#15803d",
-    accentSoft: "#E8F5EE",
+    accent: "#2B7A5E",      // Status Green
+    accentSoft: "#E4F2EC",
     teamsStyle: "good",
     teamsColor: "Good",
     icon: "✅"
@@ -33,8 +33,8 @@ const NOTIFICATION_KINDS = {
     label: "Action needed",
     headline: "Needs your attention",
     intro: "Something is waiting on you — open it when you can.",
-    accent: "#2451C4",
-    accentSoft: "#E8ECF6",
+    accent: "#2F66FF",      // Command Blue
+    accentSoft: "#EBF0FF",
     teamsStyle: "accent",
     teamsColor: "Accent",
     icon: "👉"
@@ -44,8 +44,8 @@ const NOTIFICATION_KINDS = {
     label: "Not approved",
     headline: "Changes needed",
     intro: "This was not approved. Review the details and next steps below.",
-    accent: "#B45309",
-    accentSoft: "#FEF3C7",
+    accent: "#C77800",      // Warning Amber
+    accentSoft: "#FFF7E6",
     teamsStyle: "attention",
     teamsColor: "Warning",
     icon: "⚠️"
@@ -55,8 +55,8 @@ const NOTIFICATION_KINDS = {
     label: "Cancelled",
     headline: "Cancelled",
     intro: "This item is no longer active.",
-    accent: "#64748B",
-    accentSoft: "#F1F5F9",
+    accent: "#51545A",      // Graphite
+    accentSoft: "#F4F5F6",
     teamsStyle: "default",
     teamsColor: "Default",
     icon: "∅"
@@ -66,8 +66,8 @@ const NOTIFICATION_KINDS = {
     label: "Briefing",
     headline: "For your information",
     intro: "A short summary of what happened.",
-    accent: "#0F766E",
-    accentSoft: "#E6F4F1",
+    accent: "#2F66FF",      // Command Blue
+    accentSoft: "#EBF0FF",
     teamsStyle: "emphasis",
     teamsColor: "Accent",
     icon: "📋"
@@ -77,8 +77,8 @@ const NOTIFICATION_KINDS = {
     label: "Update",
     headline: "New activity",
     intro: "A quick update on something you're involved with.",
-    accent: "#5B21B6",
-    accentSoft: "#F3E8FF",
+    accent: "#51545A",      // Graphite
+    accentSoft: "#F4F5F6",
     teamsStyle: "emphasis",
     teamsColor: "Default",
     icon: "💬"
@@ -347,40 +347,39 @@ function wrapEmailChrome({ subject, area, kind, preview, facts, actionUrl, actio
   const kindMeta = resolveNotificationKind(kind);
   const areaMeta = NOTIFICATION_AREA_META[area] || NOTIFICATION_AREA_META.General;
   const purposeIntro = purposeIntroFor(kindMeta, frame && frame.tone);
-  const fontStack = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+  const fn = "Arial,Helvetica,sans-serif";
   const factList = (facts || []).filter((fact) => fact && fact.title != null);
-  const factRows = factList.map((fact, index) => {
-    const isLast = index === factList.length - 1;
-    const rule = isLast ? "none" : "1px solid #ECEEF2";
-    return `
-    <tr>
-      <td style="padding:11px 0;border-bottom:${rule};color:#6B7280;font-size:12px;line-height:1.4;width:132px;vertical-align:top;font-family:${fontStack};">${notifyEscape(fact.title)}</td>
-      <td style="padding:11px 0 11px 16px;border-bottom:${rule};color:#111827;font-size:14px;line-height:1.45;vertical-align:top;font-family:${fontStack};">${notifyEscape(String(fact.value == null || fact.value === "" ? "—" : fact.value))}</td>
+
+  const factRows = factList.map((fact, i) => {
+    const border = i < factList.length - 1 ? "1px solid #ECEDEF" : "none";
+    return `<tr>
+      <td style="padding:10px 14px 10px 0;font-family:${fn};font-size:10.5px;font-weight:700;color:#51545A;letter-spacing:0.05em;text-transform:uppercase;width:120px;vertical-align:top;border-bottom:${border};">${notifyEscape(fact.title)}</td>
+      <td style="padding:10px 0;font-family:${fn};font-size:13.5px;color:#070708;vertical-align:top;border-bottom:${border};">${notifyEscape(String(fact.value == null || fact.value === "" ? "—" : fact.value))}</td>
     </tr>`;
   }).join("");
 
   const greeting = frame && frame.emailGreeting
-    ? `<p style="margin:0 0 14px;font-size:14px;line-height:1.5;color:#111827;font-family:${fontStack};">${frame.emailGreeting}</p>`
+    ? `<p style="margin:0 0 14px;font-family:${fn};font-size:14px;line-height:1.5;color:#070708;">${frame.emailGreeting}</p>`
     : "";
   const signoff = frame && frame.emailSignoff
-    ? `<p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#6B7280;font-family:${fontStack};">${frame.emailSignoff}</p>`
-    : "";
-  const previewBlock = preview
-    ? `<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#374151;font-family:${fontStack};">${notifyEscape(preview)}</p>`
+    ? `<p style="margin:24px 0 0;font-family:${fn};font-size:12px;color:#51545A;">${frame.emailSignoff}</p>`
     : "";
   const introBlock = purposeIntro
-    ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#4B5563;font-family:${fontStack};">${notifyEscape(purposeIntro)}</p>`
+    ? `<p style="margin:0 0 14px;font-family:${fn};font-size:14px;line-height:1.6;color:#51545A;">${notifyEscape(purposeIntro)}</p>`
+    : "";
+  const previewBlock = preview && !innerHtml
+    ? `<p style="margin:0 0 16px;font-family:${fn};font-size:14px;line-height:1.6;color:#070708;">${notifyEscape(preview)}</p>`
     : "";
   const factsTable = factRows
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:4px 0 8px;">${factRows}</table>`
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:${innerHtml || introBlock ? "16px" : "4px"} 0 0;">${factRows}</table>`
     : "";
   const cta = actionUrl
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 0;"><tr><td style="border-radius:6px;background:${kindMeta.accent};">
-        <a href="${notifyEscape(actionUrl)}" style="display:inline-block;padding:11px 20px;font-size:13px;font-weight:600;line-height:1.2;color:#FFFFFF;text-decoration:none;font-family:${fontStack};">${notifyEscape(actionTitle || "Open in PULSE")}</a>
-      </td></tr></table>`
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 0;"><tr><td style="background:#070708;"><a href="${notifyEscape(actionUrl)}" style="display:inline-block;padding:12px 22px;font-family:${fn};font-size:11px;font-weight:700;color:#fff;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;">${notifyEscape(actionTitle || "Open in PULSE")}</a></td></tr></table>`
     : "";
+
+  // innerHtml (calendar block, meeting body, etc.) renders FIRST so the CTA is at top
   const bodyContent = innerHtml
-    ? `${introBlock}<div style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#374151;font-family:${fontStack};">${innerHtml}</div>${factsTable}`
+    ? `<div style="margin:0 0 20px;">${innerHtml}</div>${introBlock}${factsTable}`
     : `${introBlock}${previewBlock}${factsTable}`;
 
   return `<!DOCTYPE html>
@@ -389,48 +388,82 @@ function wrapEmailChrome({ subject, area, kind, preview, facts, actionUrl, actio
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="color-scheme" content="light only" />
-<meta name="supported-color-schemes" content="light only" />
 <title>${notifyEscape(subject || kindMeta.headline)}</title>
-<!--[if mso]><style>table,td{font-family:Arial,Helvetica,sans-serif !important;}</style><![endif]-->
+<!--[if mso]><style>table,td,p,a{font-family:Arial,Helvetica,sans-serif !important;}</style><![endif]-->
 </head>
-<body style="margin:0;padding:0;background:#EEF0F3;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;background:#EEF0F3;">
+<body style="margin:0;padding:0;background:#ECEDEF;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#ECEDEF;">
   <tr>
-    <td align="center" style="padding:28px 16px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="580" style="width:100%;max-width:580px;background:#FFFFFF;border:1px solid #E2E5EA;">
+    <td align="center" style="padding:32px 16px 24px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;width:100%;">
+
+        <!-- Header: Signal Black with PULSE wordmark -->
+        <tr>
+          <td style="background:#070708;padding:20px 28px 18px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 36" width="108" height="28" role="img" aria-label="PULSE"><circle cx="32" cy="5" r="3" fill="#fff"/><text x="2" y="27" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="300" letter-spacing="4">PULSE</text><circle cx="67" cy="34" r="3" fill="#fff"/></svg></td>
+                <td align="right" style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#51545A;">AEWTTR</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Status accent bar (3px, brand color) -->
         <tr>
           <td style="height:3px;line-height:3px;font-size:0;background:${kindMeta.accent};">&nbsp;</td>
         </tr>
+
+        <!-- Card body -->
         <tr>
-          <td style="padding:22px 28px 0;background:#FFFFFF;">
+          <td style="background:#ffffff;">
+
+            <!-- Area label -->
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
               <tr>
-                <td style="font-family:${fontStack};font-size:15px;font-weight:700;letter-spacing:0.04em;color:#1B3A6B;line-height:1.2;">PULSE</td>
-                <td align="right" style="font-family:${fontStack};font-size:11px;color:#9CA3AF;line-height:1.2;">AEWTTR</td>
+                <td style="padding:18px 28px 0;">
+                  <span style="display:inline-block;padding:4px 10px;background:#EBF0FF;color:#2F66FF;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;">${notifyEscape(areaMeta.label)}</span>
+                </td>
               </tr>
             </table>
-            <p style="margin:6px 0 0;font-family:${fontStack};font-size:12px;color:#9CA3AF;line-height:1.3;">${notifyEscape(areaMeta.label)}</p>
+
+            <!-- Kind label + subject heading -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td style="padding:10px 28px 18px;">
+                  <p style="margin:0 0 5px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${kindMeta.accent};">${notifyEscape(kindMeta.label)}</p>
+                  <h1 style="margin:0;font-family:Arial,sans-serif;font-size:22px;font-weight:700;line-height:1.3;color:#070708;">${notifyEscape(subject || kindMeta.headline)}</h1>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Divider -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr><td style="padding:0 28px;"><div style="height:1px;background:#ECEDEF;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+            </table>
+
+            <!-- Body -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td style="padding:22px 28px 28px;">
+                  ${greeting}
+                  ${bodyContent}
+                  ${cta}
+                  ${signoff}
+                </td>
+              </tr>
+            </table>
+
           </td>
         </tr>
+
+        <!-- Footer -->
         <tr>
-          <td style="padding:20px 28px 8px;background:#FFFFFF;">
-            <p style="margin:0 0 8px;font-family:${fontStack};font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${kindMeta.accent};line-height:1.2;">${notifyEscape(kindMeta.label)}</p>
-            <h1 style="margin:0;font-family:${fontStack};font-size:20px;font-weight:700;line-height:1.35;color:#111827;">${notifyEscape(subject || kindMeta.headline)}</h1>
+          <td style="background:#ECEDEF;padding:14px 28px;border-top:1px solid #D1D3D8;">
+            <p style="margin:0;font-family:Arial,sans-serif;font-size:10.5px;line-height:1.5;color:#51545A;">Sent by <strong>AEWTTR PULSE</strong> &middot; Automated notification &middot; Manage preferences in Settings</p>
           </td>
         </tr>
-        <tr>
-          <td style="padding:8px 28px 28px;background:#FFFFFF;">
-            ${greeting}
-            ${bodyContent}
-            ${cta}
-            ${signoff}
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:14px 28px 18px;background:#FFFFFF;border-top:1px solid #ECEEF2;">
-            <p style="margin:0;font-family:${fontStack};font-size:11px;line-height:1.45;color:#9CA3AF;">Sent by AEWTTR PULSE · Manage preferences in Settings</p>
-          </td>
-        </tr>
+
       </table>
     </td>
   </tr>

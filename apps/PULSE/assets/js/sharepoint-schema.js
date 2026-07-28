@@ -149,6 +149,7 @@ const SHAREPOINT_SCHEMA = {
       { name: "MeetingDate", type: "DateTime" },
       { name: "AgendaJson", type: "Note", numLines: 20 },
       { name: "DocBlocksJson", type: "Note", numLines: 30 },
+      { name: "DocHtml", type: "Note", numLines: 50 },
       { name: "Attendees", type: "Note" },
       { name: "AttendanceJson", type: "Note" },
       { name: "Notes", type: "Note" },
@@ -367,6 +368,7 @@ const SHAREPOINT_SCHEMA = {
       { name: "LocationsJson", type: "Note", numLines: 10 },
       { name: "PortfolioCatalogJson", type: "Note", numLines: 10 },
       { name: "ContractorCatalogJson", type: "Note", numLines: 10 },
+      { name: "ContractCatalogJson", type: "Note", numLines: 10 },
       { name: "ConfigEndItemCatalogJson", type: "Note", numLines: 10 },
       { name: "HideUnaffiliatedPeople", type: "Boolean" }
     ]

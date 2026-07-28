@@ -335,9 +335,12 @@ async function startMeeting(scope, onDone) {
   const data = meetingData(scope);
   const planned = data.currentSession && data.currentSession.sessionStatus === "planned" ? data.currentSession : null;
   data.meetingStatus = "active";
+  const todayLabel = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const defaultTitle = scope.type === "global" ? `Weekly SYNC — ${todayLabel}` : `${scope.project.name} Meeting — ${todayLabel}`;
   data.currentSession = planned || {
     id: uid(scope.type === "global" ? "wm" : "pmc"),
     date: new Date().toISOString().slice(0, 10),
+    scheduledTitle: defaultTitle,
     startedAt: Date.now(),
     notesFeed: [],
     guests: [],
@@ -345,6 +348,7 @@ async function startMeeting(scope, onDone) {
     activity: [],
     sessionStatus: "active"
   };
+  if (!data.currentSession.scheduledTitle) data.currentSession.scheduledTitle = defaultTitle;
   data.currentSession.sessionStatus = "active";
   data.currentSession.startedAt = data.currentSession.startedAt || Date.now();
   initializeMeetingAttendance(data.currentSession, scope);
@@ -352,6 +356,10 @@ async function startMeeting(scope, onDone) {
   await Repo.save("meetingSession", data.currentSession, { projectCode: meetingProjectCode(scope), immediate: true });
   if (Repo.flush) await Repo.flush();
   toast("Meeting started", "success");
+  if (!window.AEWTTR.state.onenoteSelectedPage) window.AEWTTR.state.onenoteSelectedPage = {};
+  if (!window.AEWTTR.state.meetingLiveTab) window.AEWTTR.state.meetingLiveTab = {};
+  window.AEWTTR.state.onenoteSelectedPage[meetingScopeKey(scope)] = "live";
+  window.AEWTTR.state.meetingLiveTab[meetingScopeKey(scope)] = "notes";
   if (onDone) onDone();
 }
 async function ensurePlanningSession(scope) {
@@ -632,11 +640,210 @@ function projectMeetingSummary(project) {
   };
 }
 
+/* ---------- Scheduled Meetings Helpers ---------- */
+function getScheduledMeetings(scope) {
+  const data = meetingData(scope);
+  if (!Array.isArray(data.scheduledMeetings)) {
+    data.scheduledMeetings = [];
+  }
+  return data.scheduledMeetings;
+}
+
+async function saveScheduledMeeting(scope, meetingObj) {
+  const data = meetingData(scope);
+  if (!Array.isArray(data.scheduledMeetings)) data.scheduledMeetings = [];
+  const idx = data.scheduledMeetings.findIndex(s => s.id === meetingObj.id);
+  if (idx >= 0) data.scheduledMeetings[idx] = meetingObj;
+  else data.scheduledMeetings.push(meetingObj);
+  // Save as a meetingSession record with sessionStatus "planned" so it persists.
+  const sessionPayload = {
+    _spId: meetingObj._spId,
+    id: meetingObj.id,
+    date: meetingObj.date || "",
+    sessionStatus: "planned",
+    scheduledTitle: meetingObj.title || "",
+    scheduledTime: meetingObj.time || "",
+    agendaText: meetingObj.agendaText || "",
+    docHtml: meetingObj.docHtml || "",
+    createdBy: meetingObj.createdBy || "",
+    createdAt: meetingObj.createdAt || "",
+    _projectCode: scope.type !== "global" ? (scope.project && scope.project.id) || "" : "",
+    agenda: [], notesFeed: [], attendance: {}, attendees: [], guests: []
+  };
+  await Repo.save("meetingSession", sessionPayload, { immediate: true });
+  meetingObj._spId = sessionPayload._spId;
+}
+
+async function deleteScheduledMeeting(scope, meetingId) {
+  const data = meetingData(scope);
+  if (Array.isArray(data.scheduledMeetings)) {
+    const meeting = data.scheduledMeetings.find(s => s.id === meetingId);
+    if (meeting && meeting._spId) {
+      await Repo.remove("meetingSession", {
+        _spId: meeting._spId,
+        _projectCode: scope.type !== "global" ? (scope.project && scope.project.id) || "" : ""
+      });
+    }
+    data.scheduledMeetings = data.scheduledMeetings.filter(s => s.id !== meetingId);
+  }
+}
+
+function openScheduleMeetingModal(scope, onScheduled) {
+  const scopeName = scope.type === "global" ? "Weekly Meeting" : `${scope.project.name} Meeting`;
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  
+  const modalHtml = `
+    <div class="modal fade show" id="sched-mtg-modal" tabindex="-1" style="display:block;background:rgba(0,0,0,0.5);" aria-modal="true" role="dialog">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
+        <div class="modal-content aewttr-modal">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bx bx-calendar-plus" style="color:var(--aewttr-primary);"></i> Schedule Future Meeting</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" id="sched-mtg-close" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" style="padding:20px 24px;">
+            <div style="margin-bottom:16px;">
+              <label class="form-label" style="font-weight:600;font-size:13px;margin-bottom:6px;">Meeting Title</label>
+              <input type="text" class="input-aewttr" id="sched-mtg-title" value="${escapeHtml(scopeName)}" placeholder="e.g. Weekly Status Sync">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+              <div>
+                <label class="form-label" style="font-weight:600;font-size:13px;margin-bottom:6px;">Date</label>
+                <input type="date" class="input-aewttr" id="sched-mtg-date" value="${tomorrow}">
+              </div>
+              <div>
+                <label class="form-label" style="font-weight:600;font-size:13px;margin-bottom:6px;">Time</label>
+                <input type="time" class="input-aewttr" id="sched-mtg-time" value="09:00">
+              </div>
+            </div>
+            <div style="margin-bottom:16px;">
+              <label class="form-label" style="font-weight:600;font-size:13px;margin-bottom:6px;">Agenda / Pre-Meeting Notes</label>
+              <textarea class="textarea-aewttr" id="sched-mtg-agenda" rows="4" placeholder="Enter agenda topics, key discussion points, or pre-meeting notes..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-aewttr-ghost" id="sched-mtg-cancel">Cancel</button>
+            <button type="button" class="btn-aewttr" id="sched-mtg-save"><i class="bx bx-calendar-check"></i> Schedule Meeting</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const div = document.createElement("div");
+  div.id = "sched-mtg-wrapper";
+  div.innerHTML = modalHtml;
+  document.body.appendChild(div);
+
+  const closeModal = () => div.remove();
+
+  $("#sched-mtg-close", div)?.addEventListener("click", closeModal);
+  $("#sched-mtg-cancel", div)?.addEventListener("click", closeModal);
+
+  $("#sched-mtg-save", div)?.addEventListener("click", async () => {
+    const titleVal = $("#sched-mtg-title", div)?.value.trim() || scopeName;
+    const dateVal = $("#sched-mtg-date", div)?.value || tomorrow;
+    const timeVal = $("#sched-mtg-time", div)?.value || "09:00";
+    const agendaVal = $("#sched-mtg-agenda", div)?.value.trim() || "";
+
+    const meetingObj = {
+      id: uid("sched_mtg"),
+      title: titleVal,
+      date: dateVal,
+      time: timeVal,
+      agendaText: agendaVal,
+      createdBy: currentUserName(),
+      createdAt: new Date().toISOString(),
+      sessionStatus: "scheduled"
+    };
+
+    await saveScheduledMeeting(scope, meetingObj);
+    closeModal();
+    if (typeof toast === "function") toast(`Meeting scheduled for ${fmtDate(dateVal)}`, "success");
+    if (onScheduled) onScheduled(meetingObj);
+  });
+}
+
+function renderScheduledMeetingPage(body, scheduled, scope, redraw) {
+  const canFacilitate = canManageMeetings();
+  const timeFormatted = scheduled.time ? (typeof formatTravelTime === "function" ? formatTravelTime(scheduled.time) : scheduled.time) : "";
+
+  // Build initial docHtml from agendaText if the editor hasn't been used yet
+  if (!scheduled.docHtml && scheduled.agendaText) {
+    scheduled.docHtml = `<h1>${escapeHtml(scheduled.title)}</h1><h2>Agenda</h2><p>${escapeHtml(scheduled.agendaText).replace(/\n/g, "</p><p>")}</p>`;
+  } else if (!scheduled.docHtml) {
+    scheduled.docHtml = `<h1>${escapeHtml(scheduled.title)}</h1><h2>Agenda</h2><p><br></p>`;
+  }
+
+  const headerHtml = `
+    <div class="sched-mtg-header">
+      <span class="sched-mtg-badge"><i class="bx bx-calendar-event"></i> Scheduled Future Meeting</span>
+      <div class="sched-mtg-dateline">
+        <i class="bx bx-calendar"></i> ${escapeHtml(fmtDate(scheduled.date))}${timeFormatted ? ` at ${escapeHtml(timeFormatted)}` : ""}
+        ${scheduled.createdBy ? `<span class="sched-mtg-by">Scheduled by ${escapeHtml(scheduled.createdBy)}</span>` : ""}
+      </div>
+      <div class="sched-mtg-actions">
+        ${canFacilitate ? `<button type="button" class="btn-aewttr btn-aewttr-sm" id="mtg-start-scheduled-now"><i class="bx bx-play"></i> Start Meeting Now</button>` : ""}
+        <button type="button" class="btn-danger-outline btn-aewttr-sm" id="mtg-delete-scheduled-btn"><i class="bx bx-trash"></i> Cancel Meeting</button>
+      </div>
+    </div>`;
+
+  body.innerHTML = `<div class="sched-mtg-shell">${headerHtml}<div id="sched-editor-mount" style="flex:1;min-height:0;overflow:hidden;"></div></div>`;
+
+  // Wire start / delete buttons
+  $("#mtg-start-scheduled-now", body)?.addEventListener("click", async () => {
+    const data = meetingData(scope);
+    data.meetingStatus = "active";
+    data.currentSession = {
+      id: scheduled.id || uid(scope.type === "global" ? "wm" : "pmc"),
+      date: scheduled.date || new Date().toISOString().slice(0, 10),
+      startedAt: Date.now(),
+      docHtml: scheduled.docHtml || `<h1>${escapeHtml(scheduled.title)}</h1><h2>Agenda</h2><p><br></p>`,
+      notesFeed: [],
+      guests: [],
+      attendance: {},
+      activity: [],
+      sessionStatus: "active"
+    };
+    await deleteScheduledMeeting(scope, scheduled.id);
+    initializeMeetingAttendance(data.currentSession, scope);
+    logMeetingActivity(scope, `${currentUserName()} started scheduled meeting: ${scheduled.title}`, { type: "lifecycle" });
+    await Repo.save("meetingSession", data.currentSession, { projectCode: meetingProjectCode(scope), immediate: true });
+    if (Repo.flush) await Repo.flush();
+    if (typeof toast === "function") toast("Scheduled meeting started!", "success");
+    window.AEWTTR.state.onenoteSelectedPage[meetingScopeKey(scope)] = "live";
+    window.AEWTTR.state.meetingLiveTab[meetingScopeKey(scope)] = "notes";
+    redraw();
+  });
+
+  $("#mtg-delete-scheduled-btn", body)?.addEventListener("click", async () => {
+    const ok = await confirmDialog({ title: "Cancel scheduled meeting", message: `Cancel "${scheduled.title}"? This cannot be undone.`, confirmLabel: "Cancel Meeting", danger: true });
+    if (!ok) return;
+    await deleteScheduledMeeting(scope, scheduled.id);
+    if (typeof toast === "function") toast("Scheduled meeting cancelled", "info");
+    window.AEWTTR.state.onenoteSelectedPage[meetingScopeKey(scope)] = null;
+    redraw();
+  });
+
+  // Render the full OneNote editor in the mount, wired to save to the scheduled meeting record
+  const editorMount = $("#sched-editor-mount", body);
+  if (editorMount) {
+    const fakeSession = { id: scheduled.id, date: scheduled.date, docHtml: scheduled.docHtml };
+    renderMeetingDocEditor(editorMount, scope, fakeSession, {
+      title: scheduled.title,
+      subtitle: fmtDate(scheduled.date) + (timeFormatted ? ` at ${timeFormatted}` : ""),
+      saveFn: async () => {
+        scheduled.docHtml = fakeSession.docHtml;
+        scheduled.agendaText = fakeSession.docHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        await saveScheduledMeeting(scope, scheduled);
+      }
+    });
+  }
+}
+
 /* ---------- top-level meeting shell ---------- */
 function renderMeetingApp(mount, scope) {
   setTopbar(
-    scope.type === "global" ? "Weekly Meeting" : `${scope.project.name} — Meeting`,
-    scope.type === "global" ? "Cross-project pulse with a live participant work queue." : "Project-specific operating meeting with a live task queue."
+    scope.type === "global" ? "Weekly Meeting" : `${scope.project.name} — Meeting`
   );
 
   if (!window.AEWTTR.state.onenoteSelectedPage) window.AEWTTR.state.onenoteSelectedPage = {};
@@ -647,13 +854,14 @@ function renderMeetingApp(mount, scope) {
   const data = meetingData(scope);
   const canFacilitate = canManageMeetings();
   const liveTab = meetingLiveTab(scope);
+  const scheduledList = getScheduledMeetings(scope);
 
   const hasLivePage = active || (data.currentSession && (data.currentSession.sessionStatus === "active" || data.currentSession.sessionStatus === "planned"));
 
   let selectedPage = window.AEWTTR.state.onenoteSelectedPage[key];
   if (!selectedPage || (selectedPage === "live" && !hasLivePage)) {
     const allSessions = (data.sessions || []).slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
-    selectedPage = hasLivePage ? "live" : (allSessions.length ? (allSessions[0].id || allSessions[0].date) : null);
+    selectedPage = hasLivePage ? "live" : (scheduledList.length ? scheduledList[0].id : (allSessions.length ? (allSessions[0].id || allSessions[0].date) : null));
     window.AEWTTR.state.onenoteSelectedPage[key] = selectedPage;
   }
 
@@ -677,6 +885,18 @@ function renderMeetingApp(mount, scope) {
       </button>`;
   })() : "";
 
+  const scheduledPagesHtml = scheduledList.map(s => {
+    const timeFormatted = s.time ? (typeof formatTravelTime === "function" ? formatTravelTime(s.time) : s.time) : "";
+    return `
+      <button type="button" class="on-page-item${selectedPage === s.id ? " is-active" : ""}" data-onpage="${escapeHtml(s.id)}">
+        <div class="on-page-icon"><i class="bx bx-calendar-event" style="color:var(--aewttr-primary);"></i></div>
+        <div class="on-page-meta">
+          <div class="on-page-date">${escapeHtml(s.title || "Scheduled Meeting")}</div>
+          <div class="on-page-sub">${escapeHtml(fmtDate(s.date))}${timeFormatted ? " at " + escapeHtml(timeFormatted) : ""}</div>
+        </div>
+      </button>`;
+  }).join("");
+
   const pastPagesHtml = filteredSessions.map(s => {
     const notes = meetingHistoryNotesForSession(s);
     const preview = (notes[0] ? (notes[0].text || "").slice(0, 55) : "");
@@ -697,6 +917,7 @@ function renderMeetingApp(mount, scope) {
           ${active ? `<span class="on-live-badge"><span class="on-live-dot-sm"></span>Live</span>` : ""}
           ${active ? `<button class="on-ctrl-btn" id="mtg-attendance"${tip("Review attendance")}><i class="bx bx-check-square"></i> Attendance</button>` : ""}
           ${canFacilitate && active ? `<button class="on-ctrl-btn" id="mtg-end"${tip("End meeting")}><i class="bx bx-archive"></i> End Meeting</button>` : ""}
+          ${canFacilitate ? `<button class="on-ctrl-btn" id="mtg-schedule-btn"${tip("Schedule a future meeting")}><i class="bx bx-calendar-plus"></i> Schedule Meeting</button>` : ""}
           ${canFacilitate && !active ? `<button class="on-ctrl-btn on-ctrl-btn--primary" id="mtg-start-toolbar"${tip("Start a new meeting")}><i class="bx bx-play"></i> Start Meeting</button>` : ""}
         </div>
       </div>
@@ -705,16 +926,20 @@ function renderMeetingApp(mount, scope) {
           <div class="on-sidebar-search"><i class="bx bx-search"></i><input id="on-sidebar-search" type="search" placeholder="Search sessions…" value="${escapeHtml(search)}"></div>
           <div class="on-page-list">
             ${liveSectionHtml}
-            ${filteredSessions.length && hasLivePage ? `<div class="on-section-divider">Past Sessions</div>` : ""}
+            ${scheduledList.length ? `
+              <div class="on-section-divider"><i class="bx bx-calendar-plus" aria-hidden="true"></i> Scheduled Meetings (${scheduledList.length})</div>
+              ${scheduledPagesHtml}
+            ` : ""}
+            ${filteredSessions.length && (hasLivePage || scheduledList.length) ? `<div class="on-section-divider">Past Sessions</div>` : ""}
             ${pastPagesHtml}
-            ${!liveSectionHtml && !pastPagesHtml ? `<div class="on-pages-empty">No sessions yet.<br>Start a meeting to begin.</div>` : ""}
+            ${!liveSectionHtml && !scheduledList.length && !pastPagesHtml ? `<div class="on-pages-empty">No sessions yet.<br>Start or schedule a meeting to begin.</div>` : ""}
           </div>
         </div>
         <div class="onenote-main">
           ${active && selectedPage === "live" ? `
             <div class="on-section-bar">
               <button type="button" class="on-section-tab${liveTab === "notes" ? " is-active" : ""}" data-on-tab="notes"><i class="bx bx-file" aria-hidden="true"></i> Meeting Minutes</button>
-              <button type="button" class="on-section-tab${liveTab === "project" ? " is-active" : ""}" data-on-tab="project"><i class="bx bx-list-check" aria-hidden="true"></i> Major Updates</button>
+              <button type="button" class="on-section-tab${liveTab === "project" ? " is-active" : ""}" data-on-tab="project"><i class="bx bx-list-check" aria-hidden="true"></i> Project Updates</button>
               <button type="button" class="on-section-tab${liveTab === "room" ? " is-active" : ""}" data-on-tab="room"><i class="bx bx-group" aria-hidden="true"></i> Around the Room</button>
             </div>` : ""}
           <div class="on-content-body" id="on-content-body"></div>
@@ -730,10 +955,15 @@ function renderMeetingApp(mount, scope) {
   if (endBtn) endBtn.addEventListener("click", () => openEndMeetingModal(scope, () => renderMeetingApp(mount, scope)));
   const startBtn = $("#mtg-start-toolbar", mount);
   if (startBtn) startBtn.addEventListener("click", () => startMeeting(scope, () => renderMeetingApp(mount, scope)));
+  const scheduleBtn = $("#mtg-schedule-btn", mount);
+  if (scheduleBtn) scheduleBtn.addEventListener("click", () => openScheduleMeetingModal(scope, () => renderMeetingApp(mount, scope)));
 
   // Page list clicks
   $all("[data-onpage]", mount).forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
+      if (typeof window.AEWTTR._flushDocSave === "function") {
+        try { await window.AEWTTR._flushDocSave(); } catch (e) {}
+      }
       window.AEWTTR.state.onenoteSelectedPage[key] = btn.dataset.onpage;
       renderMeetingApp(mount, scope);
     });
@@ -741,7 +971,10 @@ function renderMeetingApp(mount, scope) {
 
   // Section tab clicks
   $all("[data-on-tab]", mount).forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
+      if (typeof window.AEWTTR._flushDocSave === "function") {
+        try { await window.AEWTTR._flushDocSave(); } catch (e) {}
+      }
       window.AEWTTR.state.meetingLiveTab[key] = btn.dataset.onTab;
       renderMeetingApp(mount, scope);
     });
@@ -776,8 +1009,11 @@ function renderMeetingApp(mount, scope) {
     }
   } else if (selectedPage) {
     const session = sessions.find(s => (s.id || s.date) === selectedPage);
+    const scheduled = scheduledList.find(s => s.id === selectedPage);
     if (session) {
       renderOnenoteHistoryPage(contentBody, session, scope);
+    } else if (scheduled) {
+      renderScheduledMeetingPage(contentBody, scheduled, scope, () => renderMeetingApp(mount, scope));
     } else {
       contentBody.innerHTML = `<div class="on-no-page"><i class="bx bx-error-circle"></i><p>Session not found.</p></div>`;
     }
@@ -786,10 +1022,59 @@ function renderMeetingApp(mount, scope) {
   }
 }
 
-function renderOnenoteHistoryPage(body, session, scope) {
+function renderOnenoteHistoryMinutesHtml(session) {
+  if (session.docHtml && session.docHtml.trim()) {
+    return `<div class="on-hist-doc-render">${session.docHtml}</div>`;
+  }
+  // Legacy fallback: render from old notesFeed / capturedNotes / docBlocks
   const notes = meetingHistoryNotesForSession(session);
+  if (!notes.length) return `<div class="empty-state" style="padding:32px 0;">No minutes document was recorded for this session.</div>`;
+  return `<div class="on-hist-doc-render on-hist-doc-render--legacy">${notes.map(n => `<p>${escapeHtml(n.text || "")}</p>`).join("")}</div>`;
+}
+
+function renderOnenoteHistoryStatusHtml(session, scope) {
   const changes = session.ganttChanges || [];
-  const minutesHtml = meetingHistoryMinutesHtml(session, scope);
+  if (!changes.length) return `<div class="empty-state" style="padding:32px 0;">No project or task status changes were recorded during this session.</div>`;
+  return `<div class="on-hist-status-wrap"><div class="meeting-history-gantt">${meetingHistoryProjectUpdatesHtml(changes)}</div></div>`;
+}
+
+function renderOnenoteHistoryLogsHtml(session) {
+  const activity = (session.activity || []).slice().sort((a, b) => (a.at || 0) - (b.at || 0));
+  if (!activity.length) return `<div class="empty-state" style="padding:32px 0;">No activity was recorded for this session.</div>`;
+  return `
+    <div class="on-hist-logs-wrap">
+      ${activity.map(entry => {
+        const timeLabel = meetingHistoryMinutesTimeLabel(entry);
+        const typeIcon = {
+          lifecycle: "bx-play-circle", attendance: "bx-user-check", status: "bx-transfer",
+          review: "bx-check-circle", note: "bx-note", "agenda-add": "bx-list-plus",
+          "agenda-check": "bx-check-square", "agenda-delete": "bx-list-minus"
+        }[entry.type] || "bx-info-circle";
+        return `
+          <div class="on-hist-log-row on-hist-log-row--${escapeHtml(entry.type || "info")}">
+            <i class="bx ${typeIcon} on-hist-log-icon" aria-hidden="true"></i>
+            ${timeLabel ? `<time class="on-hist-log-time">${escapeHtml(timeLabel)}</time>` : `<span class="on-hist-log-time" aria-hidden="true">—</span>`}
+            <p class="on-hist-log-text">${escapeHtml(entry.text || "")}</p>
+          </div>`;
+      }).join("")}
+    </div>`;
+}
+
+function renderOnenoteHistoryPage(body, session, scope) {
+  const changes = session.ganttChanges || [];
+  const activity = session.activity || [];
+  const attendeeCount = (session.attendees || []).length + (session.guestAttendees || []).length;
+
+  let activeTab = "minutes";
+
+  function renderTab(tab) {
+    $all(".on-hist-tab", body).forEach(b => b.classList.toggle("is-active", b.dataset.histtab === tab));
+    const el = $(".on-hist-content", body);
+    if (!el) return;
+    if (tab === "minutes") el.innerHTML = renderOnenoteHistoryMinutesHtml(session);
+    else if (tab === "status") el.innerHTML = renderOnenoteHistoryStatusHtml(session, scope);
+    else if (tab === "logs") el.innerHTML = renderOnenoteHistoryLogsHtml(session);
+  }
 
   body.innerHTML = `
     <div class="on-history-page">
@@ -797,36 +1082,24 @@ function renderOnenoteHistoryPage(body, session, scope) {
         <h1 class="on-hist-title">${scope.type === "global" ? "Weekly Meeting" : escapeHtml(scope.project.name)}</h1>
         <div class="on-hist-dateline">${escapeHtml(fmtDate(session.date))}</div>
         <div class="on-hist-stats">
-          ${(session.attendees || []).length + (session.guestAttendees || []).length > 0 ? `<span><i class="bx bx-group" aria-hidden="true"></i> ${(session.attendees || []).length + (session.guestAttendees || []).length} present</span>` : ""}
-          ${changes.length ? `<span><i class="bx bx-list-check" aria-hidden="true"></i> ${changes.length} items reviewed</span>` : ""}
-          ${notes.length ? `<span><i class="bx bx-note" aria-hidden="true"></i> ${notes.length} note${notes.length === 1 ? "" : "s"}</span>` : ""}
+          ${attendeeCount > 0 ? `<span><i class="bx bx-group" aria-hidden="true"></i> ${attendeeCount} present</span>` : ""}
+          ${changes.length ? `<span><i class="bx bx-list-check" aria-hidden="true"></i> ${changes.filter(c => c.reviewStatus === "Updated").length} updated · ${changes.length} reviewed</span>` : ""}
+          ${activity.length ? `<span><i class="bx bx-pulse" aria-hidden="true"></i> ${activity.length} logged</span>` : ""}
         </div>
       </div>
       <div class="on-hist-tabs" role="tablist">
-        <button type="button" class="on-hist-tab is-active" data-histtab="minutes">Minutes</button>
-        ${notes.length ? `<button type="button" class="on-hist-tab" data-histtab="notes">Notes (${notes.length})</button>` : ""}
-        ${changes.length ? `<button type="button" class="on-hist-tab" data-histtab="updates">Project Updates (${changes.length})</button>` : ""}
+        <button type="button" class="on-hist-tab is-active" data-histtab="minutes"><i class="bx bx-file-blank"></i> Minutes</button>
+        <button type="button" class="on-hist-tab" data-histtab="status"><i class="bx bx-transfer"></i> Status${changes.length ? ` <em>(${changes.length})</em>` : ""}</button>
+        <button type="button" class="on-hist-tab" data-histtab="logs"><i class="bx bx-list-ul"></i> Logs${activity.length ? ` <em>(${activity.length})</em>` : ""}</button>
       </div>
-      <div class="on-hist-content">${minutesHtml}</div>
+      <div class="on-hist-content">${renderOnenoteHistoryMinutesHtml(session)}</div>
     </div>
   `;
 
   $all("[data-histtab]", body).forEach(btn => {
     btn.addEventListener("click", () => {
-      $all(".on-hist-tab", body).forEach(b => b.classList.remove("is-active"));
-      btn.classList.add("is-active");
-      const tab = btn.dataset.histtab;
-      const contentEl = $(".on-hist-content", body);
-      if (!contentEl) return;
-      if (tab === "minutes") {
-        contentEl.innerHTML = minutesHtml;
-      } else if (tab === "notes") {
-        contentEl.innerHTML = notes.length
-          ? `<div class="meeting-history-notes-hub proj-notes-hub"><div class="meeting-history-notes-list proj-notes-main-body">${notes.map(meetingHistoryCapturedNoteCardHtml).join("")}</div></div>`
-          : `<div class="empty-state">No notes captured.</div>`;
-      } else if (tab === "updates") {
-        contentEl.innerHTML = `<div class="meeting-history-gantt">${meetingHistoryProjectUpdatesHtml(changes)}</div>`;
-      }
+      activeTab = btn.dataset.histtab;
+      renderTab(activeTab);
     });
   });
 }
@@ -1063,6 +1336,245 @@ function getInitialDocHtml(session) {
   return html;
 }
 
+/* ---------- OneNote & DOCX Paste / Import Parser Helpers ---------- */
+async function parseDocxArrayBuffer(buffer) {
+  if (typeof JSZip === "undefined") {
+    throw new Error("JSZip library not loaded");
+  }
+  const zip = await JSZip.loadAsync(buffer);
+  const docXmlFile = zip.file("word/document.xml");
+  if (!docXmlFile) {
+    throw new Error("Invalid .docx file: word/document.xml not found");
+  }
+  const xmlText = await docXmlFile.async("string");
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, "text/xml");
+  
+  const paragraphs = doc.getElementsByTagName("w:p");
+  let html = "";
+  let currentListType = null;
+  
+  for (let i = 0; i < paragraphs.length; i++) {
+    const p = paragraphs[i];
+    
+    const pStyle = p.getElementsByTagName("w:pStyle")[0];
+    const styleVal = pStyle ? String(pStyle.getAttribute("w:val") || "") : "";
+    
+    const numPr = p.getElementsByTagName("w:numPr")[0];
+    const isList = !!numPr;
+    
+    const runs = p.getElementsByTagName("w:r");
+    let lineHtml = "";
+    for (let r = 0; r < runs.length; r++) {
+      const run = runs[r];
+      if (run.getElementsByTagName("w:br").length > 0) {
+        lineHtml += "<br>";
+      }
+      const tNode = run.getElementsByTagName("w:t")[0];
+      if (!tNode) continue;
+      let text = tNode.textContent;
+      if (!text) continue;
+      text = escapeHtml(text);
+      
+      const isBold = run.getElementsByTagName("w:b").length > 0;
+      const isItalic = run.getElementsByTagName("w:i").length > 0;
+      const isUnderline = run.getElementsByTagName("w:u").length > 0;
+      const isStrike = run.getElementsByTagName("w:strike").length > 0;
+      
+      if (isBold) text = `<strong>${text}</strong>`;
+      if (isItalic) text = `<em>${text}</em>`;
+      if (isUnderline) text = `<u>${text}</u>`;
+      if (isStrike) text = `<s>${text}</s>`;
+      lineHtml += text;
+    }
+    
+    const plainTextContent = lineHtml.replace(/<[^>]+>/g, "").trim();
+    if (!plainTextContent && !lineHtml.includes("<br>")) {
+      if (currentListType) {
+        html += `</${currentListType}>`;
+        currentListType = null;
+      }
+      continue;
+    }
+    
+    const isHeading1 = /Heading\s?1/i.test(styleVal) || styleVal === "1";
+    const isHeading2 = /Heading\s?2/i.test(styleVal) || styleVal === "2";
+    const isHeading3 = /Heading\s?3/i.test(styleVal) || styleVal === "3";
+
+    if (isHeading1) {
+      if (currentListType) { html += `</${currentListType}>`; currentListType = null; }
+      html += `<h1>${lineHtml}</h1>`;
+    } else if (isHeading2) {
+      if (currentListType) { html += `</${currentListType}>`; currentListType = null; }
+      html += `<h2>${lineHtml}</h2>`;
+    } else if (isHeading3) {
+      if (currentListType) { html += `</${currentListType}>`; currentListType = null; }
+      html += `<h3>${lineHtml}</h3>`;
+    } else if (isList) {
+      if (!currentListType) {
+        currentListType = "ul";
+        html += `<ul>`;
+      }
+      html += `<li>${lineHtml}</li>`;
+    } else {
+      if (currentListType) {
+        html += `</${currentListType}>`;
+        currentListType = null;
+      }
+      if (/^\[\s?\]\s?/.test(plainTextContent)) {
+        const cleanTxt = lineHtml.replace(/^(\[\s?\])\s?/, "");
+        html += `<p class="doc-action-item"><label><input type="checkbox"> <span>${cleanTxt}</span></label></p>`;
+      } else if (/^\[[xX]\]\s?/.test(plainTextContent)) {
+        const cleanTxt = lineHtml.replace(/^(\[[xX]\])\s?/, "");
+        html += `<p class="doc-action-item"><label><input type="checkbox" checked> <span>${cleanTxt}</span></label></p>`;
+      } else {
+        html += `<p>${lineHtml}</p>`;
+      }
+    }
+  }
+  
+  if (currentListType) {
+    html += `</${currentListType}>`;
+  }
+  
+  return html || "<p></p>";
+}
+
+function cleanAndConvertOfficeHtml(rawHtml) {
+  if (!rawHtml || typeof rawHtml !== "string") return "";
+  
+  let cleaned = rawHtml
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<xml[\s\S]*?<\/xml>/gi, "")
+    .replace(/<\/?o:[^>]*>/gi, "")
+    .replace(/<\/?w:[^>]*>/gi, "")
+    .replace(/<\/?meta[^>]*>/gi, "")
+    .replace(/<\/?link[^>]*>/gi, "");
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(cleaned, "text/html");
+  const body = doc.body;
+
+  if (!body) return "";
+
+  const allNodes = body.querySelectorAll("*");
+  allNodes.forEach((node) => {
+    const tag = node.tagName.toLowerCase();
+    if (["style", "script", "meta", "link", "title", "xml"].includes(tag)) {
+      node.remove();
+      return;
+    }
+    node.removeAttribute("class");
+    node.removeAttribute("style");
+    node.removeAttribute("align");
+    node.removeAttribute("valign");
+    node.removeAttribute("width");
+    node.removeAttribute("height");
+    node.removeAttribute("bgcolor");
+    node.removeAttribute("color");
+    node.removeAttribute("face");
+    node.removeAttribute("lang");
+  });
+
+  const elements = Array.from(body.querySelectorAll("p, div, h1, h2, h3, h4, h5, h6, li"));
+  let activeList = null;
+  let activeListType = null;
+
+  elements.forEach((el) => {
+    const text = el.textContent.trim();
+    if (!text && !el.querySelector("img, input")) {
+      return;
+    }
+
+    const isBullet = /^[-*•·o§]\s/.test(text) || /^[-*•·o§]$/.test(text);
+    const isNum = /^\d+[\.\)]\s/.test(text);
+    const isCheckUnchecked = /^(\[\s?\]|☐)\s?/.test(text);
+    const isCheckChecked = /^(\[[xX]\]|☑|☒)\s?/.test(text);
+
+    if (isCheckUnchecked || isCheckChecked) {
+      if (activeList) { activeList = null; activeListType = null; }
+      const cleanTxt = text.replace(/^(\[\s?\]|\[[xX]\]|☐|☑|☒)\s?/, "");
+      const p = document.createElement("p");
+      p.className = "doc-action-item";
+      p.innerHTML = `<label><input type="checkbox"${isCheckChecked ? " checked" : ""}> <span>${escapeHtml(cleanTxt)}</span></label>`;
+      if (el.parentNode) el.parentNode.replaceChild(p, el);
+    } else if (isBullet || isNum) {
+      const type = isBullet ? "ul" : "ol";
+      const cleanTxt = text.replace(/^([-*•·o§]|\d+[\.\)])\s?/, "");
+      
+      let li = document.createElement("li");
+      li.innerHTML = el.innerHTML.replace(/^.*?([-*•·o§]|\d+[\.\)])\s?/, "");
+      if (!li.textContent.trim()) li.textContent = escapeHtml(cleanTxt);
+
+      if (!activeList || activeListType !== type || !activeList.parentNode) {
+        activeList = document.createElement(type);
+        activeListType = type;
+        if (el.parentNode) el.parentNode.insertBefore(activeList, el);
+      }
+      activeList.appendChild(li);
+      el.remove();
+    } else {
+      activeList = null;
+      activeListType = null;
+    }
+  });
+
+  return body.innerHTML.trim() || "";
+}
+
+function parseOneNoteOrDocxPlainText(plainText) {
+  if (!plainText || !plainText.trim()) return "";
+  const lines = plainText.split(/\r?\n/);
+  let html = "";
+  let inList = null;
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (inList) { html += `</${inList}>`; inList = null; }
+      return;
+    }
+
+    if (trimmed.startsWith("# ")) {
+      if (inList) { html += `</${inList}>`; inList = null; }
+      html += `<h1>${escapeHtml(trimmed.slice(2))}</h1>`;
+    } else if (trimmed.startsWith("## ")) {
+      if (inList) { html += `</${inList}>`; inList = null; }
+      html += `<h2>${escapeHtml(trimmed.slice(3))}</h2>`;
+    } else if (trimmed.startsWith("### ")) {
+      if (inList) { html += `</${inList}>`; inList = null; }
+      html += `<h3>${escapeHtml(trimmed.slice(4))}</h3>`;
+    } else if (/^[-*•·o§]\s/.test(trimmed)) {
+      if (inList !== "ul") {
+        if (inList) html += `</${inList}>`;
+        html += "<ul>";
+        inList = "ul";
+      }
+      html += `<li>${escapeHtml(trimmed.replace(/^[-*•·o§]\s/, ""))}</li>`;
+    } else if (/^\d+[\.\)]\s/.test(trimmed)) {
+      if (inList !== "ol") {
+        if (inList) html += `</${inList}>`;
+        html += "<ol>";
+        inList = "ol";
+      }
+      html += `<li>${escapeHtml(trimmed.replace(/^\d+[\.\)]\s/, ""))}</li>`;
+    } else if (/^(\[\s?\]|☐)\s/.test(trimmed)) {
+      if (inList) { html += `</${inList}>`; inList = null; }
+      html += `<p class="doc-action-item"><label><input type="checkbox"> <span>${escapeHtml(trimmed.replace(/^(\[\s?\]|☐)\s/, ""))}</span></label></p>`;
+    } else if (/^(\[[xX]\]|☑|☒)\s/.test(trimmed)) {
+      if (inList) { html += `</${inList}>`; inList = null; }
+      html += `<p class="doc-action-item"><label><input type="checkbox" checked> <span>${escapeHtml(trimmed.replace(/^(\[[xX]\]|☑|☒)\s/, ""))}</span></label></p>`;
+    } else {
+      if (inList) { html += `</${inList}>`; inList = null; }
+      html += `<p>${escapeHtml(line)}</p>`;
+    }
+  });
+
+  if (inList) html += `</${inList}>`;
+  return html;
+}
+
 function renderMeetingDocEditor(body, scope, session, opts) {
   opts = opts || {};
   const initialHtml = getInitialDocHtml(session);
@@ -1084,7 +1596,7 @@ function renderMeetingDocEditor(body, scope, session, opts) {
 
   body.innerHTML = `
     <div class="on-doc-frame">
-      <div class="on-doc-bar" role="toolbar" aria-label="Document formatting">
+      <div class="on-doc-bar" role="toolbar" aria-label="OneNote Ribbon">
         ${actionBtnHtml}
         <div class="on-fmt-group">
           <button type="button" class="on-fmt-btn" id="doc-fmt-undo" title="Undo (Ctrl+Z)" aria-label="Undo"><i class="bx bx-undo" aria-hidden="true"></i></button>
@@ -1095,7 +1607,9 @@ function renderMeetingDocEditor(body, scope, session, opts) {
           <option value="p">Normal</option>
           <option value="h1">Heading 1</option>
           <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
           <option value="blockquote">Quote</option>
+          <option value="pre">Code Block</option>
         </select>
         <span class="on-fmt-sep" aria-hidden="true"></span>
         <div class="on-fmt-group">
@@ -1103,16 +1617,55 @@ function renderMeetingDocEditor(body, scope, session, opts) {
           <button type="button" class="on-fmt-btn" id="doc-fmt-italic" title="Italic (Ctrl+I)" aria-label="Italic"><i>I</i></button>
           <button type="button" class="on-fmt-btn" id="doc-fmt-underline" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
           <button type="button" class="on-fmt-btn" id="doc-fmt-strike" title="Strikethrough" aria-label="Strikethrough"><s>S</s></button>
+          <button type="button" class="on-fmt-btn" id="doc-fmt-clear" title="Clear Formatting" aria-label="Clear Formatting"><i class="bx bx-eraser" aria-hidden="true"></i></button>
+        </div>
+        <span class="on-fmt-sep" aria-hidden="true"></span>
+        <div class="on-fmt-group">
+          <select class="on-style-select" id="doc-fore-color" title="Text Color" style="min-width:72px;" aria-label="Text Color">
+            <option value="">Color</option>
+            <option value="#0f172a">Dark</option>
+            <option value="#1d4ed8">Blue</option>
+            <option value="#dc2626">Red</option>
+            <option value="#16a34a">Green</option>
+            <option value="#9333ea">Purple</option>
+            <option value="#ea580c">Orange</option>
+          </select>
+          <select class="on-style-select" id="doc-bg-color" title="Highlight Color" style="min-width:82px;" aria-label="Highlight Color">
+            <option value="">Highlight</option>
+            <option value="#fef08a">Yellow</option>
+            <option value="#bbf7d0">Green</option>
+            <option value="#a5f3fc">Cyan</option>
+            <option value="#fbcfe8">Pink</option>
+            <option value="#fed7aa">Orange</option>
+          </select>
         </div>
         <span class="on-fmt-sep" aria-hidden="true"></span>
         <div class="on-fmt-group">
           <button type="button" class="on-fmt-btn" id="doc-list-bullet" title="Bullet List" aria-label="Bullet List"><i class="bx bx-list-ul" aria-hidden="true"></i></button>
           <button type="button" class="on-fmt-btn" id="doc-list-num" title="Numbered List" aria-label="Numbered List"><i class="bx bx-list-ol" aria-hidden="true"></i></button>
+          <button type="button" class="on-fmt-btn" id="doc-fmt-outdent" title="Decrease Indent" aria-label="Decrease Indent"><i class="bx bx-first-page" aria-hidden="true"></i></button>
+          <button type="button" class="on-fmt-btn" id="doc-fmt-indent" title="Increase Indent" aria-label="Increase Indent"><i class="bx bx-last-page" aria-hidden="true"></i></button>
         </div>
         <span class="on-fmt-sep" aria-hidden="true"></span>
         <div class="on-fmt-group">
-          <button type="button" class="on-fmt-action" id="doc-add-action"><i class="bx bx-check-square" aria-hidden="true"></i> Checkbox</button>
+          <select class="on-style-select" id="doc-tag-select" title="OneNote Tags" style="min-width:105px;" aria-label="OneNote Tags">
+            <option value="">+ OneNote Tag</option>
+            <option value="important">⭐ Important</option>
+            <option value="question">❓ Question</option>
+            <option value="idea">💡 Idea</option>
+            <option value="critical">⚡ Critical</option>
+            <option value="followup">📌 Follow Up</option>
+            <option value="callout">💬 Callout Box</option>
+          </select>
+        </div>
+        <span class="on-fmt-sep" aria-hidden="true"></span>
+        <div class="on-fmt-group">
+          <button type="button" class="on-fmt-action" id="doc-add-action" title="Insert Checkbox"><i class="bx bx-check-square" aria-hidden="true"></i> Checkbox</button>
+          <button type="button" class="on-fmt-action" id="doc-add-table" title="Insert Table"><i class="bx bx-table" aria-hidden="true"></i> Table</button>
+          <button type="button" class="on-fmt-action" id="doc-add-link" title="Insert Link"><i class="bx bx-link" aria-hidden="true"></i> Link</button>
           <button type="button" class="on-fmt-action" id="doc-add-task-template"><i class="bx bx-user-check" aria-hidden="true"></i> Add Task</button>
+          <button type="button" class="on-fmt-action" id="doc-import-file" title="Paste or import OneNote / DOCX notes"><i class="bx bx-file" aria-hidden="true"></i> Import DOCX / Note</button>
+          <input type="file" id="doc-file-input" accept=".docx,.txt,.md,.html" style="display:none;">
         </div>
         <span class="on-doc-meta-group">
           <span class="on-doc-wc" id="doc-word-count"></span>
@@ -1131,6 +1684,45 @@ function renderMeetingDocEditor(body, scope, session, opts) {
 
   const editor = $("#meeting-doc-editor", body);
   if (editor) editor.innerHTML = initialHtml;
+
+  // Find the nearest block-level ancestor inside the editor
+  function nearestEditorBlock(node) {
+    let n = node && node.nodeType === 1 ? node : node && node.parentElement;
+    while (n && n !== editor) {
+      if (["P","H1","H2","H3","LI","BLOCKQUOTE","DIV"].includes(n.tagName)) return n;
+      n = n.parentElement;
+    }
+    return null;
+  }
+
+  function editorGetActionItem(node) {
+    if (!node) return null;
+    const el = node.nodeType === 1 ? node : node.parentElement;
+    return el ? el.closest(".doc-action-item") : null;
+  }
+
+  function editorGetLi(node) {
+    if (!node) return null;
+    const el = node.nodeType === 1 ? node : node.parentElement;
+    return el ? el.closest("li") : null;
+  }
+
+  function insertActionItemAfterBlock(refBlock) {
+    const newP = document.createElement("p");
+    newP.className = "doc-action-item";
+    newP.innerHTML = '<label><input type="checkbox"> <span><br></span></label>';
+    if (refBlock && refBlock !== editor) refBlock.after(newP);
+    else editor.appendChild(newP);
+    const span = newP.querySelector("label span");
+    if (span) {
+      const sel = window.getSelection();
+      const r = document.createRange();
+      r.setStart(span, 0);
+      r.collapse(true);
+      if (sel) { sel.removeAllRanges(); sel.addRange(r); }
+    }
+    return newP;
+  }
 
   // Slash command palette element
   let paletteEl = document.getElementById("doc-cmd-palette");
@@ -1212,7 +1804,12 @@ function renderMeetingDocEditor(body, scope, session, opts) {
     else if (cmd.id === "bullet") exec("insertUnorderedList");
     else if (cmd.id === "num") exec("insertOrderedList");
     else if (cmd.id === "quote") exec("formatBlock", "<blockquote>");
-    else if (cmd.id === "action") exec("insertHTML", '<p class="doc-action-item"><label><input type="checkbox"> <span contenteditable="true">Action item</span></label></p>');
+    else if (cmd.id === "action") {
+      const _sel = window.getSelection();
+      const _blk = _sel && _sel.anchorNode ? nearestEditorBlock(_sel.anchorNode) : null;
+      insertActionItemAfterBlock(_blk);
+      schedSave();
+    }
     else if (cmd.id === "task") triggerAddTask();
     else if (cmd.id === "para") exec("formatBlock", "<p>");
   }
@@ -1254,16 +1851,39 @@ function renderMeetingDocEditor(body, scope, session, opts) {
     if (metaEl) metaEl.textContent = `${words} ${words === 1 ? "word" : "words"}`;
   }
 
+  const doSave = opts.saveFn || (async () => {
+    session.docHtml = editor.innerHTML;
+    // Keep currentSession in sync in case a background db swap replaced the
+    // reference while the editor was open.
+    const current = meetingData(scope) && meetingData(scope).currentSession;
+    if (current && current !== session) current.docHtml = session.docHtml;
+    await Repo.save("meetingSession", session, { projectCode: meetingProjectCode(scope), immediate: true });
+  });
+
   function schedSave() {
     clearTimeout(saveTimer);
     updateWordCount();
     const statusEl = document.getElementById("doc-save-status");
     if (statusEl) { statusEl.textContent = "Saving…"; statusEl.className = "doc-save-status doc-saving"; }
+    // Register a flush function so navigation can save immediately before switching pages.
+    if (!window.AEWTTR._pendingDocSave) window.AEWTTR._pendingDocSave = 0;
+    window.AEWTTR._pendingDocSave++;
+    window.AEWTTR._flushDocSave = async function() {
+      window.AEWTTR._flushDocSave = null;
+      window.AEWTTR._pendingDocSave = 0;
+      clearTimeout(saveTimer);
+      saveTimer = null;
+      if (!isEditorMounted()) return;
+      session.docHtml = editor.innerHTML;
+      await doSave();
+    };
     saveTimer = setTimeout(async function() {
+      window.AEWTTR._flushDocSave = null;
+      window.AEWTTR._pendingDocSave = Math.max(0, (window.AEWTTR._pendingDocSave || 1) - 1);
       if (!isEditorMounted()) return;
       session.docHtml = editor.innerHTML;
       try {
-        await saveMeetingSession(scope);
+        await doSave();
         const el = document.getElementById("doc-save-status");
         if (el) { el.textContent = "Saved"; el.className = "doc-save-status doc-saved"; }
         setTimeout(function() { const e2 = document.getElementById("doc-save-status"); if (e2 && e2.textContent === "Saved") e2.textContent = ""; }, 2000);
@@ -1288,8 +1908,11 @@ function renderMeetingDocEditor(body, scope, session, opts) {
   $("#doc-fmt-italic", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("italic"); });
   $("#doc-fmt-underline", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("underline"); });
   $("#doc-fmt-strike", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("strikeThrough"); });
+  $("#doc-fmt-clear", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("removeFormat"); });
   $("#doc-list-bullet", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("insertUnorderedList"); });
   $("#doc-list-num", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("insertOrderedList"); });
+  $("#doc-fmt-outdent", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("outdent"); });
+  $("#doc-fmt-indent", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("indent"); });
 
   const styleSelect = $("#doc-style-select", body);
   if (styleSelect) {
@@ -1299,8 +1922,53 @@ function renderMeetingDocEditor(body, scope, session, opts) {
     });
   }
 
+  const foreColorSelect = $("#doc-fore-color", body);
+  if (foreColorSelect) {
+    foreColorSelect.addEventListener("change", () => {
+      if (foreColorSelect.value) exec("foreColor", foreColorSelect.value);
+    });
+  }
+
+  const bgColorSelect = $("#doc-bg-color", body);
+  if (bgColorSelect) {
+    bgColorSelect.addEventListener("change", () => {
+      if (bgColorSelect.value) {
+        try { exec("hiliteColor", bgColorSelect.value); } catch (err) { exec("backColor", bgColorSelect.value); }
+      }
+    });
+  }
+
+  const tagSelect = $("#doc-tag-select", body);
+  if (tagSelect) {
+    tagSelect.addEventListener("change", () => {
+      const val = tagSelect.value;
+      if (!val) return;
+      if (val === "important") exec("insertHTML", '<span class="on-tag on-tag-important"><i class="bx bxs-star"></i> Important</span>&nbsp;');
+      else if (val === "question") exec("insertHTML", '<span class="on-tag on-tag-question"><i class="bx bx-help-circle"></i> Question</span>&nbsp;');
+      else if (val === "idea") exec("insertHTML", '<span class="on-tag on-tag-idea"><i class="bx bxs-bulb"></i> Idea</span>&nbsp;');
+      else if (val === "critical") exec("insertHTML", '<span class="on-tag on-tag-critical"><i class="bx bxs-zap"></i> Critical</span>&nbsp;');
+      else if (val === "followup") exec("insertHTML", '<span class="on-tag on-tag-followup"><i class="bx bxs-pin"></i> Follow Up</span>&nbsp;');
+      else if (val === "callout") exec("insertHTML", '<div class="on-callout-box"><i class="bx bx-info-circle" style="font-size:18px;color:#3b82f6;"></i><span>Type note or callout details here...</span></div><p><br></p>');
+      tagSelect.value = "";
+    });
+  }
+
   $("#doc-add-action", body)?.addEventListener("click", () => {
-    exec("insertHTML", '<p class="doc-action-item"><label><input type="checkbox"> <span>Action item</span></label></p>');
+    editor.focus();
+    const sel = window.getSelection();
+    const anchor = sel && sel.anchorNode;
+    const blk = anchor ? (editorGetActionItem(anchor) || nearestEditorBlock(anchor)) : null;
+    insertActionItemAfterBlock(blk);
+    schedSave();
+  });
+
+  $("#doc-add-table", body)?.addEventListener("click", () => {
+    exec("insertHTML", '<table><thead><tr><th>Header 1</th><th>Header 2</th><th>Header 3</th></tr></thead><tbody><tr><td>Item 1</td><td>Detail A</td><td>Status X</td></tr><tr><td>Item 2</td><td>Detail B</td><td>Status Y</td></tr></tbody></table><p><br></p>');
+  });
+
+  $("#doc-add-link", body)?.addEventListener("click", () => {
+    const url = prompt("Enter link URL:", "https://");
+    if (url && url.trim()) exec("createLink", url.trim());
   });
 
   $("#doc-add-task-template", body)?.addEventListener("click", () => {
@@ -1309,6 +1977,7 @@ function renderMeetingDocEditor(body, scope, session, opts) {
 
   // Editor events
   editor.addEventListener("keydown", (e) => {
+    // Command palette navigation — handle first, before anything else
     if (cmdOpen) {
       if (e.key === "ArrowDown") { e.preventDefault(); cmdActiveIdx = Math.min(cmdActiveIdx + 1, filteredCmds().length - 1); renderPalette(); return; }
       if (e.key === "ArrowUp") { e.preventDefault(); cmdActiveIdx = Math.max(0, cmdActiveIdx - 1); renderPalette(); return; }
@@ -1318,10 +1987,100 @@ function renderMeetingDocEditor(body, scope, session, opts) {
     }
 
     const sel = window.getSelection();
-    const anchor = sel && sel.anchorNode;
-    const li = anchor ? (anchor.nodeType === 1 ? anchor.closest("li") : anchor.parentElement?.closest("li")) : null;
+    if (!sel || !sel.rangeCount) return;
+    const anchor = sel.anchorNode;
 
+    // ── Enter ──────────────────────────────────────────────────────────────
+    if (e.key === "Enter" && !e.shiftKey && !cmdOpen) {
+      // Action item: Enter creates next checkbox; Enter on empty line escapes to <p>
+      const actionItem = editorGetActionItem(anchor);
+      if (actionItem) {
+        e.preventDefault();
+        const span = actionItem.querySelector("label span");
+        if (span && span.textContent.trim()) {
+          insertActionItemAfterBlock(actionItem);
+        } else {
+          const newP = document.createElement("p");
+          newP.innerHTML = "<br>";
+          actionItem.replaceWith(newP);
+          const r = document.createRange();
+          r.setStart(newP, 0);
+          r.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(r);
+        }
+        schedSave();
+        return;
+      }
+
+      // Heading: Enter at any position creates a plain <p> after (Word / OneNote behaviour)
+      const block = nearestEditorBlock(anchor);
+      if (block && /^H[123]$/.test(block.tagName)) {
+        e.preventDefault();
+        const newP = document.createElement("p");
+        newP.innerHTML = "<br>";
+        block.after(newP);
+        const r = document.createRange();
+        r.setStart(newP, 0);
+        r.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(r);
+        schedSave();
+        return;
+      }
+
+      // Empty list item: exit the list instead of creating another empty bullet
+      const li = editorGetLi(anchor);
+      if (li && !li.textContent.trim()) {
+        e.preventDefault();
+        const list = li.parentElement;
+        const isNested = list && list.parentElement && list.parentElement.closest("ul,ol");
+        if (isNested) {
+          exec("outdent");
+        } else {
+          const newP = document.createElement("p");
+          newP.innerHTML = "<br>";
+          li.remove();
+          if (list && !list.children.length) list.replaceWith(newP);
+          else if (list) list.after(newP);
+          else editor.appendChild(newP);
+          const r = document.createRange();
+          r.setStart(newP, 0);
+          r.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(r);
+        }
+        schedSave();
+        return;
+      }
+
+      // Everything else: let the browser create the next paragraph naturally
+    }
+
+    // ── Backspace ──────────────────────────────────────────────────────────
     if (e.key === "Backspace") {
+      // Empty action item line: delete it and land on a plain <p>
+      const actionItem = editorGetActionItem(anchor);
+      if (actionItem) {
+        const span = actionItem.querySelector("label span");
+        if (!span || !span.textContent.trim()) {
+          e.preventDefault();
+          const prev = actionItem.previousElementSibling;
+          actionItem.remove();
+          if (prev) {
+            const r = document.createRange();
+            r.selectNodeContents(prev);
+            r.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(r);
+          }
+          schedSave();
+          return;
+        }
+      }
+
+      // Empty or cursor-at-start list item: outdent or convert to <p>
+      const li = editorGetLi(anchor);
       if (li) {
         const isEmpty = !li.textContent.trim();
         const atStart = sel.anchorOffset === 0;
@@ -1331,12 +2090,8 @@ function renderMeetingDocEditor(body, scope, session, opts) {
           if (isNested) {
             exec("outdent");
           } else {
-            // Root list item -> convert line back to normal paragraph text
-            if (li.parentElement?.tagName === "OL") {
-              exec("insertOrderedList");
-            } else {
-              exec("insertUnorderedList");
-            }
+            if (li.parentElement?.tagName === "OL") exec("insertOrderedList");
+            else exec("insertUnorderedList");
             exec("formatBlock", "<p>");
           }
           return;
@@ -1344,30 +2099,27 @@ function renderMeetingDocEditor(body, scope, session, opts) {
       }
     }
 
+    // ── Tab ────────────────────────────────────────────────────────────────
     if (e.key === "Tab") {
       e.preventDefault();
+      const li = editorGetLi(anchor);
       if (li) {
         if (e.shiftKey) exec("outdent");
         else exec("indent");
       } else {
-        if (anchor) {
-          const txt = anchor.textContent || "";
-          const tr = txt.trim();
-          if (tr === "-" || tr === "*" || tr === "•") {
-            if (anchor.nodeType === 3) anchor.textContent = "";
-            else anchor.innerHTML = "<br>";
-            exec("insertUnorderedList");
-            return;
-          } else if (/^\d+\.?$/.test(tr)) {
-            if (anchor.nodeType === 3) anchor.textContent = "";
-            else anchor.innerHTML = "<br>";
-            exec("insertOrderedList");
-            return;
-          }
+        // Auto-list shortcuts: "- " → bullet, "1. " → numbered
+        const txt = anchor && anchor.nodeType === 3 ? anchor.textContent : "";
+        const tr = txt.trim();
+        if (tr === "-" || tr === "*" || tr === "•") {
+          if (anchor.nodeType === 3) anchor.textContent = "";
+          exec("insertUnorderedList");
+        } else if (/^\d+\.?$/.test(tr)) {
+          if (anchor.nodeType === 3) anchor.textContent = "";
+          exec("insertOrderedList");
+        } else if (!e.shiftKey) {
+          exec("insertUnorderedList");
         }
-        if (!e.shiftKey) exec("insertUnorderedList");
       }
-      return;
     }
   });
 
@@ -1405,6 +2157,104 @@ function renderMeetingDocEditor(body, scope, session, opts) {
   document.addEventListener("click", (e) => {
     if (cmdOpen && paletteEl && !paletteEl.contains(e.target) && !editor.contains(e.target)) {
       closePalette();
+    }
+  });
+
+  // Wire OneNote / DOCX Paste & File Import
+  const fileInput = $("#doc-file-input", body);
+  const importBtn = $("#doc-import-file", body);
+
+  if (importBtn && fileInput) {
+    importBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      try {
+        let contentHtml = "";
+        if (file.name.endsWith(".docx") || file.type.includes("wordprocessingml")) {
+          const buffer = await file.arrayBuffer();
+          contentHtml = await parseDocxArrayBuffer(buffer);
+        } else {
+          const text = await file.text();
+          contentHtml = parseOneNoteOrDocxPlainText(text);
+        }
+        exec("insertHTML", contentHtml);
+        if (typeof toast === "function") toast(`Imported ${file.name} successfully!`, "success");
+      } catch (err) {
+        console.error("File import failed:", err);
+        if (typeof toast === "function") toast("Could not parse file. Make sure it is a valid .docx or text file.", "error");
+      }
+      fileInput.value = "";
+    });
+  }
+
+  editor.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    editor.classList.add("drag-over");
+  });
+  editor.addEventListener("dragleave", () => {
+    editor.classList.remove("drag-over");
+  });
+  editor.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    editor.classList.remove("drag-over");
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      try {
+        let contentHtml = "";
+        if (file.name.endsWith(".docx") || file.type.includes("wordprocessingml")) {
+          const buffer = await file.arrayBuffer();
+          contentHtml = await parseDocxArrayBuffer(buffer);
+        } else {
+          const text = await file.text();
+          contentHtml = parseOneNoteOrDocxPlainText(text);
+        }
+        exec("insertHTML", contentHtml);
+        if (typeof toast === "function") toast(`Imported ${file.name} successfully!`, "success");
+      } catch (err) {
+        console.error("Drop import failed:", err);
+        if (typeof toast === "function") toast("Could not import file.", "error");
+      }
+    }
+  });
+
+  editor.addEventListener("paste", async (e) => {
+    e.preventDefault();
+
+    const clipboardData = e.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
+
+    const files = clipboardData.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.name.endsWith(".docx") || file.type.includes("wordprocessingml")) {
+        try {
+          const buffer = await file.arrayBuffer();
+          const docxHtml = await parseDocxArrayBuffer(buffer);
+          exec("insertHTML", docxHtml);
+          if (typeof toast === "function") toast("Imported pasted DOCX file!", "success");
+          return;
+        } catch (err) {
+          console.error("Failed to parse pasted DOCX:", err);
+        }
+      }
+    }
+
+    const html = clipboardData.getData("text/html");
+    const plainText = clipboardData.getData("text/plain");
+
+    let parsedHtml = "";
+    if (html && (html.includes("mso-") || html.includes("OneNote") || html.includes("Word") || html.includes("class=\"Mso"))) {
+      parsedHtml = cleanAndConvertOfficeHtml(html);
+    } else if (html && html.trim()) {
+      parsedHtml = cleanAndConvertOfficeHtml(html);
+    } else if (plainText && plainText.trim()) {
+      parsedHtml = parseOneNoteOrDocxPlainText(plainText);
+    }
+
+    if (parsedHtml) {
+      exec("insertHTML", parsedHtml);
     }
   });
 
@@ -3044,21 +3894,28 @@ function collectMeetingMinutesRecipientEmails(scope, session) {
   return Array.from(emails);
 }
 
-function buildMeetingMinutesEmailBody(title, log) {
-  const lines = (log || []).map((entry) => String(entry.text || "").trim()).filter(Boolean);
-  const list = lines.length
-    ? `<ol style="padding-left:20px;margin:12px 0;">${lines.map((text) => `<li style="margin:6px 0;">${escapeHtml(text)}</li>`).join("")}</ol>`
-    : `<p>No activity was logged during this meeting.</p>`;
-  return `<p><strong>${escapeHtml(title)}</strong></p>${list}`;
+function buildMeetingMinutesEmailBody(title, session) {
+  const docHtml = session && session.docHtml && session.docHtml.trim() ? session.docHtml : "";
+  const attendees = (session && session.attendees) || [];
+  const guests = (session && session.guestAttendees) || [];
+  const allPresent = [...attendees, ...guests];
+  const attendeeHtml = allPresent.length
+    ? `<p style="margin:0 0 8px;color:#555;font-size:13px;"><strong>Present:</strong> ${allPresent.map(n => escapeHtml(n)).join(", ")}</p>`
+    : "";
+  const docBody = docHtml
+    ? `<div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">${docHtml}</div>`
+    : `<p style="color:#555;">No minutes document was recorded for this session.</p>`;
+  return `
+    <p style="margin:0 0 4px;"><strong>${escapeHtml(title)}</strong></p>
+    ${attendeeHtml}
+    ${docBody}`;
 }
 
-function buildMeetingMinutesTeamsText(subject, preview, log, actionUrl) {
-  const lines = (log || []).map((entry) => String(entry.text || "").trim()).filter(Boolean);
-  const blocks = [
-    `**${subject}**`,
-    preview,
-    lines.length ? lines.map((text, idx) => `${idx + 1}. ${text}`).join("\n") : "No activity was logged during this meeting."
-  ];
+function buildMeetingMinutesTeamsText(subject, preview, session, actionUrl) {
+  const docHtml = session && session.docHtml ? session.docHtml : "";
+  const plainText = docHtml.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
+  const snippet = plainText.length > 800 ? `${plainText.slice(0, 797)}…` : plainText;
+  const blocks = [`**${subject}**`, preview, snippet || "No minutes document recorded."];
   if (actionUrl) blocks.push(`[Open Meeting History](${actionUrl})`);
   return blocks.filter(Boolean).join("\n\n");
 }
@@ -3066,28 +3923,33 @@ function buildMeetingMinutesTeamsText(subject, preview, log, actionUrl) {
 async function notifyMeetingMinutes(scope, session, recipientEmails) {
   if (typeof isSharePointMode !== "function" || !isSharePointMode()) return;
   if (typeof notifyUsers !== "function" || !session) return;
-  const emails = Array.isArray(recipientEmails) && recipientEmails.length
+  // Only send to attendees who were marked present
+  const presentNames = new Set([...(session.attendees || []), ...(session.guestAttendees || [])]);
+  const allEmails = Array.isArray(recipientEmails) && recipientEmails.length
     ? recipientEmails
     : collectMeetingMinutesRecipientEmails(scope, session);
+  const presentEmails = allEmails.filter(email => {
+    const member = (window.AEWTTR.db.members || []).find(m => m.email && m.email.toLowerCase() === email.toLowerCase());
+    if (member && presentNames.has(member.name)) return true;
+    // Guests registered by email
+    const guest = (session.guests || []).find(g => g.email && g.email.toLowerCase() === email.toLowerCase());
+    return guest && presentNames.has(guest.name);
+  });
+  // Fall back to all collected emails if present-filtering yields nothing
+  const emails = presentEmails.length ? presentEmails : allEmails;
   if (!emails.length) return;
+
   const title = meetingMinutesTitle(scope, session);
   const subject = `PULSE Meeting Minutes — ${title}`;
   const presentCount = (session.attendees || []).length + (session.guestAttendees || []).length;
-  const noteCount = (session.capturedNotes || session.notesFeed || []).length;
-  const log = session.minutesLog || [];
-  const lines = log.map((entry) => String(entry.text || "").trim()).filter(Boolean);
-  const preview = presentCount
-    ? `Minutes are ready · ${presentCount} present · ${noteCount} note${noteCount === 1 ? "" : "s"}.`
-    : `Minutes are ready · ${noteCount} note${noteCount === 1 ? "" : "s"}.`;
+  const updatedCount = (session.ganttChanges || []).filter(c => c.reviewStatus === "Updated").length;
+  const preview = `Minutes from ${escapeHtml(fmtDate(session.date))} · ${presentCount} present${updatedCount ? ` · ${updatedCount} updated` : ""}.`;
   const actionUrl = meetingMinutesDeepLink(scope);
-  const minutesValue = lines.length
-    ? lines.slice(0, 25).map((text, idx) => `${idx + 1}. ${text}`).join("\n") + (lines.length > 25 ? "\n…" : "")
-    : "No activity logged";
   const facts = [
     { title: "Meeting", value: title },
+    { title: "Date", value: fmtDate(session.date) },
     { title: "Present", value: String(presentCount) },
-    { title: "Notes", value: String(noteCount) },
-    { title: "Minutes", value: minutesValue }
+    { title: "Tasks Updated", value: String(updatedCount) }
   ];
   try {
     await notifyUsers({
@@ -3098,9 +3960,9 @@ async function notifyMeetingMinutes(scope, session, recipientEmails) {
       preview,
       facts,
       actionUrl,
-      actionTitle: "Open Meeting History",
-      body: buildMeetingMinutesEmailBody(title, log),
-      teamsText: buildMeetingMinutesTeamsText(subject, preview, log, actionUrl)
+      actionTitle: "Open Meeting Notes",
+      body: buildMeetingMinutesEmailBody(title, session),
+      teamsText: buildMeetingMinutesTeamsText(subject, preview, session, actionUrl)
     });
   } catch (e) {
     console.warn("PULSE: meeting minutes notification failed.", e);
@@ -4456,6 +5318,8 @@ function openMeetingConfigModal(proj, onDone) {
     if (onDone) onDone();
   });
 }
+
+window.AEWTTR.renderMeetingApp = renderMeetingApp;
 
 window.AEWTTR.renderProjectMeetingApp = function (body, proj) {
   /* Render a lightweight meeting view inside the project page shell.

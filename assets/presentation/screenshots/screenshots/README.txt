@@ -1,14 +1,14 @@
-PULSE-IPT — Presentation Screenshots
+PULSE — Presentation Screenshots
 =====================================
 Captured: 2026-07-09
-Source: PULSE-IPT/ (static HTML/CSS/JS single-page app)
+Source: PULSE/ (static HTML/CSS/JS single-page app)
 
 HOW THESE WERE CAPTURED
 ------------------------
-PULSE-IPT has no build step — it is plain HTML/CSS/JS designed to run inside
+PULSE has no build step — it is plain HTML/CSS/JS designed to run inside
 a SharePoint site (via a Firepit/SPFx web part) using SharePoint lists as its
 backend. It was run locally with the project's existing dev launch config
-(python3 -m http.server, see PULSE-IPT/.claude/launch.json) and driven with
+(python3 -m http.server, see PULSE/.claude/launch.json) and driven with
 Playwright (Chromium) at a fixed 1600x1000 viewport, screenshotted directly
 to PNG (no browser chrome).
 

@@ -931,6 +931,7 @@ function parseMeetingSessionNotes(rawNotes) {
     return {
       notesFeed: Array.isArray(parsed.notesFeed) ? parsed.notesFeed : [],
       docBlocks: normalizeMeetingDocBlocks(parsed.docBlocks),
+      docHtml: typeof parsed.docHtml === "string" ? parsed.docHtml : "",
       sessionStatus: parsed.sessionStatus || null,
       guests: Array.isArray(parsed.guests) ? parsed.guests : [],
       capturedNotes: Array.isArray(parsed.capturedNotes) ? parsed.capturedNotes : [],
@@ -940,7 +941,12 @@ function parseMeetingSessionNotes(rawNotes) {
       tasksReviewed: Number(parsed.tasksReviewed) || 0,
       startedAt: parsed.startedAt || null,
       endedAt: parsed.endedAt || null,
-      guestAttendees: Array.isArray(parsed.guestAttendees) ? parsed.guestAttendees : []
+      guestAttendees: Array.isArray(parsed.guestAttendees) ? parsed.guestAttendees : [],
+      scheduledTitle: parsed.scheduledTitle || null,
+      scheduledTime: parsed.scheduledTime || null,
+      agendaText: parsed.agendaText || null,
+      createdBy: parsed.createdBy || null,
+      createdAt: parsed.createdAt || null
     };
   }
   if (Array.isArray(parsed)) {
@@ -1015,11 +1021,13 @@ function meetingSessionToSpItem(session, scopeProjectCode) {
     // New sites get a purpose-built column. Notes also contains the document
     // so existing sites without that column retain it after refresh.
     DocBlocksJson: JSON.stringify(docBlocks || []),
+    DocHtml: session.docHtml || "",
     Attendees: JSON.stringify(session.attendees || []),
     AttendanceJson: JSON.stringify(session.attendance || {}),
     Notes: JSON.stringify({
       notesFeed: session.notesFeed || [],
       docBlocks: docBlocks || [],
+      docHtml: session.docHtml || "",
       sessionStatus,
       guests: session.guests || [],
       capturedNotes: session.capturedNotes || [],
@@ -1029,7 +1037,12 @@ function meetingSessionToSpItem(session, scopeProjectCode) {
       tasksReviewed: session.tasksReviewed || 0,
       startedAt: session.startedAt || null,
       endedAt: session.endedAt || null,
-      guestAttendees: session.guestAttendees || []
+      guestAttendees: session.guestAttendees || [],
+      scheduledTitle: session.scheduledTitle || null,
+      scheduledTime: session.scheduledTime || null,
+      agendaText: session.agendaText || null,
+      createdBy: session.createdBy || null,
+      createdAt: session.createdAt || null
     }),
     DecisionsJson: JSON.stringify(session.decisions || []),
     ActionItemsJson: JSON.stringify(session.actionItems || []),
@@ -1074,7 +1087,13 @@ function spItemToMeetingSession(item) {
     attendees: safeJsonParse(item.Attendees, []),
     attendance: safeJsonParse(item.AttendanceJson, {}),
     activity: safeJsonParse(item.ActivityJson, []),
-    sessionStatus: sessionStatus || "active"
+    sessionStatus: sessionStatus || "active",
+    docHtml: item.DocHtml || parsedNotes.docHtml || "",
+    scheduledTitle: parsedNotes.scheduledTitle || null,
+    scheduledTime: parsedNotes.scheduledTime || null,
+    agendaText: parsedNotes.agendaText || null,
+    createdBy: parsedNotes.createdBy || null,
+    createdAt: parsedNotes.createdAt || null
   };
   // Leave legacy sessions without a saved document alone so the editor can
   // migrate their already-persisted AgendaJson instead of showing it blank.
@@ -1244,6 +1263,7 @@ function locationConfigToSpItem(cfg) {
     LocationsJson: JSON.stringify(cfg.locations || []),
     PortfolioCatalogJson: JSON.stringify(cfg.portfolios || []),
     ContractorCatalogJson: JSON.stringify(cfg.contractors || []),
+    ContractCatalogJson: JSON.stringify(cfg.contracts || []),
     ConfigEndItemCatalogJson: JSON.stringify(cfg.configEndItems || []),
     HideUnaffiliatedPeople: cfg.hideUnaffiliatedPeople !== false
   };
@@ -1253,12 +1273,14 @@ function spItemToLocationConfig(item) {
   const locations = safeJsonParse(item.LocationsJson, []);
   const portfolios = safeJsonParse(item.PortfolioCatalogJson, []);
   const contractors = safeJsonParse(item.ContractorCatalogJson, []);
+  const contracts = safeJsonParse(item.ContractCatalogJson, []);
   const configEndItems = safeJsonParse(item.ConfigEndItemCatalogJson, []);
   return {
     _spId: item.Id,
     locations: Array.isArray(locations) ? locations.map((n) => String(n == null ? "" : n).trim()).filter(Boolean) : [],
     portfolios: Array.isArray(portfolios) ? portfolios.map((n) => String(n == null ? "" : n).trim()).filter(Boolean) : [],
     contractors: Array.isArray(contractors) ? contractors.map((n) => String(n == null ? "" : n).trim()).filter(Boolean) : [],
+    contracts: Array.isArray(contracts) ? contracts.map((n) => String(n == null ? "" : n).trim()).filter(Boolean) : [],
     configEndItems: Array.isArray(configEndItems) ? configEndItems.map((n) => String(n == null ? "" : n).trim()).filter(Boolean) : [],
     hideUnaffiliatedPeople: item.HideUnaffiliatedPeople !== false
   };
@@ -1599,22 +1621,40 @@ async function loadAllFromSharePoint(siteUrl, options) {
     (sessionsByScope[scope] = sessionsByScope[scope] || []).push({ session, itemId: item.Id });
   });
   Object.keys(sessionsByScope).forEach((scope) => {
-    const entries = sessionsByScope[scope].sort((x, y) => y.itemId - x.itemId);
+    const allEntries = sessionsByScope[scope].sort((x, y) => y.itemId - x.itemId);
+    // Planned sessions are scheduled meetings — keep them separate from the live/archive flow.
+    const plannedEntries = allEntries.filter((e) => e.session.sessionStatus === "planned");
+    const entries = allEntries.filter((e) => e.session.sessionStatus !== "planned");
     const newest = entries[0];
     const newestEnded = newest && newest.session.sessionStatus === "ended";
-    const current = newestEnded ? null : newest.session;
+    const current = newestEnded ? null : newest && newest.session;
     const archive = (newestEnded ? entries : entries.slice(1)).map((entry) => entry.session)
       .sort((x, y) => String(y.date).localeCompare(String(x.date)));
     const meetingStatus = current ? "active" : (entries.length ? "ended" : "idle");
+    const scheduledMeetings = plannedEntries.map((e) => {
+      const s = e.session;
+      return {
+        id: s.id, _spId: s._spId,
+        title: s.scheduledTitle || s.id,
+        date: s.date || "",
+        time: s.scheduledTime || "",
+        agendaText: s.agendaText || "",
+        docHtml: s.docHtml || "",
+        createdBy: s.createdBy || "",
+        createdAt: s.createdAt || "",
+        sessionStatus: "scheduled"
+      };
+    });
     if (!scope) {
       db.weeklyMeeting.currentSession = current;
       db.weeklyMeeting.sessions = archive;
       db.weeklyMeeting.meetingStatus = meetingStatus;
+      db.weeklyMeeting.scheduledMeetings = scheduledMeetings;
     } else {
       db.weeklyMeeting.projectMeetings[scope] = Object.assign(
-        { sessions: [], currentSession: null, meetingStatus: "idle" },
+        { sessions: [], currentSession: null, meetingStatus: "idle", scheduledMeetings: [] },
         db.weeklyMeeting.projectMeetings[scope] || {},
-        { currentSession: current, sessions: archive, meetingStatus }
+        { currentSession: current, sessions: archive, meetingStatus, scheduledMeetings }
       );
     }
   });
@@ -1800,6 +1840,11 @@ async function ensureLocationConfigFields(siteUrl) {
   });
   await sharePointAdapter.ensureField(siteUrl, SP_LISTS.locationConfig, {
     name: "ContractorCatalogJson",
+    type: "Note",
+    numLines: 10
+  });
+  await sharePointAdapter.ensureField(siteUrl, SP_LISTS.locationConfig, {
+    name: "ContractCatalogJson",
     type: "Note",
     numLines: 10
   });

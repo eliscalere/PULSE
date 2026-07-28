@@ -54,12 +54,10 @@ input {
 
 .pulse-calendar-card {
   width: 100%;
-  max-width: 1400px;
   height: min(720px, calc(100vh - 24px));
   min-height: 600px;
   display: flex;
   flex-direction: column;
-  margin: 0 auto;
   background: transparent;
 }
 

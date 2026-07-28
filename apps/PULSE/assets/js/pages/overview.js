@@ -2,7 +2,7 @@ PAGE_RENDERERS.overview = function () {
   if (!window.AEWTTR.state.overviewView) window.AEWTTR.state.overviewView = "My";
   if (!window.AEWTTR.state.overviewMyTasksFilter) window.AEWTTR.state.overviewMyTasksFilter = "All";
   if (!window.AEWTTR.state.overviewWorkloadSort) window.AEWTTR.state.overviewWorkloadSort = "active";
-  if (!window.AEWTTR.state.overviewTeamTab) window.AEWTTR.state.overviewTeamTab = "portfolio";
+  if (!window.AEWTTR.state.overviewTeamTab) window.AEWTTR.state.overviewTeamTab = "dashboard";
   if (!window.AEWTTR.state.overviewFilters) {
     window.AEWTTR.state.overviewFilters = { search: "", team: "All", status: "All", fundingType: "All", portfolio: "All", endItem: "All", ato: "All" };
   }
@@ -49,9 +49,14 @@ PAGE_RENDERERS.overview = function () {
       "Unclassified";
   }
 
+  function isPlaceholderRisk(r) {
+    return String(r.title || "").trim().toLowerCase() === "new risk";
+  }
+
   function projectRiskCount(projId) {
     const extra = (db.projectExtra && db.projectExtra[projId]) || {};
     return (extra.risks || []).filter(r => {
+      if (isPlaceholderRisk(r)) return false;
       const s = String(r.status || "").toLowerCase();
       return s !== "closed" && s !== "resolved" && s !== "accepted";
     }).length;
@@ -385,28 +390,38 @@ PAGE_RENDERERS.overview = function () {
     const docsInReview = docs.filter(d => !d.isArchived && !["Review Complete", "Signed", "Archived"].includes(d._column || ""));
     const pendingTravel = (db.travelRequests || []).filter(r => r.status === "Pending" || r.status === "Submitted");
     const totalRisks = projects.reduce((sum, p) => sum + projectRiskCount(p.id), 0);
+    const totalFunded = projects.reduce((sum, p) => sum + (parseFloat(p.fundedOnContractAmount) || 0), 0);
+    const totalReimb = projects.reduce((sum, p) => sum + (parseFloat(p.reimbursableAmount) || 0), 0);
+    const totalTravelCost = (db.travelRequests || []).reduce((sum, r) => sum + (parseFloat(r.estimatedCost || r.totalCost) || 0), 0);
 
     const activeProjects = projects.filter(p => {
       const s = derivedProjectStatus(p);
       return s === "Active" || s === "Needs Attention";
     });
 
+    const openTasks = allTasks.filter(taskIsActive).length;
+    const doneTasks = allTasks.filter(taskIsDone).length;
     return {
       activeProjects: activeProjects.length,
       totalProjects: projects.length,
-      activeTasks: allTasks.filter(taskIsActive).length,
-      blockedTasks: allTasks.filter(taskIsBlocked).length,
+      activeTasks: openTasks,
+      completedTasks: doneTasks,
       openRisks: totalRisks,
       docsInReview: docsInReview.length,
-      pendingTravel: pendingTravel.length
+      pendingTravel: pendingTravel.length,
+      totalFunded,
+      totalReimb,
+      totalTravelCost
     };
   }
 
   const teamTabs = [
-    { key: "portfolio", label: "Portfolio", icon: "bx-briefcase" },
-    { key: "workload",  label: "Workload",  icon: "bx-bar-chart-alt-2" },
-    { key: "resources", label: "Resources", icon: "bx-sitemap" },
-    { key: "operations",label: "Operations",icon: "bx-list-ul" }
+    { key: "dashboard",  label: "Dashboard",  icon: "bx-tachometer" },
+    { key: "portfolio",  label: "Portfolio",  icon: "bx-briefcase" },
+    { key: "workload",   label: "Workload",   icon: "bx-bar-chart-alt-2" },
+    { key: "resources",  label: "Resources",  icon: "bx-sitemap" },
+    { key: "risks",      label: "Risks",      icon: "bx-error-alt" },
+    { key: "operations", label: "Operations", icon: "bx-list-ul" }
   ];
 
   function renderTeamOverview(projects) {
@@ -414,9 +429,11 @@ PAGE_RENDERERS.overview = function () {
     const activeTab = window.AEWTTR.state.overviewTeamTab || "portfolio";
 
     let tabContent = "";
-    if (activeTab === "portfolio")  tabContent = renderPortfolioTab(projects);
-    else if (activeTab === "workload")  tabContent = renderTeamWorkload(projects);
-    else if (activeTab === "resources") tabContent = renderResourcesGraph(projects);
+    if (activeTab === "dashboard")   tabContent = renderDashboardTab(projects);
+    else if (activeTab === "portfolio")  tabContent = renderPortfolioTab(projects);
+    else if (activeTab === "workload")   tabContent = renderTeamWorkload(projects);
+    else if (activeTab === "resources")  tabContent = renderResourcesGraph(projects);
+    else if (activeTab === "risks")      tabContent = renderRiskRegister(projects);
     else if (activeTab === "operations") tabContent = renderOperationsQueues();
 
     return `<div class="overview-grid overview-team-overview">
@@ -428,17 +445,20 @@ PAGE_RENDERERS.overview = function () {
         <div class="ov-team-stat" ${tip("Tasks across all projects not yet complete")}>
           <strong>${metrics.activeTasks}</strong><span>Open tasks</span>
         </div>
-        <div class="ov-team-stat${metrics.blockedTasks > 0 ? " ov-stat-alert" : ""}" ${tip("Tasks currently blocked or on hold")}>
-          <strong>${metrics.blockedTasks}</strong><span>Blocked</span>
+        <div class="ov-team-stat ov-stat-accent" ${tip("Tasks completed across all projects")}>
+          <strong>${metrics.completedTasks}</strong><span>Completed tasks</span>
         </div>
-        <div class="ov-team-stat${metrics.openRisks > 0 ? " ov-stat-warn" : ""}" ${tip("Open risks across all projects (not Closed/Resolved)")}>
+        <div class="ov-team-stat${metrics.openRisks > 0 ? " ov-stat-warn" : ""}" ${tip("Open risks across all projects (not Closed/Resolved/New)")}>
           <strong>${metrics.openRisks}</strong><span>Open risks</span>
+        </div>
+        <div class="ov-team-stat" ${tip("Total funded amount on contract across active portfolio")}>
+          <strong style="color:var(--aewttr-success,#27ae60);">$${metrics.totalFunded ? (metrics.totalFunded / 1000).toFixed(0) + "K" : "0"}</strong><span>Contract Funding</span><small>$${(metrics.totalReimb / 1000).toFixed(0)}K reimb</small>
         </div>
         <div class="ov-team-stat" ${tip("Document review records not yet complete")}>
           <strong>${metrics.docsInReview}</strong><span>Docs in review</span>
         </div>
         <div class="ov-team-stat" ${tip("Travel requests pending action or approval")}>
-          <strong>${metrics.pendingTravel}</strong><span>Pending travel</span>
+          <strong>${metrics.pendingTravel}</strong><span>Pending travel</span><small>$${(metrics.totalTravelCost / 1000).toFixed(1)}K est</small>
         </div>
         <div class="ov-team-stats-actions">
           <button class="btn-aewttr-outline btn-aewttr-sm" data-route="projects"><i class="bx bx-briefcase"></i> All Projects</button>
@@ -473,7 +493,7 @@ PAGE_RENDERERS.overview = function () {
       const portfolios = Array.isArray(proj.portfolios) ? proj.portfolios : (proj.portfolios ? [proj.portfolios] : []);
       if (!portfolios.some(p => p === f.portfolio)) return false;
     }
-    if (f.endItem && f.endItem !== "All" && (proj.configEndItem || "") !== f.endItem) return false;
+    if (f.endItem && f.endItem !== "All" && !String(proj.configEndItem || "").split(",").map(s => s.trim()).includes(f.endItem)) return false;
     if (f.ato && f.ato !== "All" && (proj.ato || "") !== f.ato) return false;
     return true;
   }
@@ -502,39 +522,232 @@ PAGE_RENDERERS.overview = function () {
     </svg>`;
   }
 
+  /* ---- DASHBOARD TAB (leadership executive view) ---- */
+
+  function renderDashboardTab(projects) {
+    const docs = typeof getAllDocReviewRecords === "function" ? getAllDocReviewRecords() : [];
+    const docsNeedingAction = docs.filter(d => {
+      if (d.isArchived) return false;
+      const col = d._column || "";
+      return !["Review Complete", "Signed", "Archived"].includes(col);
+    }).length;
+    const pendingTravel = (db.travelRequests || []).filter(r => r.status === "Pending" || r.status === "Submitted").length;
+
+    // Per-project health — measured by open/completed tasks + risks
+    const projectHealth = projects.map(proj => {
+      const tasks = allProjectTasks(proj.id);
+      const open = tasks.filter(taskIsActive);
+      const done = tasks.filter(taskIsDone);
+      const extra = (db.projectExtra && db.projectExtra[proj.id]) || {};
+      const openRisks = (extra.risks || []).filter(r => {
+        if (isPlaceholderRisk(r)) return false;
+        const s = String(r.status || "").toLowerCase();
+        return !["closed", "resolved", "accepted"].includes(s);
+      });
+      const criticalRisks = openRisks.filter(r =>
+        ["high", "critical"].some(k =>
+          String(r.likelihood || "").toLowerCase().includes(k) ||
+          String(r.impact || "").toLowerCase().includes(k) ||
+          String(r.severity || "").toLowerCase().includes(k)
+        )
+      );
+      const health = criticalRisks.length ? "attention"
+        : open.length ? "active"
+        : done.length ? "complete"
+        : "inactive";
+      const pctDone = (open.length + done.length) > 0
+        ? Math.round((done.length / (open.length + done.length)) * 100) : null;
+      return { proj, open, done, openRisks, criticalRisks, risks: openRisks.length, health, pctDone };
+    });
+
+    // Aggregate KPIs
+    const allOpen = projectHealth.reduce((s, p) => s + p.open.length, 0);
+    const allDone = projectHealth.reduce((s, p) => s + p.done.length, 0);
+    const allCritical = projectHealth.flatMap(p => p.criticalRisks);
+    const allRisksTotal = projectHealth.reduce((s, p) => s + p.risks, 0);
+    const totalFunded = projects.reduce((s, p) => s + (parseFloat(p.fundedOnContractAmount) || 0), 0);
+    const activeCount = projectHealth.filter(p => p.open.length > 0).length;
+    const pctComplete = (allOpen + allDone) > 0
+      ? Math.round((allDone / (allOpen + allDone)) * 100) : 0;
+
+    const kpiHtml = `<div class="ov-dash-kpi-strip">
+      <div class="ov-dash-kpi">
+        <strong>${activeCount}</strong><span>Active Projects</span><small>${projects.length} total in portfolio</small>
+      </div>
+      <div class="ov-dash-kpi">
+        <strong>${allOpen}</strong><span>Open Tasks</span><small>across all projects</small>
+      </div>
+      <div class="ov-dash-kpi ov-dash-kpi--green">
+        <strong>${allDone}</strong><span>Completed Tasks</span><small>${pctComplete}% of all tasks done</small>
+      </div>
+      <div class="ov-dash-kpi${allCritical.length ? " ov-dash-kpi--amber" : ""}">
+        <strong>${allCritical.length}</strong><span>Critical Risks</span><small>${allRisksTotal} total open</small>
+      </div>
+      <div class="ov-dash-kpi">
+        <strong>${docsNeedingAction}</strong><span>Docs Pending</span><small>${pendingTravel} travel request${pendingTravel !== 1 ? "s" : ""}</small>
+      </div>
+      ${totalFunded ? `<div class="ov-dash-kpi ov-dash-kpi--green">
+        <strong>$${totalFunded >= 1000000 ? (totalFunded / 1000000).toFixed(1) + "M" : (totalFunded / 1000).toFixed(0) + "K"}</strong><span>Funded</span><small>on contract</small>
+      </div>` : ""}
+    </div>`;
+
+    // Project health cards sorted: attention → active → complete → inactive
+    const healthOrder = { attention: 0, active: 1, complete: 2, inactive: 3 };
+    const sorted = [...projectHealth].sort((a, b) =>
+      (healthOrder[a.health] ?? 9) - (healthOrder[b.health] ?? 9) ||
+      (a.proj.name || "").localeCompare(b.proj.name || "")
+    );
+
+    const clsMap   = { attention: "ov-health-card--amber", active: "ov-health-card--green", complete: "ov-health-card--blue", inactive: "ov-health-card--gray" };
+    const labelMap  = { attention: "AT RISK", active: "ACTIVE", complete: "COMPLETE", inactive: "INACTIVE" };
+    const pillMap   = { attention: "ov-status-attention", active: "ov-status-active", complete: "ov-status-done", inactive: "ov-status-inactive" };
+
+    const cardsHtml = sorted.map(({ proj, open, done, risks, health, pctDone }) => {
+      const pm = projectPMDisplayName(proj);
+      return `<button class="ov-health-card ${clsMap[health]}" data-route="projects/${escapeHtml(proj.id)}/workspace">
+        <div class="ov-health-card-head">
+          <div class="ov-health-card-name">${escapeHtml(proj.name || "Untitled")}</div>
+          <span class="ov-derived-status ${pillMap[health]}">${labelMap[health]}</span>
+        </div>
+        ${pm ? `<div class="ov-health-card-meta"><span><i class="bx bx-user"></i>${escapeHtml(pm)}</span>${proj.team ? `<span><i class="bx bx-group"></i>${escapeHtml(proj.team)}</span>` : ""}</div>` : ""}
+        <div class="ov-health-card-stats">
+          <span><b>${open.length}</b> open</span>
+          <span class="ov-hcs-done"><b>${done.length}</b> done${pctDone !== null ? ` (${pctDone}%)` : ""}</span>
+          ${risks ? `<span class="ov-hcs-warn"><b>${risks}</b> risk${risks !== 1 ? "s" : ""}</span>` : ""}
+        </div>
+      </button>`;
+    }).join("") || `<div class="empty-state">No projects in portfolio.</div>`;
+
+    // Needs attention panel — critical risks + docs pending
+    const groups = [];
+    if (allCritical.length) {
+      groups.push({
+        icon: "bx-error-alt", label: "Critical Risks", color: "var(--aewttr-amber)",
+        items: projectHealth.filter(p => p.criticalRisks.length).flatMap(p =>
+          p.criticalRisks.slice(0, 3).map(r => ({ title: r.title || r.description || "Risk", sub: p.proj.name || p.proj.id, route: `projects/${escapeHtml(p.proj.id)}/workspace` }))
+        ).slice(0, 8)
+      });
+    }
+    if (docsNeedingAction) {
+      groups.push({
+        icon: "bx-file-blank", label: "Documents Pending", color: "var(--aewttr-muted)",
+        items: [{ title: `${docsNeedingAction} document${docsNeedingAction !== 1 ? "s" : ""} awaiting review`, sub: "Open Document Review →", route: "docreview" }]
+      });
+    }
+    if (pendingTravel) {
+      groups.push({
+        icon: "bx-navigation", label: "Travel Pending", color: "var(--aewttr-muted)",
+        items: [{ title: `${pendingTravel} travel request${pendingTravel !== 1 ? "s" : ""} pending`, sub: "Open Travel →", route: "travel" }]
+      });
+    }
+
+    const escalationHtml = groups.length
+      ? groups.map(g => `<div class="ov-dash-escalation-group">
+          <div class="ov-dash-escalation-head"><i class="bx ${g.icon}" style="color:${g.color}"></i><strong>${escapeHtml(g.label)}</strong><span class="ov-queue-count">${g.items.length}</span></div>
+          ${g.items.map(item => `<button class="overview-spotlight-row" data-route="${escapeHtml(item.route)}">
+            <div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.sub)}</span></div>
+            <i class="bx bx-chevron-right" style="color:var(--aewttr-muted);font-size:18px;"></i>
+          </button>`).join("")}
+        </div>`).join("")
+      : `<div class="empty-state" style="padding:20px 8px;text-align:center;"><i class="bx bx-check-circle" style="font-size:26px;color:var(--aewttr-green);display:block;margin-bottom:8px;"></i>Everything looks good.</div>`;
+
+    return `${kpiHtml}
+    <div class="ov-dash-layout">
+      <div class="ov-dash-main">
+        <div class="ov-dash-section-head">
+          <div>
+            <div class="side-panel-title" style="margin-bottom:2px;">Portfolio Health</div>
+            <div class="overview-panel-sub">${projects.length} project${projects.length !== 1 ? "s" : ""} · sorted by status · click any card to open workspace</div>
+          </div>
+        </div>
+        <div class="ov-health-grid">${cardsHtml}</div>
+      </div>
+      <aside class="ov-dash-aside">
+        <div class="side-panel-title" style="margin-bottom:12px;">Needs Attention</div>
+        ${escalationHtml}
+      </aside>
+    </div>`;
+  }
+
+  /* ---- RISK REGISTER TAB ---- */
+
+  function renderRiskRegister(projects) {
+    const allRisks = [];
+    projects.forEach(proj => {
+      const extra = (db.projectExtra && db.projectExtra[proj.id]) || {};
+      (extra.risks || []).forEach(r => {
+        if (isPlaceholderRisk(r)) return;
+        const s = String(r.status || "").toLowerCase();
+        if (["closed", "resolved", "accepted"].includes(s)) return;
+        allRisks.push({ ...r, projectId: proj.id, projectName: proj.name || proj.id });
+      });
+    });
+
+    const sevOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+    function sev(r) {
+      const combo = [r.likelihood, r.impact, r.severity, r.priority].map(v => String(v || "").toLowerCase()).join(" ");
+      if (combo.includes("critical")) return "critical";
+      if (combo.includes("high")) return "high";
+      if (combo.includes("medium")) return "medium";
+      if (combo.includes("low")) return "low";
+      return "";
+    }
+    function sevStyle(s) {
+      if (s === "critical" || s === "high") return "ov-status-attention";
+      if (s === "medium") return "ov-status-inactive";
+      if (s === "low") return "ov-status-done";
+      return "ov-status-inactive";
+    }
+
+    allRisks.sort((a, b) => {
+      const sa = sevOrder[sev(a)] ?? 99, sb = sevOrder[sev(b)] ?? 99;
+      return sa !== sb ? sa - sb : String(a.projectName).localeCompare(String(b.projectName));
+    });
+
+    const highCount = allRisks.filter(r => ["critical", "high"].includes(sev(r))).length;
+
+    return `<div class="ov-section-head" style="margin-bottom:16px;">
+      <div>
+        <div class="side-panel-title">Open Risk Register</div>
+        <div class="overview-panel-sub">${allRisks.length} open risk${allRisks.length !== 1 ? "s" : ""} · ${highCount} high/critical · closed, resolved, and accepted excluded</div>
+      </div>
+    </div>
+    ${allRisks.length ? `<div class="overview-table-shell">
+      <table class="aewttr-table">
+        <thead><tr><th>Risk</th><th>Project</th><th>Likelihood</th><th>Impact</th><th>Owner</th><th>Status</th></tr></thead>
+        <tbody>
+          ${allRisks.map(r => {
+            const s = sev(r);
+            const lSev = String(r.likelihood || "").toLowerCase();
+            const iSev = String(r.impact || "").toLowerCase();
+            return `<tr style="cursor:pointer;" data-route="projects/${escapeHtml(r.projectId)}/workspace">
+              <td style="max-width:280px;">
+                <strong>${escapeHtml(r.title || r.description || "Risk")}</strong>
+                ${r.mitigation ? `<div style="font-size:11px;color:var(--aewttr-muted);margin-top:2px;">${escapeHtml(String(r.mitigation).slice(0, 90))}${String(r.mitigation).length > 90 ? "…" : ""}</div>` : ""}
+              </td>
+              <td><span class="kc-badge">${escapeHtml(r.projectName)}</span></td>
+              <td>${r.likelihood ? `<span class="ov-derived-status ${sevStyle(lSev)}">${escapeHtml(r.likelihood)}</span>` : "—"}</td>
+              <td>${r.impact ? `<span class="ov-derived-status ${sevStyle(iSev)}">${escapeHtml(r.impact)}</span>` : "—"}</td>
+              <td>${escapeHtml(r.owner || r.riskOwner || "—")}</td>
+              <td>${r.status ? `<span class="ov-derived-status ov-status-inactive">${escapeHtml(r.status)}</span>` : "—"}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>` : `<div class="empty-state" style="padding:32px 0;text-align:center;">
+      <i class="bx bx-check-shield" style="font-size:28px;color:var(--aewttr-green);display:block;margin-bottom:8px;"></i>
+      No open risks across the portfolio.
+    </div>`}`;
+  }
+
   function renderPortfolioTab(projects) {
     const f = window.AEWTTR.state.overviewFilters || {};
     const filtered = projects.filter(p => matchesFilter(p, f));
 
     const portfolioOptions = Array.from(new Set(projects.flatMap(p => Array.isArray(p.portfolios) ? p.portfolios : []).filter(Boolean))).sort();
-    const endItemOptions = Array.from(new Set(projects.map(p => p.configEndItem).filter(Boolean))).sort();
-    const atoOptions = Array.from(new Set(projects.map(p => p.ato).filter(Boolean))).sort();
+    const endItemOptions = Array.from(new Set(projects.flatMap(p => String(p.configEndItem || "").split(",").map(s => s.trim()).filter(Boolean)))).sort();
     const teamOptions = Array.from(new Set(projects.map(p => p.team).filter(Boolean))).sort();
-    const hasFilter = !!(f.search || (f.team && f.team !== "All") || (f.status && f.status !== "All") || (f.fundingType && f.fundingType !== "All") || (f.portfolio && f.portfolio !== "All") || (f.endItem && f.endItem !== "All") || (f.ato && f.ato !== "All"));
-
-    const PALETTE = ["#3b6bcc","#e05f2b","#2b9e6a","#9b59b6","#c0392b","#16a085","#d35400","#2980b9","#8e44ad","#27ae60","#e74c3c","#1abc9c","#f39c12","#6c5ce7","#00b894"];
-    const STATUS_COLORS = { "Active": "#2b9e6a", "Needs Attention": "#e05f2b", "No Active Work": "#9ca3af", "Completed": "#3b6bcc" };
-
-    const statusCount = {};
-    filtered.forEach(p => { const s = derivedProjectStatus(p); statusCount[s] = (statusCount[s] || 0) + 1; });
-    const statusSegments = Object.entries(statusCount).filter(([, v]) => v > 0).map(([k, v]) => ({ label: k, value: v, color: STATUS_COLORS[k] || "#9ca3af" }));
-
-    const endItemCount = {};
-    filtered.forEach(p => { const k = projectEndItem(p); endItemCount[k] = (endItemCount[k] || 0) + 1; });
-    const endItemSegments = Object.entries(endItemCount).sort((a, b) => b[1] - a[1]).map(([k, v], i) => ({ label: k, value: v, color: PALETTE[i % PALETTE.length] }));
-
-    const portfolioCount = {};
-    filtered.forEach(p => { const k = (Array.isArray(p.portfolios) && p.portfolios[0]) || "Unclassified"; portfolioCount[k] = (portfolioCount[k] || 0) + 1; });
-    const portfolioSegments = Object.entries(portfolioCount).sort((a, b) => b[1] - a[1]).map(([k, v], i) => ({ label: k, value: v, color: PALETTE[(i + 5) % PALETTE.length] }));
-
-    function legendHtml(segments) {
-      return `<div class="ov-chart-legend">${segments.map(s => `
-        <div class="ov-chart-legend-item">
-          <span class="ov-chart-legend-dot" style="background:${s.color}"></span>
-          <span class="ov-chart-legend-label">${escapeHtml(s.label)}</span>
-          <strong class="ov-chart-legend-count">${s.value}</strong>
-        </div>`).join("")}</div>`;
-    }
+    const hasFilter = !!(f.search || (f.team && f.team !== "All") || (f.status && f.status !== "All") || (f.portfolio && f.portfolio !== "All") || (f.endItem && f.endItem !== "All"));
 
     return `
       <div class="overview-filters" style="margin-bottom:16px;">
@@ -547,10 +760,6 @@ PAGE_RENDERERS.overview = function () {
           <option value="All">All End Items</option>
           ${endItemOptions.map(o => `<option value="${escapeHtml(o)}"${f.endItem === o ? " selected" : ""}>${escapeHtml(o)}</option>`).join("")}
         </select>` : ""}
-        ${atoOptions.length ? `<select class="select-aewttr" id="ov-sys-ato">
-          <option value="All">All ATOs</option>
-          ${atoOptions.map(o => `<option value="${escapeHtml(o)}"${f.ato === o ? " selected" : ""}>${escapeHtml(o)}</option>`).join("")}
-        </select>` : ""}
         <select class="select-aewttr" id="ov-sys-status">
           <option value="All"${(!f.status || f.status === "All") ? " selected" : ""}>All Statuses</option>
           ${["Active","Needs Attention","No Active Work","Completed"].map(s => `<option value="${escapeHtml(s)}"${f.status === s ? " selected" : ""}>${escapeHtml(s)}</option>`).join("")}
@@ -561,55 +770,31 @@ PAGE_RENDERERS.overview = function () {
         </select>` : ""}
         ${hasFilter ? `<button class="btn-aewttr-ghost btn-aewttr-sm" id="ov-sys-clear"><i class="bx bx-x"></i> Clear</button>` : ""}
       </div>
-
-      <div class="ov-charts-row">
-        <div class="ov-chart-card">
-          <div class="ov-chart-title">Project Status</div>
-          <div class="ov-chart-body">
-            ${donutChartSvg(statusSegments, { centerLabel: filtered.length, centerSub: "projects" })}
-            ${legendHtml(statusSegments)}
-          </div>
-        </div>
-        ${endItemSegments.length > 1 ? `<div class="ov-chart-card">
-          <div class="ov-chart-title">End Item Config</div>
-          <div class="ov-chart-body">
-            ${donutChartSvg(endItemSegments, { centerLabel: endItemSegments.length, centerSub: "items" })}
-            ${legendHtml(endItemSegments)}
-          </div>
-        </div>` : ""}
-        ${portfolioSegments.length > 1 ? `<div class="ov-chart-card">
-          <div class="ov-chart-title">Portfolio</div>
-          <div class="ov-chart-body">
-            ${donutChartSvg(portfolioSegments, { centerLabel: portfolioSegments.length, centerSub: "portfolios" })}
-            ${legendHtml(portfolioSegments)}
-          </div>
-        </div>` : ""}
-      </div>
-
-      <div class="ov-table-head">
-        <div class="side-panel-title">${filtered.length} Project${filtered.length !== 1 ? "s" : ""}</div>
-      </div>
       <div class="overview-table-shell">
         <table class="aewttr-table overview-table">
           <thead><tr>
-            <th>Project</th><th>Status</th><th>Active</th><th>Risks</th><th>PM</th><th>End Item</th><th>Portfolio</th><th>ATO</th><th>Funding</th><th>Due</th>
+            <th>Project</th><th>Status</th><th>Open</th><th>Done</th><th>Risks</th><th>PM</th><th>End Item</th><th>Portfolio</th><th>Funding</th><th>Due</th>
           </tr></thead>
           <tbody>
             ${filtered.length ? filtered.map(proj => {
               const tasks = allProjectTasks(proj.id);
-              const active = tasks.filter(taskIsActive).length;
+              const open = tasks.filter(taskIsActive).length;
+              const done = tasks.filter(taskIsDone).length;
+              const pct = (open + done) > 0 ? Math.round((done / (open + done)) * 100) : null;
               const risks = projectRiskCount(proj.id);
               const portfolio = (Array.isArray(proj.portfolios) && proj.portfolios[0]) || "—";
-              return `<tr data-route="projects/${escapeHtml(proj.id)}/workspace">
+              const pmName = projectPMDisplayName(proj);
+              const funded = proj.fundedOnContractAmount ? `$${Number(proj.fundedOnContractAmount).toLocaleString()}` : "—";
+              return `<tr data-route="projects/${escapeHtml(proj.id)}/workspace" style="cursor:pointer;">
                 <td><strong>${escapeHtml(proj.name || "Untitled project")}</strong></td>
                 <td>${derivedStatusPill(derivedProjectStatus(proj))}</td>
-                <td>${active || "—"}</td>
+                <td>${open || "—"}</td>
+                <td>${done ? `${done}${pct !== null ? ` <span style="color:var(--aewttr-muted);font-size:11px;">(${pct}%)</span>` : ""}` : "—"}</td>
                 <td><span class="${risks > 0 ? "ov-risks-badge" : ""}">${risks || "—"}</span></td>
-                <td>${escapeHtml(projectPMDisplayName(proj) || "—")}</td>
+                <td>${escapeHtml(pmName || "—")}</td>
                 <td>${escapeHtml(proj.configEndItem || "—")}</td>
-                <td>${escapeHtml(portfolio)}</td>
-                <td>${escapeHtml(proj.ato || "—")}</td>
-                <td>${escapeHtml(proj.fundingType || "—")}</td>
+                <td><span class="kc-badge">${escapeHtml(portfolio)}</span></td>
+                <td><strong style="color:var(--aewttr-green);">${funded}</strong></td>
                 <td>${proj.dueDate ? fmtDate(proj.dueDate) : "—"}</td>
               </tr>`;
             }).join("") : `<tr><td colspan="10"><div class="empty-state" style="padding:20px 0;">No projects match these filters.</div></td></tr>`}
@@ -726,7 +911,7 @@ PAGE_RENDERERS.overview = function () {
     const ensurePerson = (name) => {
       if (!personMap[name]) {
         const member = members.find(m => m.name === name) || { name, id: "" };
-        personMap[name] = { member, activeTasks: 0, blockedTasks: 0, projects: new Set(), endItems: new Set(), roles: new Set(), teams: new Set(), nextDue: null };
+        personMap[name] = { member, activeTasks: 0, completedTasks: 0, projects: new Set(), endItems: new Set(), roles: new Set(), teams: new Set(), nextDue: null };
       }
       return personMap[name];
     };
@@ -745,7 +930,7 @@ PAGE_RENDERERS.overview = function () {
         }
         if (task.end && (!entry.nextDue || task.end < entry.nextDue)) entry.nextDue = task.end;
       }
-      if (taskIsBlocked(task)) entry.blockedTasks++;
+      if (taskIsDone(task)) entry.completedTasks++;
     });
     projects.forEach(proj => {
       projectPeopleList(proj.id).forEach(person => {
@@ -771,15 +956,15 @@ PAGE_RENDERERS.overview = function () {
     const sortKey = window.AEWTTR.state.overviewWorkloadSort || "active";
     const rows = buildTeamWorkloadRows(projects);
     const sortButtons = [
-      { key: "active", label: "Most Active" },
+      { key: "active", label: "Most Open" },
       { key: "projects", label: "Most Projects" },
       { key: "name", label: "Name" }
     ];
 
     return `<div class="ov-section-head" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
         <div>
-          <div class="side-panel-title">Team Project Workload</div>
-          <div class="overview-panel-sub">Project-related assignments per person. Does not include non-project operational work.</div>
+          <div class="side-panel-title">Team Workload</div>
+          <div class="overview-panel-sub">Open and completed tasks per person across all projects.</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
           <span style="font-size:11px;color:var(--aewttr-muted);">Sort:</span>
@@ -789,10 +974,12 @@ PAGE_RENDERERS.overview = function () {
       ${rows.length ? `
       <div class="overview-table-shell">
         <table class="aewttr-table">
-          <thead><tr><th>Person</th><th>Active</th><th>Blocked</th><th>Projects</th><th>End Items</th><th>Roles</th><th>Teams</th><th>Next Due</th></tr></thead>
+          <thead><tr><th>Person</th><th>Open Tasks</th><th>Completed</th><th>Projects</th><th>Roles</th><th>Team</th><th>Next Due</th></tr></thead>
           <tbody>
             ${rows.map(entry => {
               const m = members.find(mbr => mbr.name === entry.member.name);
+              const total = entry.activeTasks + entry.completedTasks;
+              const pct = total > 0 ? Math.round((entry.completedTasks / total) * 100) : null;
               return `<tr ${m ? `data-person-id="${escapeHtml(m.id)}" style="cursor:pointer;"` : ""}>
                 <td>
                   <div class="people-row-person">
@@ -801,9 +988,8 @@ PAGE_RENDERERS.overview = function () {
                   </div>
                 </td>
                 <td>${entry.activeTasks || "—"}</td>
-                <td>${entry.blockedTasks || "—"}</td>
+                <td>${entry.completedTasks ? `${entry.completedTasks}${pct !== null ? ` <span style="color:var(--aewttr-muted);font-size:11px;">(${pct}%)</span>` : ""}` : "—"}</td>
                 <td>${entry.projects.size || "—"}</td>
-                <td>${escapeHtml([...entry.endItems].join(", ") || "—")}</td>
                 <td>${escapeHtml([...entry.roles].join(", ") || "—")}</td>
                 <td>${escapeHtml([...entry.teams].join(", ") || "—")}</td>
                 <td>${entry.nextDue ? fmtDate(entry.nextDue) : "—"}</td>
@@ -811,7 +997,7 @@ PAGE_RENDERERS.overview = function () {
             }).join("")}
           </tbody>
         </table>
-      </div>` : `<div class="empty-state" style="padding:30px 0;">No active project workload data found.</div>`}`;
+      </div>` : `<div class="empty-state" style="padding:30px 0;">No project workload data found.</div>`}`;
   }
 
   /* ---- RESOURCES GRAPH ---- */
@@ -1291,7 +1477,66 @@ PAGE_RENDERERS.overview = function () {
     const tabLabel = (teamTabs.find(tab => tab.key === activeTab) || {}).label || "Portfolio";
     const sections = [];
 
-    if (activeTab === "portfolio") {
+    if (activeTab === "dashboard") {
+      sections.push({
+        title: "Portfolio Health Summary",
+        note: "Dashboard view: projects by status with open and completed task counts.",
+        columns: [
+          { label: "Project", weight: 2 },
+          { label: "Status", weight: 1 },
+          { label: "Open Tasks", weight: 0.9 },
+          { label: "Completed", weight: 0.9 },
+          { label: "% Done", weight: 0.7 },
+          { label: "Risks", weight: 0.7 },
+          { label: "PM", weight: 1.5 }
+        ],
+        rows: projects.map(proj => {
+          const tasks = allProjectTasks(proj.id);
+          const open = tasks.filter(taskIsActive).length;
+          const done = tasks.filter(taskIsDone).length;
+          const pct = (open + done) > 0 ? Math.round((done / (open + done)) * 100) + "%" : "—";
+          const risks = projectRiskCount(proj.id);
+          const status = derivedProjectStatus(proj);
+          return [proj.name || proj.id, status, open, done, pct, risks, projectPMDisplayName(proj) || "—"];
+        }).sort((a, b) => {
+          const w = { "Needs Attention": 0, Active: 1, "No Active Work": 2, Completed: 3 };
+          return (w[a[1]] ?? 9) - (w[b[1]] ?? 9);
+        }),
+        emptyMessage: "No projects in portfolio."
+      });
+    } else if (activeTab === "risks") {
+      const allRisks = [];
+      projects.forEach(proj => {
+        const extra = (db.projectExtra && db.projectExtra[proj.id]) || {};
+        (extra.risks || []).forEach(r => {
+          if (isPlaceholderRisk(r)) return;
+          const s = String(r.status || "").toLowerCase();
+          if (["closed", "resolved", "accepted"].includes(s)) return;
+          allRisks.push({ ...r, projectName: proj.name || proj.id });
+        });
+      });
+      sections.push({
+        title: "Open Risk Register",
+        note: `${allRisks.length} open risks across the portfolio. Closed, resolved, and accepted risks excluded.`,
+        columns: [
+          { label: "Risk", weight: 2 },
+          { label: "Project", weight: 1.5 },
+          { label: "Likelihood", weight: 0.9 },
+          { label: "Impact", weight: 0.9 },
+          { label: "Owner", weight: 1.2 },
+          { label: "Status", weight: 0.9 }
+        ],
+        rows: allRisks.map(r => [
+          r.title || r.description || "Risk",
+          r.projectName,
+          r.likelihood || "-",
+          r.impact || "-",
+          r.owner || r.riskOwner || "-",
+          r.status || "-"
+        ]),
+        emptyMessage: "No open risks across the portfolio."
+      });
+    } else if (activeTab === "portfolio") {
       const filters = window.AEWTTR.state.overviewFilters || {};
       const filteredProjects = projects.filter(project => matchesFilter(project, filters));
       const groupMap = {};
@@ -1365,10 +1610,9 @@ PAGE_RENDERERS.overview = function () {
         note: `Sorted by ${sortLabel}. Includes project-related assignments shown in the active view.`,
         columns: [
           { label: "Person", weight: 1.6 },
-          { label: "Active", weight: 0.55 },
-          { label: "Blocked", weight: 0.55 },
+          { label: "Open", weight: 0.55 },
+          { label: "Completed", weight: 0.65 },
           { label: "Projects", weight: 0.6 },
-          { label: "End Items", weight: 1.7 },
           { label: "Roles", weight: 1.3 },
           { label: "Teams", weight: 1.2 },
           { label: "Next Due", weight: 0.8 }
@@ -1376,9 +1620,8 @@ PAGE_RENDERERS.overview = function () {
         rows: workloadRows.map(entry => [
           entry.member.name,
           entry.activeTasks,
-          entry.blockedTasks,
+          entry.completedTasks,
           entry.projects.size,
-          [...entry.endItems].join(", ") || "-",
           [...entry.roles].join(", ") || "-",
           [...entry.teams].join(", ") || "-",
           entry.nextDue ? fmtDate(entry.nextDue) : "-"
@@ -1469,7 +1712,7 @@ PAGE_RENDERERS.overview = function () {
       summary: [
         { label: "Active Projects", value: metrics.activeProjects, detail: `${metrics.totalProjects} total`, tone: "accent" },
         { label: "Open Tasks", value: metrics.activeTasks },
-        { label: "Blocked Tasks", value: metrics.blockedTasks, tone: metrics.blockedTasks ? "danger" : "" },
+        { label: "Completed Tasks", value: metrics.completedTasks, tone: "accent" },
         { label: "Open Risks", value: metrics.openRisks, tone: metrics.openRisks ? "warning" : "" },
         { label: "Docs in Review", value: metrics.docsInReview },
         { label: "Pending Travel", value: metrics.pendingTravel }

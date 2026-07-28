@@ -1,10 +1,10 @@
-# PULSE-IPT — User Guide
+# PULSE — User Guide
 
 <img src="../assets/images/aewttr-seal.png" alt="AEWTTR Seal" width="80" align="right">
 
 | | |
 |---|---|
-| **Document** | PULSE-IPT User Guide |
+| **Document** | PULSE User Guide |
 | **Audience** | AEWTTR IPT personnel (all roles) |
 | **Scope** | Every screen and feature currently implemented in the application |
 | **Prepared for** | AEWTTR IPT |
@@ -45,11 +45,11 @@ Callouts are used throughout:
 
 ## 1. Getting Started
 
-PULSE-IPT runs **inside your SharePoint site** — there is nothing to install. You open it the same way you'd open any other page or web part on your team's SharePoint site, using your existing SharePoint/CAC login. There is no separate PULSE-IPT username or password.
+PULSE runs **inside your SharePoint site** — there is nothing to install. You open it the same way you'd open any other page or web part on your team's SharePoint site, using your existing SharePoint/CAC login. There is no separate PULSE username or password.
 
 ### 1.1 The App Shell
 
-Every screen in PULSE-IPT shares the same top bar:
+Every screen in PULSE shares the same top bar:
 
 ![Dashboard and app shell](screenshots/01-dashboard.png)
 
@@ -66,7 +66,7 @@ Every screen in PULSE-IPT shares the same top bar:
 
 ### 1.2 Local / Offline Fallback
 
-If PULSE-IPT is ever opened somewhere it cannot detect a SharePoint site (for example, a developer testing on a laptop), it automatically starts in a **local fallback mode** with an empty, non-persisted workspace instead of failing to load. In normal day-to-day use inside SharePoint, you will never see this — it exists purely so the app never shows a blank white screen.
+If PULSE is ever opened somewhere it cannot detect a SharePoint site (for example, a developer testing on a laptop), it automatically starts in a **local fallback mode** with an empty, non-persisted workspace instead of failing to load. In normal day-to-day use inside SharePoint, you will never see this — it exists purely so the app never shows a blank white screen.
 
 ---
 
@@ -159,7 +159,7 @@ The full list of projects, toggle between **My Projects** (projects you're attac
 
 ### 4.2 Inside a Project
 
-Every project opens into its own workspace with a left-hand rail of tabs. This is the "front door" of PULSE-IPT — from here you can reach every tool relevant to that specific project.
+Every project opens into its own workspace with a left-hand rail of tabs. This is the "front door" of PULSE — from here you can reach every tool relevant to that specific project.
 
 #### Home
 
@@ -454,7 +454,7 @@ Backend connection status and provisioning tools — see the [Technical Referenc
 
 ![Users & App Roles](screenshots/25-admin-users-roles.png)
 
-Every site user and their PULSE-IPT app role (Admin, Lead, Member, etc.), synced from SharePoint site membership.
+Every site user and their PULSE app role (Admin, Lead, Member, etc.), synced from SharePoint site membership.
 
 ### 10.5 Activity Log
 
@@ -477,8 +477,8 @@ Shortcut to the same screen described in [Section 11](#11-notification-settings)
 Self-service and **autosaving** — there's no Save button, changes take effect as you make them.
 
 - **Delivery Channels** — turn Email and Teams notifications on or off independently. (A site-wide admin toggle can override this if disabled tenant-wide.)
-- **Apps & Areas** — choose which parts of PULSE-IPT are allowed to notify you at all (Travel & Leave, Document Review, Projects, Weekly Meeting, Support Tickets, Admin, general PULSE notices).
-- **Tone** — pick how PULSE-IPT "talks" to you in its messages (e.g. Robotic vs. Friendly). Only the greeting/sign-off changes — the facts in the message never change.
+- **Apps & Areas** — choose which parts of PULSE are allowed to notify you at all (Travel & Leave, Document Review, Projects, Weekly Meeting, Support Tickets, Admin, general PULSE notices).
+- **Tone** — pick how PULSE "talks" to you in its messages (e.g. Robotic vs. Friendly). Only the greeting/sign-off changes — the facts in the message never change.
 
 Use **Send Test Notification** to confirm delivery is working before you rely on it.
 
@@ -495,7 +495,7 @@ Use **Send Test Notification** to confirm delivery is working before you rely on
 | **Member** | Standard day-to-day access: projects, tasks, travel, documents, tickets |
 | **Viewer** | Read-only |
 
-> **NOTE** — Your role comes from your SharePoint site membership, synced automatically — there is nothing to request separately inside the app. If a screen looks locked and you believe it shouldn't be, ask your site's PULSE-IPT Admin to check **Admin → Users**.
+> **NOTE** — Your role comes from your SharePoint site membership, synced automatically — there is nothing to request separately inside the app. If a screen looks locked and you believe it shouldn't be, ask your site's PULSE Admin to check **Admin → Users**.
 
 ---
 

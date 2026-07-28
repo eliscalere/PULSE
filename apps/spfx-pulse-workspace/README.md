@@ -1,6 +1,6 @@
 # AEWTTR Workspace SPFx Solution
 
-This project re-architects the legacy `PULSE-IPT` prototype into a production-oriented SharePoint Framework solution using React, TypeScript, Fluent UI, and PnPjs.
+This project re-architects the legacy `PULSE` prototype into a production-oriented SharePoint Framework solution using React, TypeScript, Fluent UI, and PnPjs.
 
 ## What is included
 

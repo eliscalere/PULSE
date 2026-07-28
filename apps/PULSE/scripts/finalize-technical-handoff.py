@@ -23,7 +23,7 @@ def fontify(run, size=None, bold=None, color=None):
 
 def clean(text):
     text = text.replace("Technical Reference", "Technical Handoff")
-    text = text.replace("PULSE-IPT", "PULSE")
+    text = text.replace("PULSE", "PULSE")
     text = text.replace("AEWTTR-PULSE", "PULSE")
     text = text.replace("AEWTTR ", "")
     text = text.replace("AEWTTR", "")

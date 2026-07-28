@@ -23,6 +23,9 @@ archive/backups/
 # Temp working files
 tmp/
 
+# Personal / admin documents
+AEWTTR_AoA_Scalere.docx
+
 # Generated zips (sources are tracked; zips are redundant)
 deliverables/PULSE-Documentation-SOURCE.zip
 

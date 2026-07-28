@@ -1,11 +1,11 @@
-# PULSE-IPT — Technical Reference
+# PULSE — Technical Reference
 
 <img src="../assets/images/aewttr-seal.png" alt="AEWTTR Seal" width="80" align="right">
 
 | | |
 |---|---|
-| **Document** | PULSE-IPT Technical Reference |
-| **Audience** | Developers/maintainers of PULSE-IPT |
+| **Document** | PULSE Technical Reference |
+| **Audience** | Developers/maintainers of PULSE |
 | **Scope** | System architecture, Firepit/Forge hosting model, SharePoint integration, and the code-update workflow |
 | **Companion docs** | This document summarizes and organizes material from `AI-HANDOFF.md`, `FIREPIT-DEVELOPER-GUIDE.md`, `FS-FORGE-STEPS.md`, and `SHAREPOINT-LISTS-GUIDE.md` at the repository root. Those files carry more raw detail (postmortems, exact CAML XML, etc.) and should be treated as the primary source if this document and one of them ever disagree. |
 
@@ -28,14 +28,14 @@
 
 ## 1. System Architecture at a Glance
 
-PULSE-IPT is a **single-page, browser-only application**. There is no application server, no database server, and no separate authentication system.
+PULSE is a **single-page, browser-only application**. There is no application server, no database server, and no separate authentication system.
 
 ```
  Browser (user's SharePoint session)
    │
    │  loads one HTML page from SharePoint / Firepit
    ▼
- PULSE-IPT (vanilla HTML/CSS/JS, no framework)
+ PULSE (vanilla HTML/CSS/JS, no framework)
    │
    │  fetch() with credentials: "same-origin"
    ▼
@@ -92,7 +92,7 @@ apps/PULSE/
 
 ## 3. Firepit — the Hosting Platform
 
-**Firepit** is the SharePoint Online web part that hosts and executes PULSE-IPT. It is not a build system — it takes whatever HTML it is given and renders it directly. Inline `<script>` tags execute; inline `<style>` tags apply. There is no server-side dependency resolution.
+**Firepit** is the SharePoint Online web part that hosts and executes PULSE. It is not a build system — it takes whatever HTML it is given and renders it directly. Inline `<script>` tags execute; inline `<style>` tags apply. There is no server-side dependency resolution.
 
 That has real consequences for how the app must be packaged:
 
@@ -146,7 +146,7 @@ This produces a **different, heavier artifact**: it inlines CSS/JS the same way,
 
 ### 4.3 Why two scripts exist at all
 
-The project initially used the offline/iframe-wrapper approach for what was actually a Firepit hosting target, and it "behaved noticeably worse" there — extra layers of encoding/decoding, a heavier payload, and an iframe sandbox that didn't match how Firepit actually runs pages. `build-sharepoint-package.js` was written afterward to reproduce the real Forge tool's flat, no-wrapper output format directly, without depending on having the actual Forge tool on hand. The reference file at `releases/reference-packages/PULSE-IPT - Only Secure in FS Sharepoint-current.html` is a known-good sample of genuine Forge-tool output, kept specifically to validate that `build-sharepoint-package.js`'s output matches the real platform's expected format.
+The project initially used the offline/iframe-wrapper approach for what was actually a Firepit hosting target, and it "behaved noticeably worse" there — extra layers of encoding/decoding, a heavier payload, and an iframe sandbox that didn't match how Firepit actually runs pages. `build-sharepoint-package.js` was written afterward to reproduce the real Forge tool's flat, no-wrapper output format directly, without depending on having the actual Forge tool on hand. The reference file at `releases/reference-packages/PULSE - Only Secure in FS Sharepoint-current.html` is a known-good sample of genuine Forge-tool output, kept specifically to validate that `build-sharepoint-package.js`'s output matches the real platform's expected format.
 
 ---
 
@@ -171,7 +171,7 @@ The project initially used the offline/iframe-wrapper approach for what was actu
 Rebuild **after every change, before every upload** — there is no watch mode or auto-deploy. A few practical notes:
 
 - **Naming convention**: release filenames use semantic versioning in `MAJOR.MINOR.PATCH` form (for example, `PULSE-v1.0.0.html`). Increment MINOR for backward-compatible features and PATCH for backward-compatible fixes; use the `WFC-MANIFEST` `generated` timestamp for the build time rather than encoding a calendar date in the filename.
-- **Rollback**: there is no automated build history/archive. `releases/reference-packages/PULSE-IPT - Only Secure in FS Sharepoint-current.html` functions as the last-known-good reference copy. Keeping a prior build around before shipping a risky change is a manual discipline, not something the tooling does for you.
+- **Rollback**: there is no automated build history/archive. `releases/reference-packages/PULSE - Only Secure in FS Sharepoint-current.html` functions as the last-known-good reference copy. Keeping a prior build around before shipping a risky change is a manual discipline, not something the tooling does for you.
 - **Verification is not optional.** A local dev server or a plain browser tab cannot fully substitute for opening the real Firepit web part — some failure modes (sandbox restrictions, cache-busting breakage, SharePoint-only globals like `_spPageContextInfo`) only appear there.
 
 ### 5.1 Local development loop

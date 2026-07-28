@@ -122,6 +122,10 @@ function createAssetRuntime(sourceText, assetUrls) {
 (function () {
   var sourceText = ${sourceJson};
   var assetUrls = ${assetJson};
+  window.__PULSE_ASSETS__ = assetUrls;
+  window.getAssetUrl = function (path) {
+    return assetUrls[path] || path;
+  };
   var nativeFetch = typeof window.fetch === "function" ? window.fetch.bind(window) : null;
 
   function pathnameFor(value) {
@@ -155,9 +159,10 @@ function createAssetRuntime(sourceText, assetUrls) {
   }
 
   function rewriteTree(root) {
+    if (!root) return;
     if (root.nodeType === 1) {
-      if (root.matches("[src]")) rewriteAsset(root, "src");
-      if (root.matches("[href]")) rewriteAsset(root, "href");
+      if (root.matches && root.matches("[src]")) rewriteAsset(root, "src");
+      if (root.matches && root.matches("[href]")) rewriteAsset(root, "href");
     }
     if (root.querySelectorAll) {
       root.querySelectorAll("[src]").forEach(function (element) { rewriteAsset(element, "src"); });
@@ -167,28 +172,28 @@ function createAssetRuntime(sourceText, assetUrls) {
 
   function startAssetRewriter() {
     rewriteTree(document);
-    new MutationObserver(function (records) {
-      records.forEach(function (record) {
-        if (record.type === "attributes") {
-          rewriteAsset(record.target, record.attributeName);
-        } else {
-          record.addedNodes.forEach(rewriteTree);
-        }
+    if (document.documentElement) {
+      var observer = new MutationObserver(function (records) {
+        records.forEach(function (record) {
+          if (record.type === "attributes") {
+            rewriteAsset(record.target, record.attributeName);
+          } else {
+            record.addedNodes.forEach(rewriteTree);
+          }
+        });
       });
-    }).observe(document.documentElement, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ["src", "href"]
-    });
+      observer.observe(document.documentElement, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ["src", "href"]
+      });
+    }
   }
 
+  startAssetRewriter();
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
-      window.setTimeout(startAssetRewriter, 0);
-    }, { once: true });
-  } else {
-    window.setTimeout(startAssetRewriter, 0);
+    document.addEventListener("DOMContentLoaded", startAssetRewriter, { once: true });
   }
 })();`;
 }

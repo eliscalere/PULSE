@@ -159,7 +159,7 @@ Clear ownership. Better decisions.
      From status to execution.
 
 
-Product claims and interface examples are based on the PULSE-IPT General Overview, User Guide, and Technical Reference, July 2026.
+Product claims and interface examples are based on the PULSE General Overview, User Guide, and Technical Reference, July 2026.
 
 
 

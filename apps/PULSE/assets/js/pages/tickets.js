@@ -343,7 +343,7 @@ function openNewTicketModalWithOptions(opts, onDone) {
       <div class="form-row"><label>Title</label><input class="input-aewttr" id="nt-title"></div>
       <div class="form-grid-2">
         <div class="form-row"><label>Project</label>
-          <select class="select-aewttr" id="nt-project" ${opts.lockProject ? "disabled" : ""}><option value="">None</option>${db.projects.map(p => `<option value="${p.id}" ${opts.projectId === p.id ? "selected" : ""}>${p.id} — ${escapeHtml(p.name)}</option>`).join("")}</select>
+          <select class="select-aewttr" id="nt-project" ${opts.lockProject ? "disabled" : ""}><option value="">None</option>${db.projects.map(p => `<option value="${p.id}" ${opts.projectId === p.id ? "selected" : ""}>${escapeHtml(p.name || "Untitled project")}</option>`).join("")}</select>
         </div>
         <div class="form-row"><label>Type</label>
           <select class="select-aewttr" id="nt-type">${["Blocker", "Bug", "Access", "Platform", "Question", "Feature Request"].map(t => `<option>${t}</option>`).join("")}</select>

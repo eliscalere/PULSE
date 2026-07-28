@@ -168,13 +168,13 @@ async function main() {
   await seedDemoState(page);
 
   const notes = [
-    "PULSE-IPT Closing Collage Screenshots",
+    "PULSE Closing Collage Screenshots",
     "===================================",
     `Captured: ${new Date().toISOString()}`,
     `Source app: ${BASE_URL}`,
     `Viewport: ${VIEWPORT.width}x${VIEWPORT.height}`,
     "",
-    "All screenshots were captured from the real local PULSE-IPT app shell using Playwright with browser chrome removed.",
+    "All screenshots were captured from the real local PULSE app shell using Playwright with browser chrome removed.",
     "Demo portfolio data was created through the app's own built-in demo seed path, and any added member identities use non-identifying placeholder names and example.mil addresses.",
     ""
   ];

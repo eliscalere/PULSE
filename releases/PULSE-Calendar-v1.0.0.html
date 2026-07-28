@@ -1,4 +1,4 @@
-<!--WFC-MANIFEST:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0IjoiUFVMU0UtVFJBVkVMLUNBTEVOREFSIiwiZ2VuZXJhdGVkIjoiMjAyNi0wNy0yNVQwMjowOTo1NS44NDVaIiwiaW5kZXgiOiJpbmRleC5odG1sIiwiZmlsZXMiOlt7ImtpbmQiOiJjc3MiLCJwYXRoIjoiLi4vUFVMU0UvdmVuZG9yL2Z1bGxjYWxlbmRhci9jc3MvbWFpbi5taW4uY3NzIiwiZXh0ZXJuYWwiOmZhbHNlLCJoYXNoIjoiYmE5ZGJhYjQifSx7ImtpbmQiOiJjc3MiLCJwYXRoIjoiYXNzZXRzL2Nzcy9jYWxlbmRhci5jc3M/dj0yMDI2MDcyNGQiLCJleHRlcm5hbCI6ZmFsc2UsImhhc2giOiIyODk5ZGRlYyJ9LHsia2luZCI6ImpzIiwicGF0aCI6Ii4uL1BVTFNFL3ZlbmRvci9mdWxsY2FsZW5kYXIvanMvbWFpbi5taW4uanMiLCJleHRlcm5hbCI6ZmFsc2UsImhhc2giOiIzY2JkNjYyYSJ9LHsia2luZCI6ImpzIiwicGF0aCI6ImFzc2V0cy9qcy9jYWxlbmRhci5qcz92PTIwMjYwNzI0YyIsImV4dGVybmFsIjpmYWxzZSwiaGFzaCI6IjRhMGRjMWU5In1dfQ==-->
+<!--WFC-MANIFEST:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0IjoiUFVMU0UtVFJBVkVMLUNBTEVOREFSIiwiZ2VuZXJhdGVkIjoiMjAyNi0wNy0yOFQxNjozMTo0MC4zMjlaIiwiaW5kZXgiOiJpbmRleC5odG1sIiwiZmlsZXMiOlt7ImtpbmQiOiJjc3MiLCJwYXRoIjoiLi4vUFVMU0UvdmVuZG9yL2Z1bGxjYWxlbmRhci9jc3MvbWFpbi5taW4uY3NzIiwiZXh0ZXJuYWwiOmZhbHNlLCJoYXNoIjoiYmE5ZGJhYjQifSx7ImtpbmQiOiJjc3MiLCJwYXRoIjoiYXNzZXRzL2Nzcy9jYWxlbmRhci5jc3M/dj0yMDI2MDcyNGQiLCJleHRlcm5hbCI6ZmFsc2UsImhhc2giOiJjZjE3OGNkYyJ9LHsia2luZCI6ImpzIiwicGF0aCI6Ii4uL1BVTFNFL3ZlbmRvci9mdWxsY2FsZW5kYXIvanMvbWFpbi5taW4uanMiLCJleHRlcm5hbCI6ZmFsc2UsImhhc2giOiIzY2JkNjYyYSJ9LHsia2luZCI6ImpzIiwicGF0aCI6ImFzc2V0cy9qcy9jYWxlbmRhci5qcz92PTIwMjYwNzI0YyIsImV4dGVybmFsIjpmYWxzZSwiaGFzaCI6IjRhMGRjMWU5In1dfQ==-->
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PULSE Travel Calendar</title>
@@ -23,14 +23,14 @@
       16% { opacity: 1; }
       36% { left: 50%; top: 50%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
       42% { transform: translate(-50%, -50%) scale(1.22); }
-      64%, 100% { left: 30%; top: 22%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      64%, 100% { left: 30%; top: 28%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
     }
     @keyframes pulse-loader-dot-two {
       0%, 8% { left: 108%; top: 50%; transform: translate(-50%, -50%) scale(.8); opacity: 0; }
       16% { opacity: 1; }
       36% { left: 50%; top: 50%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
       42% { transform: translate(-50%, -50%) scale(1.22); }
-      64%, 100% { left: 70%; top: 78%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      64%, 100% { left: 70%; top: 72%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
     }
     @keyframes pulse-loader-impact {
       0%, 34% { left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.2); opacity: 0; }
@@ -45,8 +45,8 @@
     @media (prefers-reduced-motion: reduce) {
       .pulse-loader-reveal { clip-path: none; opacity: 1; transform: none; animation: none !important; }
       .pulse-loader-dot { opacity: 1; animation: none !important; transform: translate(-50%, -50%); }
-      .pulse-loader-dot--one { left: 30%; top: 22%; }
-      .pulse-loader-dot--two { left: 70%; top: 78%; }
+      .pulse-loader-dot--one { left: 30%; top: 28%; }
+      .pulse-loader-dot--two { left: 70%; top: 72%; }
       .pulse-loader-impact { display: none; }
     }
 
@@ -1485,12 +1485,10 @@ input {
 
 .pulse-calendar-card {
   width: 100%;
-  max-width: 1400px;
   height: min(720px, calc(100vh - 24px));
   min-height: 600px;
   display: flex;
   flex-direction: column;
-  margin: 0 auto;
   background: transparent;
 }
 

@@ -3,7 +3,7 @@ const path = require("path");
 const crypto = require("crypto");
 
 const ROOT = path.resolve(__dirname, "..");
-const INDEX_PATH = path.join(ROOT, "index.html");
+const INDEX_PATH = process.argv[3] ? path.resolve(ROOT, process.argv[3]) : path.join(ROOT, "index.html");
 const VERSION = "1.0.0";
 const OUTPUT_PATH = process.argv[2] || path.join(ROOT, "..", "..", "releases", `PULSE-v${VERSION}.html`);
 
@@ -192,7 +192,7 @@ function buildPackage() {
     version: 1,
     project: path.basename(ROOT),
     generated: new Date().toISOString(),
-    index: "index.html",
+    index: path.basename(INDEX_PATH),
     files: manifestFiles
   };
   const manifestB64 = Buffer.from(JSON.stringify(manifest), "utf8").toString("base64");

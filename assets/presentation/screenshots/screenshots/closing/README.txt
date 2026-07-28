@@ -1,10 +1,10 @@
-PULSE-IPT Closing Collage Screenshots
+PULSE Closing Collage Screenshots
 ===================================
 Captured: 2026-07-11T21:07:53.159Z
 Source app: http://127.0.0.1:8743/
 Viewport: 1600x1000
 
-All screenshots were captured from the real local PULSE-IPT app shell using Playwright with browser chrome removed.
+All screenshots were captured from the real local PULSE app shell using Playwright with browser chrome removed.
 Demo portfolio data was created through the app's own built-in demo seed path, and any added member identities use non-identifying placeholder names and example.mil addresses.
 
 closing-weekly-meetings.png

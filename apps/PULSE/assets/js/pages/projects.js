@@ -172,9 +172,14 @@ function allKnownPortfolios() {
   return Array.from(names).sort((a, b) => a.localeCompare(b));
 }
 
+function projectConfigEndItems(proj) {
+  if (!proj || !proj.configEndItem) return [];
+  return String(proj.configEndItem).split(",").map(s => normalizeConfigEndItemName(s.trim())).filter(Boolean);
+}
+
 function allKnownEicNames() {
   const names = new Set();
-  (window.AEWTTR.db.projects || []).forEach(p => { if (p.configEndItem) names.add(p.configEndItem); });
+  (window.AEWTTR.db.projects || []).forEach(p => projectConfigEndItems(p).forEach(v => names.add(v)));
   return Array.from(names).sort((a, b) => a.localeCompare(b));
 }
 
@@ -186,7 +191,7 @@ function projectsInPortfolioGroup(name) {
 }
 
 function projectsInEicGroup(name) {
-  return (window.AEWTTR.db.projects || []).filter(p => p.configEndItem === name);
+  return (window.AEWTTR.db.projects || []).filter(p => projectConfigEndItems(p).includes(name));
 }
 
 function allKnownProgramNames() {
@@ -1232,7 +1237,7 @@ function configEndItemPickerHtml(selected, idPrefix) {
   return tagPickerHtml(selected, idPrefix, {
     emptyText: "No config end item selected.",
     placeholder: "Search or add config end item…",
-    hint: "Pick one. New names are remembered for future projects and dividers."
+    hint: "Pick one or more. New names are remembered for future projects and dividers."
   });
 }
 
@@ -1241,12 +1246,15 @@ function wireConfigEndItemPicker(root, selectedSet, idPrefix, onChange) {
     normalize: normalizeConfigEndItemName,
     getKnown: getKnownConfigEndItemNames,
     remember: rememberConfigEndItemNames,
-    singleSelect: true,
     onChange
   });
 }
 
 function openNewProjectModal() {
+  if (typeof canCreateProject === "function" && !canCreateProject()) {
+    toast("Member and Viewer roles have read-only access to projects.", "error");
+    return;
+  }
   const db = window.AEWTTR.db;
   const pendingMembers = [];
   const pendingPortfolios = new Set();
@@ -1327,11 +1335,10 @@ function openNewProjectModal() {
     // Prefer the live db — a background refresh may have replaced
     // window.AEWTTR.db while this create modal was open.
     const liveDb = window.AEWTTR.db;
-    const nextNum = (liveDb.projects || []).length + 1;
     const portfolios = Array.from(pendingPortfolios);
     rememberPortfolioNames(portfolios);
     const newProj = {
-      id: "P" + String(nextNum).padStart(2, "0") + "x",
+      id: uid("proj"),
       name, team: "", priority: "", effort: "", rag: "Green", lifecycleStatus: "Active",
       updated: new Date().toISOString().slice(0, 10), tools: "TBD",
       stakeholders: "",
@@ -1940,7 +1947,7 @@ function wireProjectRolePickers(scope, proj, onUpdate) {
    "Edit" button, never inline on Home itself. */
 function drawWorkspace(body, proj) {
   const db = window.AEWTTR.db;
-  const extra = (db.projectExtra && db.projectExtra[proj.id]) || { history: [], risks: [], handoff: "", meetingNotes: "", notes: [] };
+  const extra = ensureProjectExtra(proj.id);
   if (!extra.notes) extra.notes = [];
   const trackerTasks = (db.ganttTasks && db.ganttTasks[proj.id]) || [];
   const people = (db.projectPeople && db.projectPeople[proj.id]) || [];
@@ -2055,7 +2062,7 @@ function drawWorkspace(body, proj) {
             <div><dt>Funding status</dt><dd>${escapeHtml(proj.fundingStatus) || "—"}</dd></div>
             <div><dt>Funded on contract</dt><dd>${proj.fundedOnContractAmount ? `$${Number(proj.fundedOnContractAmount).toLocaleString()}` : "—"}</dd></div>
             <div><dt>Reimbursable</dt><dd>${proj.reimbursableAmount ? `$${Number(proj.reimbursableAmount).toLocaleString()}` : "—"}</dd></div>
-            <div><dt>Config end item</dt><dd>${escapeHtml(proj.configEndItem) || "—"}</dd></div>
+            <div><dt>Config end item</dt><dd>${projectConfigEndItems(proj).map(escapeHtml).join(", ") || "—"}</dd></div>
             <div><dt>Change request</dt><dd>${proj.changeRequestRequired ? "Required" : "Not required"}</dd></div>
             ${proj.fundingNotes ? `<div class="project-home-facts-span"><dt>Funding notes</dt><dd>${escapeHtml(proj.fundingNotes)}</dd></div>` : ""}
           </dl>
@@ -2319,34 +2326,35 @@ function riskBurnDownHomeHtml(risks) {
 }
 
 function normalizeRiskRecord(risk, projectId) {
+  if (risk && !risk.id) risk.id = uid("risk");
   const normalized = {
-    id: risk.id || uid("risk"),
-    projectId: risk.projectId || projectId || "",
-    portfolio: risk.portfolio || "",
-    name: risk.name || risk.title || "Untitled risk",
-    title: risk.name || risk.title || "Untitled risk",
-    description: risk.description || risk.text || "",
-    text: risk.description || risk.text || risk.name || risk.title || "",
-    owner: risk.owner || risk.ownerName || "",
-    ownerName: risk.owner || risk.ownerName || "",
-    ownerEmail: risk.ownerEmail || "",
-    likelihood: Number(risk.likelihood || 1),
-    impact: Number(risk.impact || 1),
-    category: risk.category || "Operational",
-    mitigationPlan: risk.mitigationPlan || "",
-    responseStrategy: risk.responseStrategy || "Mitigate",
-    due: risk.due || "",
-    status: risk.status || "Open",
-    lastReviewedDate: risk.lastReviewedDate || "",
-    reviewNotes: Array.isArray(risk.reviewNotes) ? risk.reviewNotes : [],
-    ratingHistory: Array.isArray(risk.ratingHistory) ? risk.ratingHistory : [],
-    mitigations: Array.isArray(risk.mitigations) ? risk.mitigations : [],
-    residualLikelihood: Number(risk.residualLikelihood || 0),
-    residualImpact: Number(risk.residualImpact || 0)
+    id: risk ? (risk.id || uid("risk")) : uid("risk"),
+    projectId: risk ? (risk.projectId || projectId || "") : (projectId || ""),
+    portfolio: risk ? (risk.portfolio || "") : "",
+    name: risk ? (risk.name || risk.title || "Untitled risk") : "Untitled risk",
+    title: risk ? (risk.name || risk.title || "Untitled risk") : "Untitled risk",
+    description: risk ? (risk.description || risk.text || "") : "",
+    text: risk ? (risk.description || risk.text || risk.name || risk.title || "") : "Untitled risk",
+    owner: risk ? (risk.owner || risk.ownerName || "") : "",
+    ownerName: risk ? (risk.owner || risk.ownerName || "") : "",
+    ownerEmail: risk ? (risk.ownerEmail || "") : "",
+    likelihood: Number((risk && risk.likelihood) || 1),
+    impact: Number((risk && risk.impact) || 1),
+    category: (risk && risk.category) || "Operational",
+    mitigationPlan: (risk && risk.mitigationPlan) || "",
+    responseStrategy: (risk && risk.responseStrategy) || "Mitigate",
+    due: (risk && risk.due) || "",
+    status: (risk && risk.status) || "Open",
+    lastReviewedDate: (risk && risk.lastReviewedDate) || "",
+    reviewNotes: Array.isArray(risk && risk.reviewNotes) ? risk.reviewNotes : [],
+    ratingHistory: Array.isArray(risk && risk.ratingHistory) ? risk.ratingHistory : [],
+    mitigations: Array.isArray(risk && risk.mitigations) ? risk.mitigations : [],
+    residualLikelihood: Number((risk && risk.residualLikelihood) || 0),
+    residualImpact: Number((risk && risk.residualImpact) || 0)
   };
-  normalized.rating = risk.rating || risk.rag || risk.level || riskRating(normalized.likelihood, normalized.impact);
+  normalized.rating = (risk && (risk.rating || risk.rag || risk.level)) || riskRating(normalized.likelihood, normalized.impact);
   normalized.level = normalized.rating;
-  if (risk._spId) normalized._spId = risk._spId;
+  if (risk && risk._spId) normalized._spId = risk._spId;
   return normalized;
 }
 
@@ -2378,24 +2386,38 @@ async function deleteProjectRisk(proj, risk) {
     String(item.owner || item.ownerName || "").trim().toLowerCase()
   ].join("|");
   const riskSignature = signatureFor(risk);
-  const index = extra.risks.findIndex((item) =>
+  const matchesRisk = (item) =>
     item === risk ||
     (item.id && risk.id && String(item.id) === String(risk.id)) ||
     (item._spId && risk._spId && String(item._spId) === String(risk._spId)) ||
     // Some older project mirrors predate risk IDs. Match their stable
     // operational fields so those risks remain deletable too.
-    (riskSignature !== "|||" && signatureFor(item) === riskSignature)
-  );
-  if (index < 0) return null;
-  const removed = extra.risks.splice(index, 1)[0];
+    (riskSignature !== "|||" && signatureFor(item) === riskSignature);
+
+  // Collect ALL copies — a risk can appear twice in extra.risks (once parsed
+  // from the project's RisksJson without _spId, once pushed from the PULSE
+  // Risks SP list with _spId). Using only findIndex leaves the _spId copy
+  // behind, which then gets written back into RisksJson on the project save
+  // and is re-loaded from the Risks list on the next refresh. Removing all
+  // copies and using the _spId one for Repo.remove fixes both old risks
+  // (never in the list → no-op delete is correct) and new risks (duplicate
+  // copies → both gone, SP list item properly deleted).
+  const matches = extra.risks.filter(matchesRisk);
+  if (matches.length === 0) return null;
+
+  const firstIndex = extra.risks.indexOf(matches[0]);
+  const canonical = matches.find((r) => r._spId) || matches[0];
+  const snapshot = extra.risks.slice();
+  extra.risks = extra.risks.filter((r) => !matchesRisk(r));
+
   try {
     if (typeof reanchorProject === "function") reanchorProject(proj);
     // Commit the project-side RisksJson first so a reload cannot resurrect it.
     await Repo.save("project", proj);
-    await Repo.remove("risk", removed);
-    return { removed, index };
+    await Repo.remove("risk", canonical);
+    return { removed: canonical, index: firstIndex };
   } catch (error) {
-    extra.risks.splice(index, 0, removed);
+    extra.risks = snapshot;
     // Best-effort repair of the project mirror if its save was the operation
     // that failed after the optimistic UI update.
     Repo.save("project", proj).catch(() => {});
@@ -2519,9 +2541,12 @@ function riskInlineTableHtml(risks, owners) {
             <i class="bx bx-note"></i>${hasNotes ? `<span class="monday-notes-btn-count">•</span>` : ""}
           </button>
         </td>
+        <td class="risk-actions-td">
+          <button type="button" class="risk-inline-del" data-risk-inline-delete="${escapeHtml(risk.id)}"${tip("Delete risk")} aria-label="Delete risk"><i class="bx bx-trash"></i></button>
+        </td>
       </tr>
       <tr class="risk-detail-row risk-detail-row--hidden" data-detail-for="${escapeHtml(risk.id)}">
-        <td colspan="9" class="risk-detail-td"></td>
+        <td colspan="10" class="risk-detail-td"></td>
       </tr>`;
   }).join("");
   return `
@@ -2538,10 +2563,11 @@ function riskInlineTableHtml(risks, owners) {
           <th class="risk-th-li"><button class="risk-col-filter-btn" data-col-filter="likelihood">Likelihood <i class="bx bx-filter-alt"></i></button></th>
           <th class="risk-th-li"><button class="risk-col-filter-btn" data-col-filter="impact">Impact <i class="bx bx-filter-alt"></i></button></th>
           <th class="risk-th-notes">Notes</th>
+          <th class="risk-actions-td"></th>
         </tr></thead>
         <tbody>
           ${rowsHtml}
-          <tr class="monday-inline-add-row"><td colspan="9"><button type="button" class="monday-inline-add-btn" id="risk-inline-add"><i class="bx bx-plus"></i> Add risk</button></td></tr>
+          <tr class="monday-inline-add-row"><td colspan="10"><button type="button" class="monday-inline-add-btn" id="risk-inline-add"><i class="bx bx-plus"></i> Add risk</button></td></tr>
         </tbody>
       </table>
       ${risks.length ? "" : `<div class="monday-table-empty">No risks match this view. Click "Add risk" to log one.</div>`}
@@ -2734,7 +2760,7 @@ function wireRiskWorkspaceShell(body, proj) {
     if (_riskPendingTimer) clearTimeout(_riskPendingTimer);
     _riskPendingTimer = setTimeout(() => {
       _riskPendingTimer = null;
-      persistRisk(risk, false).catch(() => {});
+      persistRisk(risk, true).catch(() => {});
     }, 400);
   }
 
@@ -2746,10 +2772,8 @@ function wireRiskWorkspaceShell(body, proj) {
     setRiskSaveStatus("saving");
     try {
       await Repo.save("risk", risk);
-      // Field edits hit PULSE Risks only. Mirror into project RisksJson on
-      // create/delete (and when explicitly requested) so we don't rewrite the
-      // entire Projects list item (BoardsJson/PeopleJson/…) on every cell commit.
-      if (mirrorProject) await Repo.save("project", proj);
+      // Always mirror into project RisksJson so field edits persist on the Project record
+      await Repo.save("project", proj);
       setRiskSaveStatus("saved");
     } catch (e) {
       setRiskSaveStatus("error");
@@ -2762,9 +2786,7 @@ function wireRiskWorkspaceShell(body, proj) {
     extra.risks.unshift(risk);
     state.view = "register";
     state.filter = "All";
-    // Paint the row first; SharePoint writes continue in the background.
-    const hasShell = !!$(".risk-workspace", body);
-    drawProjectRisks(body, proj, hasShell ? { viewOnly: true } : {});
+    drawProjectRisks(body, proj, { viewOnly: false });
     const nameInput = $(`input[data-risk-field="name"][data-risk-id="${risk.id}"]`, body);
     if (nameInput) { nameInput.focus(); nameInput.select(); }
     try {
@@ -2773,7 +2795,7 @@ function wireRiskWorkspaceShell(body, proj) {
       const idx = extra.risks.findIndex((r) => r.id === risk.id);
       if (idx >= 0) extra.risks.splice(idx, 1);
       toast((e && e.friendly) || "Couldn’t create risk", "error");
-      drawProjectRisks(body, proj, { viewOnly: true });
+      drawProjectRisks(body, proj, { viewOnly: false });
     }
   }
 
@@ -2782,11 +2804,11 @@ function wireRiskWorkspaceShell(body, proj) {
       const result = await deleteProjectRisk(proj, risk);
       if (!result) return false;
       if (typeof closeUi === "function") closeUi();
-      drawProjectRisks(body, proj, { viewOnly: !!$(".risk-workspace", body) });
+      drawProjectRisks(body, proj, { viewOnly: false });
       toast("Risk deleted", "success");
       return true;
     } catch (e) {
-      drawProjectRisks(body, proj, { viewOnly: true });
+      drawProjectRisks(body, proj, { viewOnly: false });
       toast((e && e.friendly) || "Couldn’t delete risk", "error");
       return false;
     }
@@ -2922,6 +2944,21 @@ function wireRiskViewBody(body, proj) {
     const risk = riskById(riskId);
     if (!risk) return { risk: null, needsViewRefresh: false };
     let needsViewRefresh = state.view !== "register";
+
+    const rawInExtra = (extra.risks || []).find(r => r === risk || (r.id && String(r.id) === String(riskId)) || (r._spId && String(r._spId) === String(risk._spId)));
+    if (rawInExtra) {
+      rawInExtra[field] = value;
+      if (field === "name") { rawInExtra.title = value; rawInExtra.name = value; }
+      if (field === "owner") { rawInExtra.ownerName = value; rawInExtra.owner = value; }
+      if (field === "description") { rawInExtra.text = value; rawInExtra.description = value; }
+      if (field === "likelihood" || field === "impact") {
+        rawInExtra.likelihood = Number(field === "likelihood" ? value : rawInExtra.likelihood || 1);
+        rawInExtra.impact = Number(field === "impact" ? value : rawInExtra.impact || 1);
+        rawInExtra.rating = riskRating(rawInExtra.likelihood, rawInExtra.impact);
+        rawInExtra.level = rawInExtra.rating;
+      }
+    }
+
     if (field === "name") {
       const trimmed = String(value || "").trim();
       if (!trimmed) {
@@ -2958,11 +2995,11 @@ function wireRiskViewBody(body, proj) {
     // shell rather than reaching for an out-of-scope local function.
     const scheduleSave = body._riskScheduleSave;
     if (immediate && typeof body._riskPersist === "function") {
-      body._riskPersist(risk, false).catch(() => {});
+      body._riskPersist(risk, true).catch(() => {});
     } else if (typeof scheduleSave === "function") {
       scheduleSave(risk);
     } else if (typeof body._riskPersist === "function") {
-      body._riskPersist(risk, false).catch(() => {});
+      body._riskPersist(risk, true).catch(() => {});
     }
     updateRiskSummaryStrip(body, riskSummaryFromRaw(projectRisks(proj.id)));
     if (!riskStillVisible(risk)) needsViewRefresh = true;
@@ -2988,6 +3025,23 @@ function wireRiskViewBody(body, proj) {
   $all("[data-risk-details]", body).forEach((btn) => btn.addEventListener("click", () => openRiskModal(proj, btn.dataset.riskDetails, () => refresh())));
   $all("[data-review-risk]", body).forEach((btn) => btn.addEventListener("click", () => openRiskModal(proj, btn.dataset.reviewRisk, () => refresh())));
   $all("[data-risk-open]", body).forEach((btn) => btn.addEventListener("click", () => openRiskModal(proj, btn.dataset.riskOpen, () => refresh())));
+
+  const deleteRiskFn = body._riskDelete;
+  $all("[data-risk-inline-delete]", body).forEach((btn) => btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const riskId = btn.dataset.riskInlineDelete;
+    const risk = extra.risks.find((r) => String(r.id) === String(riskId));
+    if (!risk) return;
+    const ok = await confirmDialog({ title: "Delete risk", message: `Delete "${risk.name || "this risk"}"? This cannot be undone.`, confirmLabel: "Delete", danger: true });
+    if (!ok) return;
+    if (typeof deleteRiskFn === "function") {
+      await deleteRiskFn(risk);
+    } else {
+      await deleteProjectRisk(proj, risk);
+      refresh();
+      toast("Risk deleted", "success");
+    }
+  }));
 
   wireRiskColumnFilters(body, proj, refreshView);
   wireRiskExpand(body, proj);
@@ -3791,7 +3845,11 @@ function drawProjectNotes(body, proj) {
     return `
       <article class="proj-notes-card ${isMine ? "mine" : ""}" data-note-id="${escapeHtml(n.id)}">
         <header class="proj-notes-card-head">
-          ${showAssigned ? `<div class="proj-notes-card-assigned"><i class="bx bx-link-alt"></i> ${escapeHtml(showAssigned)}</div>` : ""}
+          ${showAssigned ? `<div class="proj-notes-card-assigned">${
+            showAssigned.startsWith("Subitem") ? `<span class="proj-notes-tree-elbow" aria-hidden="true"></span><i class="bx bx-git-branch"></i>` :
+            showAssigned.startsWith("Task") ? `<i class="bx bx-task"></i>` :
+            `<i class="bx bx-folder"></i>`
+          } ${escapeHtml(showAssigned)}</div>` : ""}
           <div class="proj-notes-card-meta">
             <strong>${escapeHtml(n.author || "Unknown")}</strong>
             <span>${escapeHtml(stamp)}</span>
@@ -4369,8 +4427,8 @@ function drawProjectNotes(body, proj) {
 }
 
 function drawProjectMeeting(body, proj) {
-  if (window.AEWTTR && typeof window.AEWTTR.renderProjectMeetingApp === "function") {
-    return window.AEWTTR.renderProjectMeetingApp(body, proj);
+  if (window.AEWTTR && typeof window.AEWTTR.renderMeetingApp === "function") {
+    return window.AEWTTR.renderMeetingApp(body, { type: "project", project: proj });
   }
   body.innerHTML = `<div class="empty-state" style="padding:40px;">Project meeting app is loading.</div>`;
 }
@@ -5833,9 +5891,9 @@ function openDividerSettingsModal(divider, proj, onDone, opts) {
   const selectedPortfolios = new Set(meta.portfolios || []);
   const selectedLocations = new Set(meta.locations || []);
   const selectedContractors = new Set(parseContractorList(meta.contractor));
-  const selectedConfigEnd = new Set();
-  const initialConfig = normalizeConfigEndItemName(meta.configEndItem || "");
-  if (initialConfig) selectedConfigEnd.add(initialConfig);
+  const selectedConfigEnd = new Set(
+    String(meta.configEndItem || "").split(",").map(s => normalizeConfigEndItemName(s.trim())).filter(Boolean)
+  );
   const roleFields = ASSIGNABLE_PROJECT_ROLE_FIELDS.filter((f) => f.key !== "contractor");
   const roleDraft = {};
   roleFields.forEach((f) => {
@@ -5857,7 +5915,7 @@ function openDividerSettingsModal(divider, proj, onDone, opts) {
       fundingType: $("#div-fundingtype", modal).value.trim(),
       fiscalYear: $("#div-fiscalyear", modal).value.trim(),
       fundingStatus: $("#div-fundingstatus", modal).value.trim(),
-      configEndItem: Array.from(selectedConfigEnd)[0] || "",
+      configEndItem: Array.from(selectedConfigEnd).join(", "),
       contractor: Array.from(selectedContractors).join("; "),
       changeRequestRequired: (($(`input[name="div-crr"]:checked`, modal) || {}).value === "Yes"),
       portfolios: Array.from(selectedPortfolios),
@@ -5880,7 +5938,7 @@ function openDividerSettingsModal(divider, proj, onDone, opts) {
     fundingType: meta.fundingType || "",
     fiscalYear: meta.fiscalYear || "",
     fundingStatus: meta.fundingStatus || "",
-    configEndItem: initialConfig,
+    configEndItem: Array.from(selectedConfigEnd).join(", "),
     contractor: Array.from(selectedContractors).join("; "),
     changeRequestRequired: !!meta.changeRequestRequired,
     portfolios: Array.from(selectedPortfolios),
@@ -7299,7 +7357,15 @@ function renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEd
     e.stopPropagation();
     const task = tasks.find((t) => t.id === btn.dataset.taskComplete);
     if (!task) return;
-    setTaskCompletionState(task, !taskIsFullyDone(task));
+    const wouldComplete = !taskIsFullyDone(task);
+    if (wouldComplete && task.subtasks && task.subtasks.length) {
+      const allDone = flattenTaskSubitems(task.subtasks).every(s => s.done);
+      if (!allDone) {
+        toast("Complete all subtasks before marking this task done.", "error");
+        return;
+      }
+    }
+    setTaskCompletionState(task, wouldComplete);
     Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
     redraw();
   }));
@@ -7310,7 +7376,6 @@ function renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEd
     const subtask = task && task.subtasks && task.subtasks[+subIndexText];
     if (!task || !subtask) return;
     setSubtaskCompletionState(subtask, !subtask.done);
-    syncTaskStatusFromSubtasks(task);
     Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
     redraw();
   }));
@@ -7348,12 +7413,10 @@ function renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEd
     const ok = await confirmDialog({ title: "Delete subitem", message: "Delete this subitem? This cannot be undone.", confirmLabel: "Delete", danger: true });
     if (!ok) return;
     const removed = task.subtasks.splice(+subIndexText, 1)[0];
-    syncTaskStatusFromSubtasks(task);
     toast("Subitem deleted", "success");
     redraw();
     Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource }).catch(() => {
       task.subtasks.splice(+subIndexText, 0, removed);
-      syncTaskStatusFromSubtasks(task);
       redraw();
     });
   }));
@@ -7447,7 +7510,6 @@ function wireTrackerContextMenu(mount, tasks, onOpenEditor, onChange, opts) {
       window.AEWTTR.state.trackerFocusSubtask = { taskId: task.id, path: childPath };
     }
     if (opts.expanded) opts.expanded[task.id] = true;
-    syncTaskStatusFromSubtasks(task);
     Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
     onChange();
   }
@@ -7473,7 +7535,6 @@ function wireTrackerContextMenu(mount, tasks, onOpenEditor, onChange, opts) {
       items.push({ label: sub && sub.done ? "Mark subitem not done" : "Mark subitem done", icon: "bx-check-circle", action: () => {
         if (!sub) return;
         setSubtaskCompletionState(sub, !sub.done);
-        syncTaskStatusFromSubtasks(task);
         Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
         onChange();
       }});
@@ -7483,7 +7544,6 @@ function wireTrackerContextMenu(mount, tasks, onOpenEditor, onChange, opts) {
         const ok = await confirmDialog({ title: "Delete subtask", message: `Delete "${sub.text || "this subtask"}"${(sub.subtasks || []).length ? " and its nested subtasks" : ""}?`, confirmLabel: "Delete", danger: true });
         if (!ok) return;
         removeSubtaskAtPath(task, subPath);
-        syncTaskStatusFromSubtasks(task);
         Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
         toast("Subtask deleted", "success");
         onChange();
@@ -7494,7 +7554,12 @@ function wireTrackerContextMenu(mount, tasks, onOpenEditor, onChange, opts) {
       items.push({ label: "Edit task", icon: "bx-pencil", action: () => onOpenEditor(taskId) });
       items.push({ label: "Add subtask", icon: "bx-list-plus", action: () => addSubtask(task, "") });
       items.push({ label: taskIsFullyDone(task) ? "Mark not done" : "Mark done", icon: "bx-check-circle", action: () => {
-        setTaskCompletionState(task, !taskIsFullyDone(task));
+        const wouldComplete = !taskIsFullyDone(task);
+        if (wouldComplete && task.subtasks && task.subtasks.length) {
+          const allDone = flattenTaskSubitems(task.subtasks).every(s => s.done);
+          if (!allDone) { toast("Complete all subtasks before marking this task done.", "error"); return; }
+        }
+        setTaskCompletionState(task, wouldComplete);
         Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
         onChange();
       }});
@@ -7718,7 +7783,6 @@ function wireGanttContextMenu(mount, tasks, expanded, onOpenEditor, redraw, opts
         const sub = task.subtasks && task.subtasks[subIndex];
         if (!sub) return;
         setSubtaskCompletionState(sub, !sub.done);
-        syncTaskStatusFromSubtasks(task);
         Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
         redraw();
       });
@@ -7726,7 +7790,6 @@ function wireGanttContextMenu(mount, tasks, expanded, onOpenEditor, redraw, opts
         const ok = await confirmDialog({ title: "Delete subitem", message: "Delete this subitem?", confirmLabel: "Delete", danger: true });
         if (!ok) return;
         task.subtasks.splice(subIndex, 1);
-        syncTaskStatusFromSubtasks(task);
         Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
         redraw();
       }, true);
@@ -7740,7 +7803,12 @@ function wireGanttContextMenu(mount, tasks, expanded, onOpenEditor, redraw, opts
         onOpenEditor(task.id, task.subtasks.length - 1);
       });
       addItem(taskIsFullyDone(task) ? "Mark task not done" : "Mark task done", () => {
-        setTaskCompletionState(task, !taskIsFullyDone(task));
+        const wouldComplete = !taskIsFullyDone(task);
+        if (wouldComplete && task.subtasks && task.subtasks.length) {
+          const allDone = flattenTaskSubitems(task.subtasks).every(s => s.done);
+          if (!allDone) { toast("Complete all subtasks before marking this task done.", "error"); return; }
+        }
+        setTaskCompletionState(task, wouldComplete);
         Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
         redraw();
       });
@@ -7951,7 +8019,6 @@ function wireMondayGanttTitleEdits(mount, tasks, redraw, onOpenEditor, opts) {
       const value = node.textContent.trim();
       if (!value) { node.textContent = task.title || "Untitled"; return; }
       task.title = value;
-      syncTaskStatusFromSubtasks(task);
       Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
       if (typeof redraw === "function") redraw();
     });
@@ -7960,9 +8027,7 @@ function wireMondayGanttTitleEdits(mount, tasks, redraw, onOpenEditor, opts) {
 
 function taskIsFullyDone(task) {
   if (!task) return false;
-  const subs = flattenTaskSubitems((task.subtasks) || []);
-  if (!subs.length) return task.status === "Done";
-  return taskProgressPct(task) === 100;
+  return task.status === "Done";
 }
 
 function setSubtaskCompletionState(subtask, completed) {
@@ -7973,12 +8038,7 @@ function setSubtaskCompletionState(subtask, completed) {
 
 function setTaskCompletionState(task, completed) {
   if (!task) return;
-  if (task.subtasks && task.subtasks.length) {
-    walkNestedSubtasks(task.subtasks, (subtask) => setSubtaskCompletionState(subtask, completed));
-    syncTaskStatusFromSubtasks(task);
-  } else {
-    task.status = completed ? "Done" : "Not Started";
-  }
+  task.status = completed ? "Done" : "Not Started";
   if (completed) { task.health = "On Track"; task.end = new Date().toISOString().slice(0, 10); }
 }
 
@@ -8123,7 +8183,6 @@ function renderLegacyGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEd
     e.stopPropagation();
     const t = tasks.find(x => x.id === cb.dataset.task);
     setSubtaskCompletionState(t.subtasks[+cb.dataset.sub], cb.checked);
-    syncTaskStatusFromSubtasks(t);
     Repo.save("actionItem", t, { projectCode: saveProjectCode, source: saveSource });
     renderGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
   }));
@@ -8136,7 +8195,6 @@ function wireGanttInlineEdits(mount, tasks, expanded, onToggleExpand, onOpenEdit
   const saveSource = opts.saveSource || "Tracker";
   const saveProjectCode = opts.projectCode || projectCodeForTaskList(tasks);
   function persist(task) {
-    syncTaskStatusFromSubtasks(task);
     ensureAssigneesFromTask(saveProjectCode, task);
     Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
     if (typeof redraw === "function") redraw();
@@ -8349,7 +8407,6 @@ function wireTrackerTableDragDrop(mount, tasks, redraw, opts) {
           const [sub] = srcTask.subtasks.splice(idx, 1);
           if (!tt.subtasks) tt.subtasks = [];
           tt.subtasks.push(sub);
-          if (typeof syncTaskStatusFromSubtasks === "function") syncTaskStatusFromSubtasks(srcTask);
           Repo.save("actionItem", srcTask, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
           Repo.save("actionItem", tt, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
           redraw();
@@ -8609,14 +8666,12 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
       if (!ok) return;
       const snapshot = JSON.parse(JSON.stringify(task.subtasks || []));
       removeSubtaskAtPath(task, String(pathOrIdx));
-      syncTaskStatusFromSubtasks(task);
       toast("Subitem deleted", "success");
       onChange();
       Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource })
         .then(() => { if (typeof afterSave === "function") afterSave(); })
         .catch(() => {
           task.subtasks = snapshot;
-          syncTaskStatusFromSubtasks(task);
           onChange();
         });
     },
@@ -8636,7 +8691,6 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
         task.subtasks.push(normalizeTaskSubtask(task, { text: "New subitem", start: task.start, end: "" }));
         window.AEWTTR.state.trackerFocusSubtask = { taskId, path: childPath };
       }
-      syncTaskStatusFromSubtasks(task);
       persistTask(task);
       expanded[taskId] = true;
       onChange();
@@ -8670,7 +8724,6 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
         taskId,
         path: parentPath ? `${parentPath}.${newIndex}` : String(newIndex)
       };
-      syncTaskStatusFromSubtasks(task);
       persistTask(task);
       expanded[taskId] = true;
       onChange();
@@ -8725,18 +8778,15 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
       if (key === "start" || key === "end" || key.startsWith("subtask.")) {
         if (key === "start" || key === "end") cascadeSubtaskDates(tasks, task, task.start, task.end);
       }
-      syncTaskStatusFromSubtasks(task);
       persistTask(task);
     },
     onToggleSubtaskDone: (task, pathOrIdx, checked) => {
       const sub = resolveSub(task, pathOrIdx);
       if (!sub) return;
       setSubtaskCompletionState(sub, checked);
-      // Cascade done to nested children when marking a parent complete.
       if (checked) {
         walkNestedSubtasks(sub.subtasks || [], (child) => setSubtaskCompletionState(child, true));
       }
-      syncTaskStatusFromSubtasks(task);
       persistTask(task);
       onChange();
     }
@@ -8958,7 +9008,6 @@ function openTaskSidePanel(task, tasks, onChange, opts) {
       if (!subtask.health) subtask.health = task.health;
     });
     cascadeSubtaskDates(tasks, task, prevStart, prevEnd);
-    syncTaskStatusFromSubtasks(task);
     const savedProjectCode = projectCodeForTaskList(tasks);
     ensureAssigneesFromTask(savedProjectCode, task);
     Repo.save("actionItem", task, { projectCode: savedProjectCode, source: "Tracker" });
@@ -9025,7 +9074,6 @@ function openSubtaskSidePanel(task, tasks, onChange, subIndex, isNew, opts) {
   });
   $("#ssp-delete", panel).addEventListener("click", async () => {
     itemList.splice(itemIndex, 1);
-    syncTaskStatusFromSubtasks(task);
     Repo.save("actionItem", task, { projectCode: projectCodeForTaskList(tasks), source: "Tracker" });
     closeTaskSidePanel();
     toast("Subtask deleted", "success");
@@ -9048,7 +9096,6 @@ function openSubtaskSidePanel(task, tasks, onChange, subIndex, isNew, opts) {
     if (!next.text) { toast("Subtask title is required", "error"); return; }
     if (next.start && next.end && next.start > next.end) { toast("End date must be on or after start date", "error"); return; }
     itemList[itemIndex] = next;
-    syncTaskStatusFromSubtasks(task);
     const savedProjectCode = projectCodeForTaskList(tasks);
     ensureAssigneesFromTask(savedProjectCode, task);
     Repo.save("actionItem", task, { projectCode: savedProjectCode, source: "Tracker" });
@@ -9098,7 +9145,6 @@ function openGanttTaskModal(tasks, onDone) {
         text, assignee: "", done: false, health: $("#gt-health", modal).value, start, end, relatedDocs: []
       }))
     };
-    syncTaskStatusFromSubtasks(newTask);
     tasks.push(newTask);
     const newTaskProjectCode = projectCodeForTaskList(tasks);
     ensureAssigneesFromTask(newTaskProjectCode, newTask);
@@ -9135,10 +9181,9 @@ function drawProjectSettings(body, proj) {
   window.AEWTTR.state.projectSettingsTabs[proj.id] = activeSettingsTab;
   const selectedPortfolios = new Set(projectPortfolios(proj));
   const selectedLocations = new Set(projectLocations(proj));
-  const selectedConfigEnd = new Set();
-  const initialConfigEnd = normalizeConfigEndItemName(proj.configEndItem || "");
-  if (initialConfigEnd) selectedConfigEnd.add(initialConfigEnd);
+  const selectedConfigEnd = new Set(projectConfigEndItems(proj));
   const selectedProgram = new Set(); if (proj.program) String(proj.program).split(",").forEach(p => { const v = normalizeProgramName(p.trim()); if (v) selectedProgram.add(v); });
+  const selectedContract = new Set(); if (proj.contract) String(proj.contract).split(",").forEach(p => { const v = normalizeContractName(p.trim()); if (v) selectedContract.add(v); });
   const selectedTaskOrder = new Set(); if (proj.taskOrder) String(proj.taskOrder).split(",").forEach(p => { const v = normalizeTaskOrderName(p.trim()); if (v) selectedTaskOrder.add(v); });
   const selectedFundingType = new Set(); if (proj.fundingType) String(proj.fundingType).split(",").forEach(p => { const v = normalizeFundingTypeName(p.trim()); if (v) selectedFundingType.add(v); });
   const selectedFiscalYear = new Set(); if (proj.fiscalYear) String(proj.fiscalYear).split(",").forEach(p => { const v = normalizeFiscalYearName(p.trim()); if (v) selectedFiscalYear.add(v); });
@@ -9258,7 +9303,7 @@ function drawProjectSettings(body, proj) {
         <div class="ps-tab-panel ${activeSettingsTab === "funding" ? "is-active" : ""}" id="ps-panel-funding" data-pspanel="funding" role="tabpanel" aria-labelledby="ps-tab-funding" ${activeSettingsTab === "funding" ? "" : "hidden"}>
           <div class="form-grid-2">
             <div class="form-row"><label>Program Office ${glossaryTip("Program")}</label>${tagPickerHtml(Array.from(selectedProgram), "ps-program", { emptyText: "No program office set.", placeholder: "Search or add program office…", hint: "" })}</div>
-            <div class="form-row"><label>Contract ${glossaryTip("Contract")}</label><input class="input-aewttr" id="ps-contract" value="${escapeHtml(proj.contract)}"></div>
+            <div class="form-row"><label>Contract ${glossaryTip("Contract")}</label>${tagPickerHtml(Array.from(selectedContract), "ps-contract", { emptyText: "No contract set.", placeholder: "Search or add contract…", hint: "" })}</div>
             <div class="form-row"><label>Task Order</label>${tagPickerHtml(Array.from(selectedTaskOrder), "ps-taskorder", { emptyText: "No task order set.", placeholder: "Search or add task order…", hint: "" })}</div>
             <div class="form-row"><label>Funding Type</label>${tagPickerHtml(Array.from(selectedFundingType), "ps-fundingtype", { emptyText: "No funding type set.", placeholder: "Search or add funding type…", hint: "" })}</div>
             <div class="form-row"><label>Fiscal Year</label>${tagPickerHtml(Array.from(selectedFiscalYear), "ps-fiscalyear", { emptyText: "No fiscal year set.", placeholder: "e.g. FY26", hint: "" })}</div>
@@ -9271,8 +9316,17 @@ function drawProjectSettings(body, proj) {
         </div>
 
         <div class="ps-tab-panel ${activeSettingsTab === "classification" ? "is-active" : ""}" id="ps-panel-classification" data-pspanel="classification" role="tabpanel" aria-labelledby="ps-tab-classification" ${activeSettingsTab === "classification" ? "" : "hidden"}>
-          <div class="form-grid-2">
-            <div class="form-row"><label>Project Type</label>
+          <div class="ps-classification-banner">
+            <div>
+              <div style="font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;font-weight:600;margin-bottom:4px;">Security &amp; Data Governance</div>
+              <strong style="font-size:16px;color:#fff;">ATO &amp; Project Security Control</strong>
+              <div style="font-size:12.5px;color:#cbd5e1;margin-top:4px;">Manage Authority to Operate (ATO) credentials, compliance status, and related system linkages.</div>
+            </div>
+          </div>
+
+          <div class="form-grid-2" style="align-items:start;">
+            <div class="form-row">
+              <label>Project Execution Type</label>
               <select class="select-aewttr" id="ps-project-type">
                 <option value="" ${!proj.projectType ? "selected" : ""}>Not set</option>
                 <option value="Development" ${proj.projectType === "Development" ? "selected" : ""}>Development</option>
@@ -9281,9 +9335,28 @@ function drawProjectSettings(body, proj) {
                 <option value="Other" ${proj.projectType === "Other" ? "selected" : ""}>Other</option>
               </select>
             </div>
-            <div class="form-row"><label>Related Projects</label>${tagPickerHtml(Array.from(selectedRelatedProjects), "ps-relprojects", { emptyText: "No related projects.", placeholder: "Search or add project…", hint: "" })}</div>
+            <div class="form-row">
+              <label>ATO Compliance Status</label>
+              <select class="select-aewttr" id="ps-ato-status">
+                <option value="Active" ${(!proj.atoStatus || proj.atoStatus === "Active") ? "selected" : ""}>Active ATO</option>
+                <option value="Pending Renewal" ${proj.atoStatus === "Pending Renewal" ? "selected" : ""}>Pending Renewal</option>
+                <option value="In Progress" ${proj.atoStatus === "In Progress" ? "selected" : ""}>In Progress (IATO)</option>
+                <option value="Exempt" ${proj.atoStatus === "Exempt" ? "selected" : ""}>Exempt / N/A</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Authority to Operate (ATO) Designation</label>
+              ${tagPickerHtml(Array.from(selectedAto), "ps-ato", { emptyText: "No ATO set.", placeholder: "Search or select ATO…", hint: "" })}
+            </div>
+            <div class="form-row">
+              <label>ATO Expiration Date</label>
+              <input type="date" class="input-aewttr" id="ps-ato-expiration" value="${escapeHtml(proj.atoExpiration || "")}">
+            </div>
+            <div class="form-row" style="grid-column:1/-1;margin-bottom:0;">
+              <label>Related System Projects</label>
+              ${tagPickerHtml(Array.from(selectedRelatedProjects), "ps-relprojects", { emptyText: "No related projects.", placeholder: "Search or add project…", hint: "" })}
+            </div>
           </div>
-          <div class="form-row" style="margin-bottom:0;"><label>ATO</label>${tagPickerHtml(Array.from(selectedAto), "ps-ato", { emptyText: "No ATO set.", placeholder: "Search or select ATO…", hint: "" })}</div>
         </div>
 
         <div class="ps-tab-panel ${activeSettingsTab === "scope" ? "is-active" : ""}" id="ps-panel-scope" data-pspanel="scope" role="tabpanel" aria-labelledby="ps-tab-scope" ${activeSettingsTab === "scope" ? "" : "hidden"}>
@@ -9349,7 +9422,8 @@ function drawProjectSettings(body, proj) {
     statusEl.textContent = message;
   }
 
-  function renderDeliverablesEditor({ focusLast = false } = {}) {
+  function renderDeliverablesEditor(opts = {}) {
+    const focusLast = opts.focusLast;
     const list = $("#ps-deliverables-list", body);
     if (!list) return;
     list.innerHTML = pendingDeliverables.length
@@ -9399,7 +9473,8 @@ function drawProjectSettings(body, proj) {
     rememberPortfolioNames(proj.portfolios);
     proj.program = Array.from(selectedProgram).join(", ") || "";
     if (proj.program) rememberProgramNames(Array.from(selectedProgram));
-    proj.contract = $("#ps-contract", body).value.trim();
+    proj.contract = Array.from(selectedContract).join(", ") || "";
+    if (proj.contract) rememberContractNames(Array.from(selectedContract));
     proj.taskOrder = Array.from(selectedTaskOrder).join(", ") || "";
     if (proj.taskOrder) rememberTaskOrderNames(Array.from(selectedTaskOrder));
     proj.fundingType = Array.from(selectedFundingType).join(", ") || "";
@@ -9411,8 +9486,8 @@ function drawProjectSettings(body, proj) {
     proj.fundedOnContractAmount = parseFloat($("#ps-funded-amount", body).value) || 0;
     proj.reimbursableAmount = parseFloat($("#ps-reimb-amount", body).value) || 0;
     proj.fundingNotes = ($("#ps-fundingnotes", body) ? $("#ps-fundingnotes", body).value.trim() : "") || "";
-    proj.configEndItem = Array.from(selectedConfigEnd)[0] || "";
-    if (proj.configEndItem) rememberConfigEndItemNames([proj.configEndItem]);
+    proj.configEndItem = Array.from(selectedConfigEnd).join(", ");
+    if (selectedConfigEnd.size) rememberConfigEndItemNames(Array.from(selectedConfigEnd));
     proj.scope = $("#ps-scope", body).value.trim();
     proj.deliverables = pendingDeliverables.map((item) => item.trim()).filter(Boolean);
     delete proj.objectives;
@@ -9430,6 +9505,10 @@ function drawProjectSettings(body, proj) {
     if (spoFolderEl) proj.sharepointFolderUrl = spoFolderEl.value.trim();
     const projTypeEl = $("#ps-project-type", body);
     if (projTypeEl) proj.projectType = projTypeEl.value;
+    const atoStatusEl = $("#ps-ato-status", body);
+    if (atoStatusEl) proj.atoStatus = atoStatusEl.value;
+    const atoExpEl = $("#ps-ato-expiration", body);
+    if (atoExpEl) proj.atoExpiration = atoExpEl.value;
     proj.ato = Array.from(selectedAto)[0] || "";
     if (proj.ato) rememberAtoNames([proj.ato]);
     proj.relatedProjects = Array.from(selectedRelatedProjects);
@@ -9490,6 +9569,7 @@ function drawProjectSettings(body, proj) {
   wireLocationPicker(body, selectedLocations, "ps-locations", () => scheduleAutosave());
   wireConfigEndItemPicker(body, selectedConfigEnd, "ps-config", () => scheduleAutosave());
   wireTagPicker(body, selectedProgram, "ps-program", { normalize: normalizeProgramName, getKnown: getKnownProgramNames, remember: rememberProgramNames, singleSelect: false, onChange: () => scheduleAutosave() });
+  wireTagPicker(body, selectedContract, "ps-contract", { normalize: normalizeContractName, getKnown: getKnownContractNames, remember: rememberContractNames, singleSelect: false, onChange: () => scheduleAutosave() });
   wireTagPicker(body, selectedTaskOrder, "ps-taskorder", { normalize: normalizeTaskOrderName, getKnown: getKnownTaskOrderNames, remember: rememberTaskOrderNames, singleSelect: false, onChange: () => scheduleAutosave() });
   wireTagPicker(body, selectedFundingType, "ps-fundingtype", { normalize: normalizeFundingTypeName, getKnown: getKnownFundingTypeNames, remember: rememberFundingTypeNames, singleSelect: false, onChange: () => scheduleAutosave() });
   wireTagPicker(body, selectedFiscalYear, "ps-fiscalyear", { normalize: normalizeFiscalYearName, getKnown: getKnownFiscalYearNames, remember: rememberFiscalYearNames, singleSelect: false, onChange: () => scheduleAutosave() });
@@ -9497,13 +9577,13 @@ function drawProjectSettings(body, proj) {
   wireTagPicker(body, selectedAto, "ps-ato", { normalize: normalizeAtoName, getKnown: getKnownAtoNames, remember: rememberAtoNames, singleSelect: true, onChange: () => scheduleAutosave() });
   wireTagPicker(body, selectedRelatedProjects, "ps-relprojects", { normalize: v => (v || "").trim(), getKnown: () => (db.projects || []).filter(p => p.id !== proj.id).map(p => p.name || p.id).filter(Boolean).sort(), remember: () => {}, singleSelect: false, onChange: () => scheduleAutosave() });
 
-  ["ps-name", "ps-desc", "ps-contract", "ps-scope", "ps-handoff", "ps-funded-amount", "ps-reimb-amount", "ps-fundingnotes", "ps-spo-folder"].forEach((id) => {
+  ["ps-name", "ps-desc", "ps-scope", "ps-handoff", "ps-funded-amount", "ps-reimb-amount", "ps-fundingnotes", "ps-spo-folder", "ps-ato-expiration"].forEach((id) => {
     const field = $(`#${id}`, body);
     if (!field) return;
     field.addEventListener("input", () => scheduleAutosave());
     field.addEventListener("change", () => scheduleAutosave());
   });
-  ["ps-tech-status", "ps-priority", "ps-lifecycle", "ps-startdate", "ps-duedate", "ps-completiondate", "ps-project-type"].forEach((id) => {
+  ["ps-tech-status", "ps-priority", "ps-lifecycle", "ps-startdate", "ps-duedate", "ps-completiondate", "ps-project-type", "ps-ato-status"].forEach((id) => {
     const field = $(`#${id}`, body);
     if (field) field.addEventListener("change", () => scheduleAutosave());
   });
@@ -9535,13 +9615,16 @@ function drawProjectSettings(body, proj) {
   });
 
   $("#ps-delete", body).addEventListener("click", async () => {
-    const ok = await confirmDialog({
+    const confirmed = await promptDialog({
       title: "Delete project",
-      message: `Delete ${proj.name}? This cannot be undone in this session.`,
+      label: `Type the project name "${proj.name}" to confirm`,
+      placeholder: proj.name,
       confirmLabel: "Delete",
-      danger: true
     });
-    if (!ok) return;
+    if ((confirmed || "").trim() !== (proj.name || "").trim()) {
+      if (confirmed !== null) toast("Project name didn't match — deletion cancelled.", "error");
+      return;
+    }
     clearTimeout(saveTimer);
     clearTimeout(savePendingLabel);
     db.projects = db.projects.filter(p => p.id !== proj.id);
