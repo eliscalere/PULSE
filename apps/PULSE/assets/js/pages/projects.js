@@ -1981,6 +1981,37 @@ function drawWorkspace(body, proj) {
   const dueLabel = proj.dueDate ? fmtDate(proj.dueDate) : (proj.completionDate ? fmtDate(proj.completionDate) : "No due date");
   const locLabel = (proj.locations || []).length ? escapeHtml(proj.locations.join(", ")) : "No locations set";
 
+  // Collect notes from project, all tasks, and all nested subtasks — sorted newest-first
+  const allHomeNotes = (() => {
+    const rows = [];
+    (extra.notes || []).forEach((n) => rows.push({ n, label: null }));
+    actionableTasks.forEach((task) => {
+      (task.notes || []).forEach((n) => rows.push({ n, label: task.title || "Task" }));
+      if (typeof walkNestedSubtasks === "function") {
+        walkNestedSubtasks(task.subtasks || [], (sub, _arr, pathStr) => {
+          (sub.notes || []).forEach((n) => {
+            const parts = String(pathStr || "").split(".").filter((p) => p !== "");
+            const trail = [];
+            let list = task.subtasks || [];
+            for (let i = 0; i < parts.length; i++) {
+              const node = list[Number(parts[i])];
+              if (!node) break;
+              trail.push(node.text || "Subitem");
+              list = node.subtasks || [];
+            }
+            rows.push({ n, label: (task.title || "Task") + (trail.length ? " › " + trail[trail.length - 1] : "") });
+          });
+        });
+      }
+    });
+    rows.sort((a, b) => {
+      const ka = `${a.n.date || ""}T${a.n.time || "00:00"}`;
+      const kb = `${b.n.date || ""}T${b.n.time || "00:00"}`;
+      return kb.localeCompare(ka);
+    });
+    return rows.slice(0, 5);
+  })();
+
   body.innerHTML = `
     <div class="project-home">
       <header class="project-home-header">
@@ -2124,8 +2155,9 @@ function drawWorkspace(body, proj) {
             <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" data-route="projects/${proj.id}/notes">View all</button>
           </div>
           <div class="proj-notes-widget" id="proj-home-notes-feed">
-            ${(extra.notes || []).length === 0 ? `<div class="project-home-empty">No notes yet. Add one below.</div>` : (extra.notes || []).slice().reverse().slice(0, 4).map((n) => `
+            ${allHomeNotes.length === 0 ? `<div class="project-home-empty">No notes yet. Add one below.</div>` : allHomeNotes.map(({ n, label }) => `
               <div class="proj-notes-widget-item">
+                ${label ? `<div class="proj-notes-widget-context"><i class="bx bx-task" aria-hidden="true"></i> ${escapeHtml(label)}</div>` : ""}
                 <div class="proj-notes-widget-meta"><strong>${escapeHtml(n.author || "Unknown")}</strong><span>${escapeHtml(n.date || "")}${n.time ? ` · ${escapeHtml(n.time)}` : ""}</span></div>
                 <div class="proj-notes-widget-text">${escapeHtml(n.text || "")}</div>
               </div>`).join("")}
@@ -4158,18 +4190,43 @@ function drawProjectNotes(body, proj) {
     const crumb = (folder.breadcrumb && folder.breadcrumb.length)
       ? folder.breadcrumb.join(" › ")
       : (folder.assignedTo || folder.label);
+
+    // For task folders: merge own notes with all nested subtask notes
+    const isTaskView = folder.kind === "task" && folder.parentTask;
+    const displayRows = isTaskView ? (() => {
+      const rows = [];
+      (folder.notes || []).forEach((n) => rows.push({ note: n, assignedTo: null, folderId: folder.id }));
+      if (typeof walkNestedSubtasks === "function") {
+        walkNestedSubtasks(folder.parentTask.subtasks || [], (sub, _arr, pathStr) => {
+          (sub.notes || []).forEach((n) => {
+            rows.push({ note: n, assignedTo: assignedLabelForSub(folder.parentTask, pathStr), folderId: folderKeyForSub(folder.parentTask.id, pathStr) });
+          });
+        });
+      }
+      rows.sort((a, b) => String(noteSortKey(b.note)).localeCompare(String(noteSortKey(a.note))));
+      return rows;
+    })() : null;
+    const totalNoteCount = isTaskView ? displayRows.length : notes.length;
+
     mainEl.innerHTML = `
       <div class="proj-notes-main-head">
         <div>
           <h2><i class="bx ${folder.kind === "project" ? "bx-folder" : folder.kind === "sub" ? "bx-subdirectory-right" : "bx-task"}"></i> ${escapeHtml(folder.label)}</h2>
           <p>${escapeHtml(crumb)}</p>
         </div>
-        <span class="aewttr-muted">${notes.length} note${notes.length === 1 ? "" : "s"}</span>
+        <span class="aewttr-muted">${totalNoteCount} note${totalNoteCount === 1 ? "" : "s"}</span>
       </div>
       <div class="proj-notes-main-body" id="proj-notes-main-body">
-        ${notes.length
-          ? notes.map((n) => noteBubbleHtml(n, { showAssigned: folder.assignedTo })).join("")
-          : `<div class="empty-state" style="padding:32px;text-align:center;">No notes in this folder yet — add the first one below.</div>`}
+        ${isTaskView
+          ? (displayRows.length
+              ? displayRows.map(({ note: n, assignedTo, folderId }) => `
+                  <div data-jump-folder="${escapeHtml(folderId)}">
+                    ${noteBubbleHtml(n, { showAssigned: assignedTo })}
+                  </div>`).join("")
+              : `<div class="empty-state" style="padding:32px;text-align:center;">No notes in this folder yet — add the first one below.</div>`)
+          : (notes.length
+              ? notes.map((n) => noteBubbleHtml(n, { showAssigned: folder.assignedTo })).join("")
+              : `<div class="empty-state" style="padding:32px;text-align:center;">No notes in this folder yet — add the first one below.</div>`)}
       </div>
       <div class="task-notes-input-row proj-notes-compose">
         <textarea class="task-notes-input" id="proj-notes-input" placeholder="Type a note — Enter to post…" rows="1"></textarea>
@@ -4177,7 +4234,52 @@ function drawProjectNotes(body, proj) {
       </div>`;
 
     const bodyEl = $("#proj-notes-main-body", mainEl);
-    wireNoteActions(bodyEl || mainEl, folder);
+    if (isTaskView) {
+      $all("[data-edit-note], [data-del-note], [data-save-note], [data-cancel-edit]", bodyEl || mainEl).forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (btn.hasAttribute("data-cancel-edit")) { editingId = null; renderMain(); return; }
+          const card = btn.closest("[data-jump-folder]");
+          const owning = resolveFolder(card && card.dataset.jumpFolder);
+          if (!owning || !owning.notes) return;
+          if (btn.hasAttribute("data-edit-note")) {
+            const note = owning.notes.find((n) => n.id === btn.dataset.editNote);
+            if (typeof isNoteAuthor === "function" && !isNoteAuthor(note)) { toast("You can only edit your own notes.", "error"); return; }
+            setActiveFolder(owning.id);
+            editingId = btn.dataset.editNote;
+            renderMain();
+            return;
+          }
+          if (btn.hasAttribute("data-del-note")) {
+            (async () => {
+              const note = owning.notes.find((n) => n.id === btn.dataset.delNote);
+              if (typeof isNoteAuthor === "function" && !isNoteAuthor(note)) { toast("You can only delete your own notes.", "error"); return; }
+              const ok = await confirmDialog({ title: "Delete note", message: "Delete this note? This cannot be undone.", confirmLabel: "Delete", danger: true });
+              if (!ok) return;
+              owning.notes = owning.notes.filter((n) => n.id !== btn.dataset.delNote);
+              if (owning.kind === "project") extra.notes = owning.notes;
+              persistThread(owning);
+              editingId = null;
+              renderAll();
+            })();
+          }
+          if (btn.hasAttribute("data-save-note")) {
+            const ta = $(`#proj-note-edit-${btn.dataset.saveNote}`, bodyEl || mainEl);
+            const text = ta ? ta.value.trim() : "";
+            if (!text) { toast("Note can't be empty.", "error"); return; }
+            const note = owning.notes.find((n) => n.id === btn.dataset.saveNote);
+            if (!note || (typeof isNoteAuthor === "function" && !isNoteAuthor(note))) { toast("You can only edit your own notes.", "error"); editingId = null; renderMain(); return; }
+            note.text = text;
+            if (typeof touchNoteTimestamp === "function") touchNoteTimestamp(note);
+            persistThread(owning);
+            editingId = null;
+            renderAll();
+          }
+        });
+      });
+    } else {
+      wireNoteActions(bodyEl || mainEl, folder);
+    }
 
     const input = $("#proj-notes-input", mainEl);
     const sendBtn = $("#proj-notes-send", mainEl);

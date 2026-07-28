@@ -15312,6 +15312,17 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
   font-size: 12.5px; line-height: 1.4; color: var(--aewttr-text);
   white-space: pre-wrap; word-break: break-word;
 }
+.proj-notes-widget-context {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--aewttr-blue);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 3px;
+  line-height: 1.2;
+}
+.proj-notes-widget-context i { font-size: 11px; }
 .proj-notes-widget-compose {
   display: flex; gap: 6px; align-items: center; margin-top: 8px;
 }
@@ -17055,6 +17066,15 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
   letter-spacing: -0.01em;
 }
 .doc-block-content--bullet { /* indent handled by gutter */ }
+.doc-block--bullet-sub {
+  padding-left: 34px;
+}
+.doc-block--bullet-sub .doc-gutter-bullet {
+  width: 4px;
+  height: 4px;
+  border: 1px solid currentColor;
+  background: transparent;
+}
 .doc-block-content--action { /* handled by gutter checkbox */ }
 
 @media (max-width: 640px) {
