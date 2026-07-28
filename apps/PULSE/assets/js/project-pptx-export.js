@@ -373,7 +373,8 @@
     });
     if (!bullets.length) {
       bullets.push(`Project status: ${typeof computeProjectStatus === "function" ? computeProjectStatus(proj) : "In progress"}`);
-      if (proj.objectives) bulletize(proj.objectives, 2).forEach((b) => bullets.push(b));
+      const deliverables = typeof projectDeliverables === "function" ? projectDeliverables(proj) : (proj.deliverables || []);
+      deliverables.slice(0, 2).forEach((item) => bullets.push(item));
     }
     return bullets.slice(0, 8);
   }
@@ -411,7 +412,7 @@
         status = "Green";
       }
       const comments = top
-        ? (top.mitigationPlan || top.description || top.name || "").slice(0, 160)
+        ? (top.mitigationPlan || top.description || top.name || "").replace(/\s+/g, " ").trim().slice(0, 90)
         : "No open items in this category.";
       return { category: cat.key, status, comments };
     });
@@ -1176,7 +1177,7 @@
 
     /* Title stays left of the vertical divider (x≈4.73) so it never pushes over
        the Technical Status heading or POC column on the right side. */
-    slide.addText(proj.name || proj.id || "Project", {
+    slide.addText(proj.name || "Project", {
       x: L.title.x,
       y: L.title.y,
       w: 3.6,
@@ -1229,7 +1230,7 @@
 
     addSectionHeading(slide, "Project Description", L.descHead);
     const descBullets = bulletize(
-      proj.scope || proj.description || proj.objectives || "",
+      proj.scope || proj.description || (typeof projectDeliverables === "function" ? projectDeliverables(proj).join("\n") : (proj.deliverables || []).join("\n")) || "",
       10
     );
     const descFit = fitBulletsToBox(
@@ -1371,82 +1372,147 @@
     const points = perRiskBurnPoints(risk);
     addStatusChrome(slide, shapes, logos, pageNum);
 
+    // ── Title block ──
     slide.addText("Risk Assessment", {
-      x: L.title.x, y: L.title.y, w: 7.5, h: 0.4,
-      fontSize: 22, bold: true, color: TITLE_NAVY, fontFace: "Arial Black"
+      x: L.title.x, y: L.title.y, w: 6.0, h: 0.35,
+      fontSize: 20, bold: true, color: TITLE_NAVY, fontFace: "Arial Black"
     });
-    slide.addText(proj.name || proj.id || "", {
-      x: L.title.x, y: 0.55, w: 7.5, h: 0.25, fontSize: 11, color: GRAY, fontFace: "Arial"
+    slide.addText(proj.name || "Project", {
+      x: L.title.x, y: 0.50, w: 6.0, h: 0.22, fontSize: 10, color: GRAY, fontFace: "Arial"
     });
 
-    const lx = 0.3;
-    const lw = 4.7;
-    let ly = 0.95;
-    slide.addText("Risk Description:", { x: lx, y: ly, w: lw, h: 0.2, fontSize: 10, bold: true, fontFace: "Arial" });
-    ly += 0.2;
-    const nameFit = fitPlainTextToBox(risk.name || risk.title || "Untitled risk", lw, 0.4, {
-      maxFont: 11, minFont: 8, paraGap: 0, pad: 0.02
+    // ── Risk name bar + score badge (placed below seals at y≥1.04) ──
+    const riskScore = (Number(risk.likelihood) || 0) * (Number(risk.impact) || 0);
+    const scoreBand = riskScore >= 15 ? "HIGH" : riskScore >= 6 ? "MEDIUM" : "LOW";
+    const scoreBadgeColor = riskScore >= 15 ? RED : riskScore >= 6 ? "FFC000" : GREEN;
+    const scoreBadgeFontColor = (riskScore >= 6 && riskScore < 15) ? "333333" : "FFFFFF";
+    slide.addShape(shapes.rect, {
+      x: 0.28, y: 1.04, w: 9.44, h: 0.28,
+      fill: { color: NAVY }, line: { color: NAVY, width: 0 }
     });
-    slide.addText(nameFit.text, {
-      x: lx, y: ly, w: lw, h: 0.4, fontSize: nameFit.fontSize, fontFace: "Arial", color: "111111",
-      valign: "top", margin: 0, fit: "shrink"
+    slide.addText((risk.name || risk.title || "Untitled Risk").trim(), {
+      x: 0.36, y: 1.04, w: 7.50, h: 0.28,
+      fontSize: 11, bold: true, color: "FFFFFF", fontFace: "Arial",
+      valign: "middle", margin: 0, fit: "shrink"
     });
-    ly += 0.45;
-    slide.addText("Consequence / Impact:", { x: lx, y: ly, w: lw, h: 0.2, fontSize: 10, bold: true, fontFace: "Arial" });
-    ly += 0.2;
-    const impactFit = fitPlainTextToBox(risk.description || "No consequence narrative captured.", lw, 0.95, {
-      maxFont: 9, minFont: 7, paraGap: 0, pad: 0.02
+    slide.addShape(shapes.rect, {
+      x: 7.94, y: 1.04, w: 1.78, h: 0.28,
+      fill: { color: scoreBadgeColor }, line: { color: scoreBadgeColor, width: 0 }
     });
-    slide.addText(impactFit.text, {
-      x: lx, y: ly, w: lw, h: 0.95, fontSize: impactFit.fontSize, fontFace: "Arial", color: "222222",
-      valign: "top", margin: 0, fit: "shrink"
+    slide.addText(`Score: ${riskScore || "—"}  ${scoreBand}`, {
+      x: 7.94, y: 1.04, w: 1.78, h: 0.28,
+      fontSize: 8, bold: true, color: scoreBadgeFontColor,
+      fontFace: "Arial", align: "center", valign: "middle"
     });
-    ly += 1.0;
-    slide.addText("Mitigation Plan:", { x: lx, y: ly, w: lw, h: 0.2, fontSize: 10, bold: true, fontFace: "Arial" });
-    ly += 0.2;
-    const mitFit = fitPlainTextToBox(risk.mitigationPlan || "No mitigation plan captured.", lw, 0.95, {
-      maxFont: 9, minFont: 7, paraGap: 0, pad: 0.02
-    });
-    slide.addText(mitFit.text, {
-      x: lx, y: ly, w: lw, h: 0.95, fontSize: mitFit.fontSize, fontFace: "Arial", color: "222222",
-      valign: "top", margin: 0, fit: "shrink"
-    });
-    ly += 1.05;
 
-    const actionRows = [
-      [
-        { text: "#", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF", align: "center" } },
-        { text: "Description", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF" } },
-        { text: "Timeline", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF" } },
-        { text: "Est. Comp", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF" } },
-        { text: "Pr", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF", align: "center" } },
-        { text: "Cr", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF", align: "center" } }
-      ]
-    ].concat(
-      points.map((p, i) => [
-        { text: String(p.n), options: { align: "center", fill: { color: i % 2 ? ROW_ALT : "FFFFFF" } } },
-        { text: p.desc, options: { fill: { color: i % 2 ? ROW_ALT : "FFFFFF" }, fontSize: 8 } },
-        { text: p.timeline, options: { fill: { color: i % 2 ? ROW_ALT : "FFFFFF" }, fontSize: 8 } },
-        { text: shortDate(p.date), options: { fill: { color: i % 2 ? ROW_ALT : "FFFFFF" }, fontSize: 8 } },
-        { text: String(p.pr), options: { align: "center", fill: { color: i % 2 ? ROW_ALT : "FFFFFF" } } },
-        { text: String(p.cr), options: { align: "center", fill: { color: i % 2 ? ROW_ALT : "FFFFFF" } } }
-      ])
+    // ── Meta strip: 6 attribute cells ──
+    const metaY = 1.36;
+    const metaH = 0.28;
+    const metaItems = [
+      { label: "Category",    value: risk.category || "—" },
+      { label: "Status",      value: risk.status || "Open" },
+      { label: "Likelihood",  value: risk.likelihood ? `${risk.likelihood}/5` : "—" },
+      { label: "Impact",      value: risk.impact ? `${risk.impact}/5` : "—" },
+      { label: "Due Date",    value: risk.due ? shortDate(risk.due) : "—" },
+      { label: "Last Review", value: risk.lastReviewedDate ? shortDate(risk.lastReviewedDate) : "—" }
+    ];
+    const metaW = 9.44 / metaItems.length;
+    metaItems.forEach((item, i) => {
+      const cx = 0.28 + i * metaW;
+      slide.addShape(shapes.rect, {
+        x: cx, y: metaY, w: metaW, h: metaH,
+        fill: { color: i % 2 ? "EEF5FB" : "F5F8FC" },
+        line: { color: "D0D8E4", width: 0.5 }
+      });
+      slide.addText(item.label.toUpperCase(), {
+        x: cx + 0.05, y: metaY + 0.02, w: metaW - 0.10, h: 0.10,
+        fontSize: 5.5, color: GRAY, fontFace: "Arial", bold: true
+      });
+      slide.addText(item.value, {
+        x: cx + 0.05, y: metaY + 0.12, w: metaW - 0.10, h: 0.16,
+        fontSize: 8.5, color: "111111", fontFace: "Arial", valign: "middle", fit: "shrink"
+      });
+    });
+
+    // ── Two-column body ──
+    const LX = 0.28, LW = 4.72;
+    const RX = 5.2,  RW = 4.5;
+    const bodyY     = metaY + metaH + 0.08;  // ≈ 1.72
+    const bodyBottom = 6.98;
+    const labelH    = 0.18;
+    const textH     = 1.40;
+    const gap       = 0.06;
+
+    // Consequence / Impact
+    let ly = bodyY;
+    slide.addText("Consequence / Impact:", {
+      x: LX, y: ly, w: LW, h: labelH,
+      fontSize: 9.5, bold: true, fontFace: "Arial", color: TITLE_NAVY, valign: "middle"
+    });
+    ly += labelH;
+    const impBullets = bulletize(risk.description || "No consequence narrative captured.", 10);
+    const impFit = fitBulletsToBox(impBullets, LW - 0.10, textH, { maxFont: 9, minFont: 7, paraGap: 1, pad: 0.02 });
+    slide.addText(
+      impFit.texts.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < impFit.texts.length - 1 } })),
+      { x: LX + 0.05, y: ly, w: LW - 0.10, h: textH, fontSize: impFit.fontSize, fontFace: "Arial",
+        color: "222222", valign: "top", margin: 0, paraSpacingAfter: impFit.paraGap, fit: "shrink" }
     );
-    slide.addTable(actionRows, {
-      x: lx,
-      y: ly,
-      w: lw,
-      colW: [0.35, 2.0, 0.85, 0.75, 0.4, 0.35],
-      border: [{ pt: 0.5, color: "BBBBBB" }, { pt: 0.5, color: "BBBBBB" }, { pt: 0.5, color: "BBBBBB" }, { pt: 0.5, color: "BBBBBB" }],
-      fontFace: "Arial",
-      fontSize: 8,
-      color: "222222",
-      valign: "middle"
-    });
+    ly += textH + gap;
 
-    const rx = 5.2;
-    addHeatMap(slide, shapes, points, rx, 0.95, 4.5, `Risk Type: ${String(risk.category || "Operational").toUpperCase()}`);
-    addBurnDownChart(slide, shapes, points, rx, 4.15, 4.5, 2.7);
+    // Mitigation Plan
+    slide.addText("Mitigation Plan:", {
+      x: LX, y: ly, w: LW, h: labelH,
+      fontSize: 9.5, bold: true, fontFace: "Arial", color: TITLE_NAVY, valign: "middle"
+    });
+    ly += labelH;
+    const mitBullets = bulletize(risk.mitigationPlan || "No mitigation plan captured.", 10);
+    const mitFit = fitBulletsToBox(mitBullets, LW - 0.10, textH, { maxFont: 9, minFont: 7, paraGap: 1, pad: 0.02 });
+    slide.addText(
+      mitFit.texts.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < mitFit.texts.length - 1 } })),
+      { x: LX + 0.05, y: ly, w: LW - 0.10, h: textH, fontSize: mitFit.fontSize, fontFace: "Arial",
+        color: "222222", valign: "top", margin: 0, paraSpacingAfter: mitFit.paraGap, fit: "shrink" }
+    );
+    ly += textH + gap;
+
+    // Action items table — explicit rowH prevents overflow
+    const tableY = ly;
+    const tableH = Math.max(0.4, bodyBottom - tableY);
+    const dataPoints = points.slice(0, 4);
+    if (dataPoints.length) {
+      const rowH = Math.min(0.30, Math.max(0.22, (tableH - 0.28) / dataPoints.length));
+      const actionRows = [
+        [
+          { text: "#",         options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF", align: "center" } },
+          { text: "Description", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF" } },
+          { text: "Timeline",  options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF" } },
+          { text: "Est. Comp", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF" } },
+          { text: "Pr",        options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF", align: "center" } },
+          { text: "Cr",        options: { bold: true, fill: { color: LIGHT_BLUE }, color: "FFFFFF", align: "center" } }
+        ]
+      ].concat(
+        dataPoints.map((p, i) => [
+          { text: String(p.n), options: { align: "center", fill: { color: i % 2 ? ROW_ALT : "FFFFFF" } } },
+          { text: String(p.desc || "").slice(0, 80), options: { fill: { color: i % 2 ? ROW_ALT : "FFFFFF" }, fontSize: 7.5 } },
+          { text: p.timeline,        options: { fill: { color: i % 2 ? ROW_ALT : "FFFFFF" }, fontSize: 7.5 } },
+          { text: shortDate(p.date), options: { fill: { color: i % 2 ? ROW_ALT : "FFFFFF" }, fontSize: 7.5 } },
+          { text: String(p.pr), options: { align: "center", fill: { color: i % 2 ? ROW_ALT : "FFFFFF" } } },
+          { text: String(p.cr), options: { align: "center", fill: { color: i % 2 ? ROW_ALT : "FFFFFF" } } }
+        ])
+      );
+      slide.addTable(actionRows, {
+        x: LX, y: tableY, w: LW,
+        colW: [0.32, 2.05, 0.82, 0.72, 0.41, 0.40],
+        border: [{ pt: 0.5, color: "BBBBBB" }, { pt: 0.5, color: "BBBBBB" }, { pt: 0.5, color: "BBBBBB" }, { pt: 0.5, color: "BBBBBB" }],
+        fontFace: "Arial", fontSize: 8, color: "222222", valign: "middle", rowH
+      });
+    }
+
+    // Right column — heat map then burn-down, no overlap
+    const HEAT_SIZE = 2.4;
+    addHeatMap(slide, shapes, points, RX, bodyY, HEAT_SIZE, `${String(risk.category || "Operational").toUpperCase()} RISK`);
+    const burnY = bodyY + HEAT_SIZE + 0.34;  // clears "Consequence (Cr)" axis label
+    const burnH = Math.max(1.0, bodyBottom - burnY);
+    addBurnDownChart(slide, shapes, points, RX, burnY, RW, burnH);
 
     slide.addText(`As of ${todayLabel()}`, {
       x: L.asOf.x, y: L.asOf.y, w: L.asOf.w, h: L.asOf.h,
@@ -1549,7 +1615,8 @@
 
     /* A project update is deliberately one slide.  Risk and work appendices
        belong only in an explicitly requested full deck. */
-    const fileName = `${proj.id || "project"}-project-update-${new Date().toISOString().slice(0, 10)}.pptx`;
+    const safeProjectName = String(proj.name || "project").replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "") || "project";
+    const fileName = `${safeProjectName}-project-update-${new Date().toISOString().slice(0, 10)}.pptx`;
     const blob = await pptx.write({ outputType: "blob" });
     return { fileName, blob };
   }
@@ -1655,7 +1722,7 @@
     if (exportOptions.exportMode === "fullDeck") {
       return exportGroupStatusPptx([proj], Object.assign({}, exportOptions, {
         exportMode: "fullDeck",
-        groupName: exportOptions.groupName || proj.name || proj.id || "Project",
+        groupName: exportOptions.groupName || proj.name || "Project",
         groupType: "project"
       }));
     }
@@ -1780,7 +1847,7 @@
             const keep = taskFilter === "open" ? (t.status !== "Done" && t.status !== "Cancelled")
               : taskFilter === "high" ? ((t.priority === "Immediate" || t.priority === "High") && t.status !== "Done" && t.status !== "Cancelled")
               : true;
-            if (keep && (!selectedTaskIds.length || selectedTaskIds.includes(t.id))) allTasks.push(Object.assign({}, t, { _projName: proj.name || proj.id }));
+            if (keep && (!selectedTaskIds.length || selectedTaskIds.includes(t.id))) allTasks.push(Object.assign({}, t, { _projName: proj.name || "Untitled project" }));
             if (t.subtasks) flattenTasks(t.subtasks);
           });
         }
