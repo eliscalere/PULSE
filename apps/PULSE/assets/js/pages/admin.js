@@ -940,15 +940,25 @@ function drawListsConfig(body) {
   }
 
   body.innerHTML = requireAdmin(() => {
-    const portfolios = getKnownPortfolioNames ? getKnownPortfolioNames() : (cfg.portfolios || []);
-    const endItems = getKnownConfigEndItemNames ? getKnownConfigEndItemNames() : (cfg.configEndItems || []);
-    const locations = cfg.locations || [];
-    const atos = cfg.atos || [];
+    const portfolios    = cfg.portfolios || [];
+    const endItems      = cfg.configEndItems || [];
+    const atos          = cfg.atos || [];
+    const programs      = cfg.programs || [];
+    const locations     = cfg.locations || [];
+    const taskOrders    = cfg.taskOrders || [];
+    const fundingTypes  = cfg.fundingTypes || [];
+    const fiscalYears   = cfg.fiscalYears || [];
+    const fundingStatuses = cfg.fundingStatuses || [];
     return `
-      ${renderSection("portfolios", "Portfolios", "These appear in the Portfolio picker when editing or creating a project.", portfolios, "Add Portfolio")}
-      ${renderSection("endItems", "End Item Configurations", "These appear in the Config End Item picker when editing a project.", endItems, "Add End Item")}
-      ${renderSection("locations", "Ranges / Locations", "These appear in the Location picker when editing a project.", locations, "Add Location")}
-      ${renderSection("atos", "ATO Values", "These appear in the ATO dropdown when editing a project's classification settings.", atos, "Add ATO")}
+      ${renderSection("portfolios",     "Portfolios",       "Appear in the Portfolio picker when editing or creating a project.",               portfolios,      "Add Portfolio")}
+      ${renderSection("endItems",       "End Item Configs",  "Appear in the Config End Item picker when editing a project.",                    endItems,        "Add End Item")}
+      ${renderSection("atos",           "ATO Values",        "Appear in the ATO picker in project classification settings.",                    atos,            "Add ATO")}
+      ${renderSection("programs",       "Program Offices",   "Appear in the Program Office picker when editing a project.",                     programs,        "Add Program Office")}
+      ${renderSection("locations",      "Ranges / Locations","Appear in the Location picker when editing a project.",                           locations,       "Add Location")}
+      ${renderSection("taskOrders",     "Task Orders",       "Appear in the Task Order picker in project funding settings.",                    taskOrders,      "Add Task Order")}
+      ${renderSection("fundingTypes",   "Funding Types",     "Appear in the Funding Type picker in project funding settings.",                  fundingTypes,    "Add Funding Type")}
+      ${renderSection("fiscalYears",    "Fiscal Years",      "Appear in the Fiscal Year picker in project funding settings.",                   fiscalYears,     "Add Fiscal Year")}
+      ${renderSection("fundingStatuses","Funding Statuses",  "Appear in the Funding Status picker in project funding settings.",                fundingStatuses, "Add Funding Status")}
     `;
   });
 
@@ -962,10 +972,15 @@ function drawListsConfig(body) {
   };
 
   const SECTION_META = {
-    portfolios: { singular: "Portfolio", label: "Portfolio name", placeholder: "e.g. AEWTTR", list: () => cfg.portfolios || (cfg.portfolios = []) },
-    endItems:   { singular: "End Item Config", label: "End item name", placeholder: "e.g. AN/ALQ-217", list: () => cfg.configEndItems || (cfg.configEndItems = []) },
-    locations:  { singular: "Location", label: "Location name", placeholder: "e.g. White Sands Missile Range", list: () => cfg.locations || (cfg.locations = []) },
-    atos:       { singular: "ATO", label: "ATO value", placeholder: "e.g. ATO-2024-001", list: () => cfg.atos || (cfg.atos = []) },
+    portfolios:      { singular: "Portfolio",       label: "Portfolio name",         placeholder: "e.g. AEWTTR",                    list: () => cfg.portfolios      || (cfg.portfolios      = []) },
+    endItems:        { singular: "End Item Config",  label: "End item name",          placeholder: "e.g. AN/ALQ-217",                list: () => cfg.configEndItems  || (cfg.configEndItems  = []) },
+    atos:            { singular: "ATO",              label: "ATO value",              placeholder: "e.g. ATO-2024-001",              list: () => cfg.atos            || (cfg.atos            = []) },
+    programs:        { singular: "Program Office",   label: "Program office name",    placeholder: "e.g. PEO IEWS",                  list: () => cfg.programs        || (cfg.programs        = []) },
+    locations:       { singular: "Location",         label: "Location name",          placeholder: "e.g. White Sands Missile Range", list: () => cfg.locations       || (cfg.locations       = []) },
+    taskOrders:      { singular: "Task Order",       label: "Task order number/name", placeholder: "e.g. TO-2024-001",               list: () => cfg.taskOrders      || (cfg.taskOrders      = []) },
+    fundingTypes:    { singular: "Funding Type",     label: "Funding type name",      placeholder: "e.g. RDT&E",                     list: () => cfg.fundingTypes    || (cfg.fundingTypes    = []) },
+    fiscalYears:     { singular: "Fiscal Year",      label: "Fiscal year",            placeholder: "e.g. FY26",                      list: () => cfg.fiscalYears     || (cfg.fiscalYears     = []) },
+    fundingStatuses: { singular: "Funding Status",   label: "Funding status",         placeholder: "e.g. Fully Funded",              list: () => cfg.fundingStatuses || (cfg.fundingStatuses = []) },
   };
 
   $all("[data-lists-add]", body).forEach((btn) => {
