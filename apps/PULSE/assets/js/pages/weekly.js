@@ -921,7 +921,7 @@ function renderMeetingDocEditor(body, scope, session) {
       <div class="meeting-doc-head">
         <div class="meeting-doc-title">
           <div class="side-panel-title">Meeting Notes</div>
-          <p class="meeting-doc-help">Capture decisions and follow-ups as they happen. Press <kbd class="doc-key">/</kbd> on any line to change its type.</p>
+          <p class="meeting-doc-help">Type freely, use <kbd class="doc-key">/</kbd> for block types, or start a line with <kbd class="doc-key">-</kbd> and <kbd class="doc-key">Space</kbd> for a bullet. <kbd class="doc-key">Ctrl B</kbd> bold · <kbd class="doc-key">Ctrl I</kbd> italic · <kbd class="doc-key">Ctrl Z</kbd> undo.</p>
           <div class="meeting-doc-meta" aria-label="Note summary">
             <span id="doc-block-count"></span>
             <span id="doc-action-count"></span>
@@ -931,7 +931,7 @@ function renderMeetingDocEditor(body, scope, session) {
           <div class="meeting-doc-quick-actions" aria-label="Add a note block">
             <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="doc-add-bullet"><i class="bx bx-list-ul" aria-hidden="true"></i> Bullet</button>
             <button type="button" class="btn-aewttr btn-aewttr-sm" id="doc-add-action"><i class="bx bx-check-square" aria-hidden="true"></i> Action</button>
-            <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="doc-add-task-template" title="Add action item template with name and task fields"><i class="bx bx-user-check" aria-hidden="true"></i> Task</button>
+            <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="doc-add-task-template" title="Add a task to the project tracker"><i class="bx bx-user-check" aria-hidden="true"></i> Add task</button>
           </div>
           <span class="doc-save-status" id="doc-save-status" aria-live="polite"></span>
         </div>
@@ -1013,7 +1013,7 @@ function renderMeetingDocEditor(body, scope, session) {
       return {
         id: row.dataset.blockId,
         type: row.dataset.blockType,
-        content: contentEl ? contentEl.textContent : "",
+        content: contentEl ? sanitizeInline(contentEl.innerHTML) : "",
         done: row.dataset.done === "true"
       };
     });
@@ -1196,7 +1196,8 @@ function renderMeetingDocEditor(body, scope, session) {
     closePalette();
     const block = session.docBlocks.find(function(b) { return b.id === prevBlockId; });
     if (!block) return;
-    block.type = cmd.id;
+    const opensTaskModal = cmd.id === "task";
+    block.type = opensTaskModal ? "para" : cmd.id;
     block.content = "";
     const oldRow = editor.querySelector(`.doc-block[data-block-id="${prevBlockId}"]`);
     const newRow = buildBlockRow(block);
@@ -1208,6 +1209,14 @@ function renderMeetingDocEditor(body, scope, session) {
     if (c) c.focus();
     updateDocMeta();
     schedSave();
+    if (opensTaskModal) {
+      openMeetingAddTaskModal(
+        scope,
+        currentMeetingParticipant(scope),
+        null,
+        scope.type === "project" ? scope.project.id : ""
+      );
+    }
   }
 
   function placeCursorAtEnd(el) {
@@ -1236,6 +1245,24 @@ function renderMeetingDocEditor(body, scope, session) {
     updateDocMeta();
     schedSave();
     return newBlock;
+  }
+
+  function replaceBlockType(block, nextType) {
+    if (!block || block.type === nextType) return;
+    block.type = nextType;
+    if (nextType !== "action" && nextType !== "task") block.done = false;
+    const oldRow = editor.querySelector(`.doc-block[data-block-id="${block.id}"]`);
+    const newRow = buildBlockRow(block);
+    if (oldRow) oldRow.parentNode.replaceChild(newRow, oldRow);
+    else editor.appendChild(newRow);
+    wireBlock(newRow, block);
+    const content = newRow.querySelector(".doc-block-content");
+    if (content) {
+      content.focus();
+      placeCursorAtEnd(content);
+    }
+    updateDocMeta();
+    schedSave();
   }
 
   function deleteBlock(id) {
@@ -1399,18 +1426,57 @@ function renderMeetingDocEditor(body, scope, session) {
         if (e.key === "Backspace" && !cmdFilter) { closePalette(); return; }
       }
 
+      // Ctrl+B / Ctrl+I — inline bold / italic
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === "b" || e.key === "B" || e.key === "i" || e.key === "I")) {
+        e.preventDefault();
+        document.execCommand(e.key.toLowerCase() === "b" ? "bold" : "italic");
+        const b = session.docBlocks.find(function(x) { return x.id === block.id; });
+        if (b) b.content = sanitizeInline(contentEl.innerHTML);
+        schedSave();
+        return;
+      }
+
+      // "-" or "*" + Space at start of empty para → bullet
+      if (e.key === " " && block.type === "para" && (contentEl.textContent === "-" || contentEl.textContent === "*")) {
+        e.preventDefault();
+        const b = session.docBlocks.find(function(x) { return x.id === block.id; });
+        if (b) { b.content = ""; block.content = ""; }
+        replaceBlockType(block, "bullet");
+        return;
+      }
+
+      // "#" + Space at start of empty para → heading
+      if (e.key === " " && block.type === "para" && contentEl.textContent === "#") {
+        e.preventDefault();
+        const b = session.docBlocks.find(function(x) { return x.id === block.id; });
+        if (b) { b.content = ""; block.content = ""; }
+        replaceBlockType(block, "h2");
+        return;
+      }
+
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-        if (b) b.content = text;
+        if (b) b.content = sanitizeInline(contentEl.innerHTML);
         const nextType = block.type === "h2" ? "para" : block.type;
         addBlockAfter(nextType, block.id);
         return;
       }
 
-      if (e.key === "Backspace" && isEmpty && session.docBlocks.length > 1) {
+      if (e.key === "Tab" && (block.type === "bullet" || block.type === "bullet-sub")) {
         e.preventDefault();
-        deleteBlock(block.id);
+        if (e.shiftKey) replaceBlockType(block, block.type === "bullet-sub" ? "bullet" : "para");
+        else replaceBlockType(block, "bullet-sub");
+        return;
+      }
+
+      if (e.key === "Backspace" && isEmpty) {
+        e.preventDefault();
+        if (block.type !== "para") {
+          replaceBlockType(block, "para");
+        } else if (session.docBlocks.length > 1) {
+          deleteBlock(block.id);
+        }
         return;
       }
     });
@@ -1418,7 +1484,7 @@ function renderMeetingDocEditor(body, scope, session) {
     contentEl.addEventListener("input", function() {
       const text = contentEl.textContent;
       const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-      if (b) b.content = text;
+      if (b) b.content = sanitizeInline(contentEl.innerHTML);
 
       if (text === "/") {
         openPalette(block.id);
@@ -1508,6 +1574,18 @@ function renderMeetingDocEditor(body, scope, session) {
     }
   }
 
+  function sanitizeInline(html) {
+    const div = document.createElement("div");
+    div.innerHTML = html || "";
+    div.querySelectorAll("*").forEach(function(el) {
+      if (!/^(B|I|STRONG|EM|U|S|BR)$/.test(el.tagName)) {
+        while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
+        el.parentNode.removeChild(el);
+      }
+    });
+    return div.innerHTML;
+  }
+
   function buildBlockRow(block) {
     if (block.type === "task") {
       const done = !!block.done;
@@ -1554,7 +1632,7 @@ function renderMeetingDocEditor(body, scope, session) {
     const phMap = { h2: "Heading…", action: "Action item…", bullet: "List item…", "bullet-sub": "Sub-item…", para: "Type, or / for commands…" };
     const ph = phMap[block.type] || "Type…";
 
-    row.innerHTML = `<div class="doc-block-gutter">${gutterHtml}</div><div class="doc-block-content doc-block-content--${block.type}" contenteditable="true" data-placeholder="${ph}" spellcheck="true">${escapeHtml(block.content)}</div>`;
+    row.innerHTML = `<div class="doc-block-gutter">${gutterHtml}</div><div class="doc-block-content doc-block-content--${block.type}" contenteditable="true" data-placeholder="${ph}" spellcheck="true">${sanitizeInline(block.content || "")}</div>`;
     return row;
   }
 
@@ -1606,13 +1684,12 @@ function renderMeetingDocEditor(body, scope, session) {
   });
   const addTaskTemplateBtn = $("#doc-add-task-template", body);
   if (addTaskTemplateBtn) addTaskTemplateBtn.addEventListener("click", function() {
-    const lastBlock = session.docBlocks[session.docBlocks.length - 1];
-    const nb = addBlockAfter("action", lastBlock && lastBlock.id);
-    if (nb) {
-      nb.content = "Name: ";
-      const newEl = editor.querySelector(`.doc-block[data-block-id="${nb.id}"] .doc-block-content`);
-      if (newEl) { newEl.textContent = "Name: "; placeCursorAtEnd(newEl); }
-    }
+    openMeetingAddTaskModal(
+      scope,
+      currentMeetingParticipant(scope),
+      null,
+      scope.type === "project" ? scope.project.id : ""
+    );
   });
 
   // Close palette / menus and deselect when clicking outside
@@ -1853,7 +1930,7 @@ function openMeetingProjectDetailsModal(project, onSaved) {
   const modal = openModal(`
     <div class="aewttr-modal-head meeting-det-head">
       <div class="meeting-det-head-copy">
-        <div class="meeting-det-kicker">${escapeHtml(proj.id)}</div>
+        <div class="meeting-det-kicker">${escapeHtml(proj.name || "Project")}</div>
         <h3>Project settings</h3>
       </div>
       <div class="meeting-det-head-actions">
@@ -2343,6 +2420,7 @@ function renderMeetingProjectTracker(mount, scope, project, defaultParticipant, 
     collapseDividersByDefault: true,
     flatGantt: true,
     defaultAssignee: defaultParticipant ? defaultParticipant.name : "Unassigned",
+    onAddTask: () => openMeetingAddTaskModal(scope, defaultParticipant, onRedraw, project.id),
     onRedraw,
     onOpenEditor: (taskId, subIndex) => openMeetingTaskEditor(scope, project.id, taskId, onRedraw, subIndex),
     onAfterSave: () => saveMeetingSession(scope)
@@ -2824,10 +2902,9 @@ function meetingTaskCardHtml(pid, task) {
 
 /* ---------- add task modal ---------- */
 function openMeetingAddTaskModal(scope, defaultParticipant, onDone, forcedProjectId) {
-  const db = window.AEWTTR.db;
   const canFacilitate = canManageMeetings();
   const me = currentMeetingParticipant(scope);
-  const projectOptions = scope.type === "project" ? [scope.project] : db.projects;
+  const projectOptions = scope.type === "project" ? [scope.project] : (window.AEWTTR.db.projects || []);
   const today = new Date().toISOString().slice(0, 10);
   const defaultOwner = defaultParticipant ? defaultParticipant.name : (me ? me.name : "");
   const pendingOwner = defaultOwner ? [{ name: defaultOwner, email: "" }] : [];
@@ -2849,7 +2926,7 @@ function openMeetingAddTaskModal(scope, defaultParticipant, onDone, forcedProjec
       <div class="form-grid-2">
         <div class="form-row"><label>Project</label>
           <select class="select-aewttr" id="mt-project" ${scope.type === "project" ? "disabled" : ""}>
-            ${projectOptions.map(p => `<option value="${p.id}">${p.id} — ${escapeHtml(p.name)}</option>`).join("")}
+            ${projectOptions.map(p => `<option value="${p.id}">${escapeHtml(p.name || "Untitled project")}</option>`).join("")}
           </select>
         </div>
         <div class="form-row"><label>Due date</label><input type="date" class="input-aewttr" id="mt-due" value="${today}"></div>
@@ -2858,47 +2935,84 @@ function openMeetingAddTaskModal(scope, defaultParticipant, onDone, forcedProjec
     </div>
     <div class="aewttr-modal-foot">
       <button class="btn-aewttr-ghost" id="mt-cancel">Cancel</button>
-      <button class="btn-aewttr" id="mt-save">Add Task</button>
+      <button class="btn-aewttr" id="mt-save" ${projectOptions.length ? "" : "disabled"}>Add Task</button>
     </div>
   `);
+  const projectSelect = $("#mt-project", modal);
+  if (projectSelect && forcedProjectId && projectOptions.some((project) => project.id === forcedProjectId)) {
+    projectSelect.value = forcedProjectId;
+  }
+  if (!projectOptions.length) {
+    const projectRow = projectSelect && projectSelect.closest(".form-row");
+    if (projectRow) projectRow.insertAdjacentHTML("beforeend", `<p class="form-error" role="alert">Create a project before adding meeting tasks.</p>`);
+  }
   if (canFacilitate) wirePeoplePicker(modal, pendingOwner, { mount: "mt-owner-sel", input: "mt-owner-input", suggestions: "mt-owner-sugg" }, { singleSelect: true, allowManualEmail: false });
   $(".aewttr-modal-close", modal).addEventListener("click", closeModal);
   $("#mt-cancel", modal).addEventListener("click", closeModal);
-  $("#mt-save", modal).addEventListener("click", (e) => {
-    const saveBtn = e.currentTarget;
+  async function submitMeetingTask(e) {
+    if (e) e.preventDefault();
+    const saveBtn = $("#mt-save", modal);
     if (saveBtn.disabled) return;
     const title = $("#mt-title", modal).value.trim();
     if (!title) { toast("Title is required", "error"); return; }
-    saveBtn.disabled = true;
-    saveBtn.textContent = "Adding…";
     const pid = forcedProjectId || (scope.type === "project" ? scope.project.id : $("#mt-project", modal).value);
+    const liveDb = window.AEWTTR.db;
+    const project = (liveDb.projects || []).find((candidate) => candidate.id === pid);
+    if (!pid || !project) {
+      toast("Choose a valid project.", "error");
+      return;
+    }
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `<i class="bx bx-loader-alt bx-spin" aria-hidden="true"></i> Adding…`;
     const due = $("#mt-due", modal).value || today;
     const owner = (canFacilitate ? (pendingOwner[0] && pendingOwner[0].name) : (me ? me.name : defaultOwner)) || "Unassigned";
-    if (!db.ganttTasks[pid]) db.ganttTasks[pid] = [];
-    const newTask = { id: uid("g"), title, assignee: owner, start: today, end: due, status: "Not Started", health: $("#mt-health", modal).value, notes: "", subtasks: [] };
-    db.ganttTasks[pid].push(newTask);
-    logMeetingActivity(scope, `${currentUserName()} added a new task to project ${pid}: ${title}.`, {
-      type: "create",
-      projectId: pid,
-      taskId: newTask.id,
-      taskTitle: title
-    });
-    const ensurePeople = typeof ensureAssigneesFromTask === "function"
-      ? ensureAssigneesFromTask(pid, newTask).catch((e) => { console.warn("project people sync", e); })
-      : Promise.resolve();
-    Promise.all([
-      ensurePeople,
-      Repo.save("actionItem", newTask, { projectCode: pid, source: "Tracker" }),
-      saveMeetingSession(scope)
-    ]).then(() => {
+    if (!liveDb.ganttTasks[pid]) liveDb.ganttTasks[pid] = [];
+    const newTask = {
+      id: uid("g"),
+      title,
+      assignee: owner,
+      start: today,
+      end: due,
+      status: "Not Started",
+      health: $("#mt-health", modal).value,
+      notes: [],
+      subtasks: []
+    };
+    liveDb.ganttTasks[pid].push(newTask);
+    try {
+      await Repo.save("actionItem", newTask, { projectCode: pid, source: "Tracker", immediate: true });
+      logMeetingActivity(scope, `${currentUserName()} added a new task to ${project.name || "the project"}: ${title}.`, {
+        type: "create",
+        projectId: pid,
+        taskId: newTask.id,
+        taskTitle: title
+      });
+      try {
+        await saveMeetingSession(scope);
+      } catch (sessionError) {
+        console.warn("meeting task activity save", sessionError);
+        toast("Task added; the meeting activity log could not be updated.", "info");
+      }
+      if (typeof ensureAssigneesFromTask === "function") {
+        try { await ensureAssigneesFromTask(pid, newTask); } catch (peopleError) { console.warn("project people sync", peopleError); }
+      }
+      if (typeof notifyTaskAssignee === "function") {
+        try { await notifyTaskAssignee(newTask, pid); } catch (notifyError) { console.warn("task notification", notifyError); }
+      }
       closeModal();
       toast("Task added", "success");
       if (onDone) onDone();
-    }).catch((err) => {
+    } catch (err) {
+      const taskIndex = liveDb.ganttTasks[pid].findIndex((task) => task.id === newTask.id);
+      if (taskIndex >= 0) liveDb.ganttTasks[pid].splice(taskIndex, 1);
       saveBtn.disabled = false;
-      saveBtn.textContent = "Add Task";
+      saveBtn.innerHTML = "Add Task";
       toast((err && err.friendly) || "Could not add the task — try again.", "error");
-    });
+    }
+  }
+  $("#mt-save", modal).addEventListener("click", submitMeetingTask);
+  $("#mt-title", modal).addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) submitMeetingTask(event);
   });
 }
 
@@ -3798,7 +3912,7 @@ function renderMeetingFullTasksList(mount, scope, projects, onRedraw) {
       tasks.forEach((t) => {
         if (!t) return;
         t._projectCode = proj.id;
-        t._projectName = proj.name || proj.id;
+        t._projectName = proj.name || "Untitled project";
         combined.push(t);
       });
     });
@@ -3960,10 +4074,10 @@ function renderMeetingFullTasksList(mount, scope, projects, onRedraw) {
       const projHeader = document.createElement("div");
       projHeader.className = "mtf-proj-divider";
       projHeader.innerHTML = `
-        <button type="button" class="mtf-proj-toggle" data-mtf-toggle-proj="${escapeHtml(proj.id)}" aria-expanded="${!isCollapsed}" aria-label="${isCollapsed ? "Expand" : "Collapse"} ${escapeHtml(proj.name || proj.id)}">
+        <button type="button" class="mtf-proj-toggle" data-mtf-toggle-proj="${escapeHtml(proj.id)}" aria-expanded="${!isCollapsed}" aria-label="${isCollapsed ? "Expand" : "Collapse"} ${escapeHtml(proj.name || "Untitled project")}">
           <i class="bx bx-chevron-${isCollapsed ? "right" : "down"}"></i>
         </button>
-        <strong class="mtf-proj-name">${escapeHtml(proj.name || proj.id)}</strong>
+        <strong class="mtf-proj-name">${escapeHtml(proj.name || "Untitled project")}</strong>
         <span class="mtf-proj-count">${totalTasks} task${totalTasks === 1 ? "" : "s"}</span>`;
       bodyEl.appendChild(projHeader);
 
@@ -4047,6 +4161,7 @@ function renderMeetingFullTasksList(mount, scope, projects, onRedraw) {
             <option value="">All statuses</option>
             ${["Not Started","In Progress","On Hold","Done"].map((s) => `<option value="${escapeHtml(s)}" ${filters.status === s ? "selected" : ""}>${escapeHtml(s)}</option>`).join("")}
           </select>
+          <button type="button" class="btn-aewttr btn-aewttr-sm" id="mtf-add-task"><i class="bx bx-plus" aria-hidden="true"></i> Add task</button>
         </div>
       </div>
       <div id="mtf-unified-body"></div>
@@ -4058,6 +4173,14 @@ function renderMeetingFullTasksList(mount, scope, projects, onRedraw) {
         renderMeetingFullTasksList(mount, scope, projects, onRedraw);
       });
     });
+    const addTaskBtn = $("#mtf-add-task", mount);
+    if (addTaskBtn) {
+      addTaskBtn.addEventListener("click", () => openMeetingAddTaskModal(
+        scope,
+        currentMeetingParticipant(scope),
+        redrawFull
+      ));
+    }
 
     // Inject the shared column header once above the unified body
     const headerMount = document.createElement("div");
@@ -4709,7 +4832,7 @@ window.AEWTTR.renderProjectMeetingApp = function (body, proj) {
         ${active ? `<span class="kc-badge proj-meeting-status-badge">Meeting active</span>` : ``}
         ${planning ? `<span class="kc-badge proj-meeting-status-badge proj-meeting-status-badge--plan"><i class="bx bx-edit-alt"></i> Pre-meeting</span>` : ``}
         ${!active && !planning && meetingStatus(scope) === "ended" ? `<span class="kc-badge proj-meeting-status-badge proj-meeting-status-badge--ended">Meeting ended</span>` : ``}
-        <span class="proj-meeting-scope-label">${escapeHtml(proj.name || proj.id)} · meeting</span>
+        <span class="proj-meeting-scope-label">${escapeHtml(proj.name || "Untitled project")} · meeting</span>
         ${active ? `
           <div class="segmented proj-mtg-live-tabs">
             <button class="segmented-opt ${liveTab === "tasks" ? "active" : ""}" data-proj-mtg-tab="tasks"><i class="bx bx-list-check"></i> Tasks</button>
