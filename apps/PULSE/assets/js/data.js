@@ -265,7 +265,13 @@ function normalizeStoreShape(db) {
     if (!Array.isArray(p.images)) p.images = [];
     if (p.description == null) p.description = "";
     if (p.scope == null) p.scope = "";
-    if (p.objectives == null) p.objectives = "";
+    if (!Array.isArray(p.deliverables)) {
+      p.deliverables = String(p.deliverables || p.objectives || "")
+        .split(/\r?\n/)
+        .map(item => item.replace(/^\s*[-*•]\s*/, "").trim())
+        .filter(Boolean);
+    }
+    delete p.objectives;
     if (p.projectType == null) p.projectType = p.parentProjectId ? "Subproject" : "Project";
     if (p.parentProjectId == null) p.parentProjectId = "";
     if (p.pm == null) p.pm = "";
@@ -504,7 +510,7 @@ function aewttrLoadStore() {
       }
     }
   } catch (e) { /* storage unavailable or corrupt */ }
-  return normalizeStoreShape(buildEmptyStore({ name: "Local User", role: "Member", isAdmin: false }));
+  return normalizeStoreShape(buildEmptyStore({ name: "Local User", role: "Admin", isAdmin: true }));
 }
 
 function aewttrSaveStore() {
@@ -516,7 +522,7 @@ function aewttrSaveStore() {
 }
 
 function aewttrResetStore() {
-  const fresh = normalizeStoreShape(buildEmptyStore({ name: "Local User", role: "Member", isAdmin: false }));
+  const fresh = normalizeStoreShape(buildEmptyStore({ name: "Local User", role: "Admin", isAdmin: true }));
   window.AEWTTR.db = fresh;
   try { localStorage.removeItem(LOCAL_STORE_KEY); } catch (e) { /* ignore */ }
 }

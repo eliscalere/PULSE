@@ -202,7 +202,7 @@ function projectToSpItem(proj) {
     Stakeholders: proj.stakeholders || "",
     Description: proj.description || "",
     Scope: proj.scope || "",
-    Objectives: proj.objectives || "",
+    DeliverablesJson: JSON.stringify(typeof projectDeliverables === "function" ? projectDeliverables(proj) : (proj.deliverables || [])),
     CoverImageUrl: proj.coverImage || "",
     ProjectImagesJson: JSON.stringify(proj.images || []),
     HistoryJson: JSON.stringify(extra.history || []),
@@ -270,7 +270,8 @@ function spItemToProject(item) {
     images: safeJsonParse(item.ProjectImagesJson, []),
     description: item.Description || "",
     scope: item.Scope || "",
-    objectives: item.Objectives || "",
+    deliverables: safeJsonParse(item.DeliverablesJson, null)
+      || String(item.Objectives || "").split(/\r?\n/).map((value) => value.replace(/^\s*[-*•]\s*/, "").trim()).filter(Boolean),
     linkSubtaskDates: item.LinkSubtaskDates !== false,
     projectType: item.ProjectType || (item.ParentProjectId ? "Subproject" : "Project"),
     parentProjectId: item.ParentProjectId ? projectCodeForSpId(item.ParentProjectId) : "",
@@ -1732,6 +1733,17 @@ async function ensureBoardsJsonField(siteUrl) {
   _boardsJsonFieldReady = true;
 }
 
+let _deliverablesJsonFieldReady = false;
+async function ensureDeliverablesJsonField(siteUrl) {
+  if (_deliverablesJsonFieldReady || !siteUrl || typeof sharePointAdapter === "undefined" || !sharePointAdapter.ensureField) return;
+  await sharePointAdapter.ensureField(siteUrl, SP_LISTS.project, {
+    name: "DeliverablesJson",
+    type: "Note",
+    numLines: 20
+  });
+  _deliverablesJsonFieldReady = true;
+}
+
 // Agenda uses PULSE Meetings.AgendaJson. Older manually-created sites may
 // have the list but not this field, so create it before the first agenda save.
 let _meetingAgendaFieldReady = false;
@@ -1874,6 +1886,7 @@ async function writeRecord(kind, obj) {
 
   if (kind === "project") {
     await ensureBoardsJsonField(siteUrl);
+    await ensureDeliverablesJsonField(siteUrl);
     await ensurePortfoliosJsonField(siteUrl);
     await ensureReportConfigJsonField(siteUrl);
   }

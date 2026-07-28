@@ -651,9 +651,9 @@ function renderMeetingApp(mount, scope) {
       </div>
       ${view === "live" && active ? `
         <div class="segmented meeting-live-tabs">
-          <button class="segmented-opt ${meetingLiveTab(scope) === "notes" ? "active" : ""}" data-live-tab="notes"${tip("Combined notes, agenda, and action items")}>Notes</button>
-          <button class="segmented-opt ${meetingLiveTab(scope) === "project" ? "active" : ""}" data-live-tab="project"${tip("All projects in one collapsible list")}>Project View</button>
-          <button class="segmented-opt ${meetingLiveTab(scope) === "room" ? "active" : ""}" data-live-tab="room"${tip("Walk the room person by person")}>Around the Room</button>
+          <button class="segmented-opt ${meetingLiveTab(scope) === "notes" ? "active" : ""}" data-live-tab="notes"${tip("Meeting Minutes — Word document editor")}><i class="bx bx-file"></i> Meeting Minutes</button>
+          <button class="segmented-opt ${meetingLiveTab(scope) === "project" ? "active" : ""}" data-live-tab="project"${tip("Major updates, project health, and status changes")}><i class="bx bx-list-check"></i> Major Updates & Status</button>
+          <button class="segmented-opt ${meetingLiveTab(scope) === "room" ? "active" : ""}" data-live-tab="room"${tip("Walk the room person by person")}><i class="bx bx-group"></i> Around the Room</button>
         </div>
       ` : ""}
       ${active ? `<button class="btn-aewttr-outline btn-aewttr-sm" id="mtg-attendance"${tip("Review and update meeting attendance")}><i class="bx bx-check-square"></i> Attendance</button>` : ""}
@@ -877,123 +877,256 @@ function renderMeetingAgendaTab(body, scope, session) {
   });
 }
 
-/* ---------- combined meeting document editor ---------- */
+/* ---------- combined meeting document editor (single unified Word document) ---------- */
 
-function migrateToDocBlocks(session) {
-  const blocks = [];
-  if (session.agenda && session.agenda.length) {
+function getInitialDocHtml(session) {
+  if (session.docHtml && typeof session.docHtml === "string" && session.docHtml.trim()) {
+    return session.docHtml;
+  }
+  let html = "";
+  if (Array.isArray(session.docBlocks) && session.docBlocks.length) {
+    let inList = false;
+    session.docBlocks.forEach(function(b) {
+      if (b.type === "bullet" || b.type === "bullet-sub") {
+        if (!inList) { html += "<ul>"; inList = true; }
+        html += `<li>${b.content || ""}</li>`;
+      } else {
+        if (inList) { html += "</ul>"; inList = false; }
+        if (b.type === "h2") html += `<h2>${b.content || ""}</h2>`;
+        else if (b.type === "action" || b.type === "task") html += `<p class="doc-action-item"><label><input type="checkbox"${b.done ? " checked" : ""}> <span>${b.content || ""}</span></label></p>`;
+        else html += `<p>${b.content || ""}</p>`;
+      }
+    });
+    if (inList) html += "</ul>";
+  } else if (session.agenda && session.agenda.length) {
     session.agenda.forEach(function(item) {
-      blocks.push({ id: uid("db"), type: "h2", content: item.title || "", done: item.done || false });
-      if (item.notes && String(item.notes).trim()) {
+      if (item.title) html += `<h2>${escapeHtml(item.title)}</h2>`;
+      if (item.notes) {
         String(item.notes).split("\n").forEach(function(line) {
           const tr = line.trim();
-          if (!tr) return;
-          const isBullet = tr.startsWith("- ") || tr.startsWith("• ");
-          blocks.push({ id: uid("db"), type: isBullet ? "bullet" : "para", content: isBullet ? tr.replace(/^[-•]\s*/, "") : tr });
+          if (tr) html += `<p>${escapeHtml(tr)}</p>`;
         });
       }
     });
   }
-  if (session.notesFeed && session.notesFeed.length) {
-    if (blocks.length) blocks.push({ id: uid("db"), type: "h2", content: "Meeting Notes" });
-    session.notesFeed.forEach(function(note) {
-      if (note && note.text) blocks.push({ id: uid("db"), type: "para", content: note.text });
-    });
+  if (!html.trim()) {
+    html = "<p><br></p>";
   }
-  return blocks;
+  session.docHtml = html;
+  return html;
 }
 
-function renderMeetingDocEditor(body, scope, session) {
-  if (!Array.isArray(session.docBlocks)) {
-    session.docBlocks = migrateToDocBlocks(session);
-  }
+function renderMeetingDocEditor(body, scope, session, opts) {
+  opts = opts || {};
+  const initialHtml = getInitialDocHtml(session);
 
   const COMMANDS = [
-    { id: "task", label: "Assigned task", icon: "bx-user-check", desc: "@Name — task for project" },
-    { id: "action", label: "Action item", icon: "bx-check-square", desc: "Task with complete button" },
-    { id: "bullet", label: "Bullet point", icon: "bx-list-ul", desc: "• Unordered list item" },
-    { id: "h2", label: "Heading", icon: "bx-heading", desc: "Section header" },
-    { id: "para", label: "Text", icon: "bx-text", desc: "Plain paragraph" },
+    { id: "h1", label: "Heading 1", icon: "bx-heading", desc: "Big section heading" },
+    { id: "h2", label: "Heading 2", icon: "bx-heading", desc: "Medium section heading" },
+    { id: "bullet", label: "Bullet list", icon: "bx-list-ul", desc: "Simple bulleted list" },
+    { id: "num", label: "Numbered list", icon: "bx-list-ol", desc: "Sequential numbered list" },
+    { id: "action", label: "Checkbox item", icon: "bx-check-square", desc: "Single-line action item" },
+    { id: "task", label: "Assigned task", icon: "bx-user-check", desc: "@Name — task sentence" },
+    { id: "quote", label: "Quote", icon: "bx-block", desc: "Indented blockquote" },
+    { id: "para", label: "Normal text", icon: "bx-text", desc: "Plain text paragraph" }
   ];
+
+  // Left side context info
+  const docTitle = opts.title || "Meeting Minutes";
+  const ribbonLeftHtml = `
+    <div class="doc-ribbon-context">
+      <span class="doc-ribbon-context-title">${escapeHtml(docTitle)}</span>
+      ${opts.subtitle ? `<span class="doc-ribbon-context-sub">${escapeHtml(opts.subtitle)}</span>` : ""}
+    </div>
+    ${opts.action ? `<button type="button" class="doc-ribbon-action doc-ribbon-action--primary" id="${escapeHtml(opts.action.id)}">${opts.action.icon ? `<i class="bx ${escapeHtml(opts.action.icon)}" aria-hidden="true"></i> ` : ""}${escapeHtml(opts.action.label)}</button>` : ""}
+    <div class="doc-ribbon-sep" aria-hidden="true"></div>
+  `;
 
   body.innerHTML = `
     <div class="meeting-doc-shell">
-      <div class="meeting-doc-head">
-        <div class="meeting-doc-title">
-          <div class="side-panel-title">Meeting Notes</div>
-          <p class="meeting-doc-help">Type freely, use <kbd class="doc-key">/</kbd> for block types, or start a line with <kbd class="doc-key">-</kbd> and <kbd class="doc-key">Space</kbd> for a bullet. <kbd class="doc-key">Ctrl B</kbd> bold · <kbd class="doc-key">Ctrl I</kbd> italic · <kbd class="doc-key">Ctrl Z</kbd> undo.</p>
-          <div class="meeting-doc-meta" aria-label="Note summary">
-            <span id="doc-block-count"></span>
-            <span id="doc-action-count"></span>
-          </div>
+      <div class="meeting-doc-ribbon" role="toolbar" aria-label="Document formatting">
+        ${ribbonLeftHtml}
+        <!-- Undo / Redo group -->
+        <div class="doc-ribbon-group" aria-label="Undo and Redo">
+          <button type="button" class="doc-fmt-btn" id="doc-fmt-undo" title="Undo (Ctrl+Z)" aria-label="Undo"><i class="bx bx-undo" aria-hidden="true"></i></button>
+          <button type="button" class="doc-fmt-btn" id="doc-fmt-redo" title="Redo (Ctrl+Y)" aria-label="Redo"><i class="bx bx-redo" aria-hidden="true"></i></button>
         </div>
-        <div class="meeting-doc-head-actions">
-          <div class="meeting-doc-quick-actions" aria-label="Add a note block">
-            <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="doc-add-bullet"><i class="bx bx-list-ul" aria-hidden="true"></i> Bullet</button>
-            <button type="button" class="btn-aewttr btn-aewttr-sm" id="doc-add-action"><i class="bx bx-check-square" aria-hidden="true"></i> Action</button>
-            <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="doc-add-task-template" title="Add a task to the project tracker"><i class="bx bx-user-check" aria-hidden="true"></i> Add task</button>
-          </div>
-          <span class="doc-save-status" id="doc-save-status" aria-live="polite"></span>
+        <div class="doc-ribbon-sep" aria-hidden="true"></div>
+        <!-- Format group -->
+        <div class="doc-ribbon-group" aria-label="Text formatting">
+          <button type="button" class="doc-fmt-btn" id="doc-fmt-bold" title="Bold (Ctrl+B)" aria-label="Bold"><b>B</b></button>
+          <button type="button" class="doc-fmt-btn" id="doc-fmt-italic" title="Italic (Ctrl+I)" aria-label="Italic"><i>I</i></button>
+          <button type="button" class="doc-fmt-btn" id="doc-fmt-underline" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
+          <button type="button" class="doc-fmt-btn" id="doc-fmt-strike" title="Strikethrough" aria-label="Strikethrough"><s>S</s></button>
+        </div>
+        <div class="doc-ribbon-sep" aria-hidden="true"></div>
+        <!-- Style dropdown group -->
+        <div class="doc-ribbon-group" aria-label="Style">
+          <select class="doc-ribbon-select" id="doc-style-select" title="Paragraph Style" aria-label="Paragraph Style">
+            <option value="p">Normal Text</option>
+            <option value="h1">Heading 1</option>
+            <option value="h2">Heading 2</option>
+            <option value="blockquote">Quote</option>
+          </select>
+        </div>
+        <div class="doc-ribbon-sep" aria-hidden="true"></div>
+        <!-- Lists group -->
+        <div class="doc-ribbon-group" aria-label="Lists">
+          <button type="button" class="doc-fmt-btn" id="doc-list-bullet" title="Bullet List" aria-label="Bullet List"><i class="bx bx-list-ul" aria-hidden="true"></i></button>
+          <button type="button" class="doc-fmt-btn" id="doc-list-num" title="Numbered List" aria-label="Numbered List"><i class="bx bx-list-ol" aria-hidden="true"></i></button>
+        </div>
+        <div class="doc-ribbon-sep" aria-hidden="true"></div>
+        <!-- Insert group -->
+        <div class="doc-ribbon-group" aria-label="Insert">
+          <button type="button" class="doc-ribbon-action" id="doc-add-action"><i class="bx bx-check-square" aria-hidden="true"></i> Checkbox</button>
+          <button type="button" class="doc-ribbon-action" id="doc-add-task-template"><i class="bx bx-user-check" aria-hidden="true"></i> Add Task</button>
+        </div>
+        <!-- Right side -->
+        <div class="doc-ribbon-sep" aria-hidden="true"></div>
+        <span class="doc-ribbon-meta" id="doc-word-count"></span>
+        <span class="doc-save-status" id="doc-save-status" aria-live="polite"></span>
+      </div>
+      <div class="meeting-doc-canvas">
+        <div class="meeting-doc-page">
+          <div class="word-document-editor" id="meeting-doc-editor" contenteditable="true" spellcheck="true" data-placeholder="Type or paste your meeting document here… (use / for commands)"></div>
         </div>
       </div>
-      <div class="meeting-doc-editor" id="meeting-doc-editor" role="document" aria-label="Meeting notes editor"></div>
     </div>
   `;
 
   const editor = $("#meeting-doc-editor", body);
+  if (editor) editor.innerHTML = initialHtml;
 
-  // Append palette to document.body so it escapes any overflow clipping
-  const existingPalette = document.getElementById("doc-cmd-palette");
-  if (existingPalette) existingPalette.remove();
-  const palette = document.createElement("div");
-  palette.id = "doc-cmd-palette";
-  palette.className = "doc-cmd-palette";
-  palette.setAttribute("role", "listbox");
-  palette.setAttribute("aria-label", "Block type");
-  palette.style.display = "none";
-  document.body.appendChild(palette);
+  // Slash command palette element
+  let paletteEl = document.getElementById("doc-cmd-palette");
+  if (paletteEl) paletteEl.remove();
+  paletteEl = document.createElement("div");
+  paletteEl.id = "doc-cmd-palette";
+  paletteEl.className = "doc-cmd-palette";
+  paletteEl.style.display = "none";
+  document.body.appendChild(paletteEl);
 
-  // @ mention menu
-  const existingAtMenu = document.getElementById("doc-at-menu");
-  if (existingAtMenu) existingAtMenu.remove();
-  const atMenu = document.createElement("div");
-  atMenu.id = "doc-at-menu";
-  atMenu.className = "doc-at-menu";
-  atMenu.style.display = "none";
-  document.body.appendChild(atMenu);
+  let cmdOpen = false;
+  let cmdQuery = "";
+  let cmdActiveIdx = 0;
 
-  const projMenu = document.createElement("div");
-  projMenu.id = "doc-proj-menu";
-  projMenu.className = "doc-at-menu";
-  projMenu.style.display = "none";
-  document.body.appendChild(projMenu);
+  function filteredCmds() {
+    if (!cmdQuery) return COMMANDS;
+    const q = cmdQuery.toLowerCase();
+    return COMMANDS.filter(c => c.label.toLowerCase().includes(q) || c.id.toLowerCase().includes(q));
+  }
+
+  function renderPalette() {
+    const list = filteredCmds();
+    if (!list.length) { closePalette(); return; }
+    cmdActiveIdx = Math.max(0, Math.min(cmdActiveIdx, list.length - 1));
+    paletteEl.innerHTML = list.map((c, i) => `
+      <div class="doc-cmd-item${i === cmdActiveIdx ? " active" : ""}" data-cmd-id="${c.id}">
+        <i class="bx ${c.icon} doc-cmd-icon"></i>
+        <div class="doc-cmd-text">
+          <span class="doc-cmd-label">${escapeHtml(c.label)}</span>
+          <span class="doc-cmd-desc">${escapeHtml(c.desc)}</span>
+        </div>
+      </div>
+    `).join("");
+
+    $all(".doc-cmd-item", paletteEl).forEach((item, i) => {
+      item.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        applySlashCommand(list[i]);
+      });
+    });
+  }
+
+  function openPalette() {
+    cmdOpen = true;
+    cmdActiveIdx = 0;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      const rect = sel.getRangeAt(0).getBoundingClientRect();
+      paletteEl.style.top = Math.max(10, rect.bottom + window.scrollY + 4) + "px";
+      paletteEl.style.left = Math.max(12, rect.left + window.scrollX) + "px";
+    }
+    paletteEl.style.display = "block";
+    renderPalette();
+  }
+
+  function closePalette() {
+    cmdOpen = false;
+    cmdQuery = "";
+    if (paletteEl) paletteEl.style.display = "none";
+  }
+
+  function applySlashCommand(cmd) {
+    closePalette();
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      const range = sel.getRangeAt(0);
+      const node = range.startContainer;
+      if (node && node.nodeType === Node.TEXT_NODE) {
+        const txt = node.textContent;
+        const slashIdx = txt.lastIndexOf("/");
+        if (slashIdx >= 0) {
+          node.textContent = txt.slice(0, slashIdx);
+        }
+      }
+    }
+
+    if (cmd.id === "h1") exec("formatBlock", "<h1>");
+    else if (cmd.id === "h2") exec("formatBlock", "<h2>");
+    else if (cmd.id === "bullet") exec("insertUnorderedList");
+    else if (cmd.id === "num") exec("insertOrderedList");
+    else if (cmd.id === "quote") exec("formatBlock", "<blockquote>");
+    else if (cmd.id === "action") exec("insertHTML", '<p class="doc-action-item"><label><input type="checkbox"> <span contenteditable="true">Action item</span></label></p>');
+    else if (cmd.id === "task") triggerAddTask();
+    else if (cmd.id === "para") exec("formatBlock", "<p>");
+  }
+
+  function triggerAddTask() {
+    const sel = window.getSelection();
+    const anchor = sel && sel.anchorNode;
+    const inLi = anchor ? (anchor.nodeType === 1 ? anchor.closest("li") : anchor.parentElement?.closest("li")) : null;
+
+    openMeetingAddTaskModal(
+      scope,
+      currentMeetingParticipant(scope),
+      (newTask, project) => {
+        if (newTask) {
+          const pName = project ? project.name : (scope.type === "project" ? scope.project.name : "Project");
+          const taskContentHtml = `<span class="doc-task-inline"><strong>@${escapeHtml(newTask.assignee || "Unassigned")}</strong> — ${escapeHtml(newTask.title)} <em>(Project: ${escapeHtml(pName)})</em></span>`;
+
+          if (inLi) {
+            exec("insertHTML", taskContentHtml);
+          } else {
+            const sentenceHtml = `<p class="doc-task-sentence">${taskContentHtml}</p><p><br></p>`;
+            exec("insertHTML", sentenceHtml);
+          }
+        }
+      },
+      scope.type === "project" ? scope.project.id : ""
+    );
+  }
 
   let saveTimer = null;
-  let cmdOpen = false;
-  let cmdBlockId = null;
-  let cmdFilter = "";
-  let cmdActiveIdx = 0;
-  let atOpen = false;
-  let atFieldEl = null;
-  let atQuery = "";
-  let atActiveIdx = 0;
-  let projOpen = false;
-  let projFieldEl = null;
-  let projQuery = "";
-  let projActiveIdx = 0;
-  let docAllSelected = false;
-
   function isEditorMounted() {
     return document.getElementById("meeting-doc-editor") === editor;
   }
 
+  function updateWordCount() {
+    const text = editor.textContent || "";
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const metaEl = document.getElementById("doc-word-count");
+    if (metaEl) metaEl.textContent = `${words} ${words === 1 ? "word" : "words"}`;
+  }
+
   function schedSave() {
     clearTimeout(saveTimer);
+    updateWordCount();
     const statusEl = document.getElementById("doc-save-status");
     if (statusEl) { statusEl.textContent = "Saving…"; statusEl.className = "doc-save-status doc-saving"; }
     saveTimer = setTimeout(async function() {
       if (!isEditorMounted()) return;
-      collectBlocks();
+      session.docHtml = editor.innerHTML;
       try {
         await saveMeetingSession(scope);
         const el = document.getElementById("doc-save-status");
@@ -1002,723 +1135,145 @@ function renderMeetingDocEditor(body, scope, session) {
       } catch (error) {
         const el = document.getElementById("doc-save-status");
         if (el) { el.textContent = "Couldn’t save — try again"; el.className = "doc-save-status doc-save-failed"; }
-        toast("Couldn’t save meeting notes. Your changes are still on this page.", "error");
       }
-    }, 800);
+    }, 600);
   }
 
-  function collectBlocks() {
-    session.docBlocks = Array.from($all(".doc-block", editor)).map(function(row) {
-      const contentEl = row.querySelector(".doc-block-content");
-      return {
-        id: row.dataset.blockId,
-        type: row.dataset.blockType,
-        content: contentEl ? sanitizeInline(contentEl.innerHTML) : "",
-        done: row.dataset.done === "true"
-      };
+  function exec(cmd, arg = null) {
+    if (!editor) return;
+    editor.focus();
+    document.execCommand(cmd, false, arg);
+    schedSave();
+  }
+
+  // Ribbon button handlers
+  $("#doc-fmt-undo", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("undo"); });
+  $("#doc-fmt-redo", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("redo"); });
+  $("#doc-fmt-bold", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("bold"); });
+  $("#doc-fmt-italic", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("italic"); });
+  $("#doc-fmt-underline", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("underline"); });
+  $("#doc-fmt-strike", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("strikeThrough"); });
+  $("#doc-list-bullet", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("insertUnorderedList"); });
+  $("#doc-list-num", body)?.addEventListener("mousedown", (e) => { e.preventDefault(); exec("insertOrderedList"); });
+
+  const styleSelect = $("#doc-style-select", body);
+  if (styleSelect) {
+    styleSelect.addEventListener("change", () => {
+      const val = styleSelect.value;
+      exec("formatBlock", `<${val}>`);
     });
   }
 
-  function updateDocMeta() {
-    const blockCount = session.docBlocks.length;
-    const actionCount = session.docBlocks.filter(function(block) { return (block.type === "action" || block.type === "task") && !block.done; }).length;
-    const blockEl = document.getElementById("doc-block-count");
-    const actionEl = document.getElementById("doc-action-count");
-    if (blockEl) blockEl.textContent = `${blockCount} ${blockCount === 1 ? "block" : "blocks"}`;
-    if (actionEl) actionEl.textContent = actionCount ? `${actionCount} open ${actionCount === 1 ? "action" : "actions"}` : "No open actions";
-  }
+  $("#doc-add-action", body)?.addEventListener("click", () => {
+    exec("insertHTML", '<p class="doc-action-item"><label><input type="checkbox"> <span>Action item</span></label></p>');
+  });
 
-  function filteredCmds() {
-    if (!cmdFilter) return COMMANDS;
-    const f = cmdFilter.toLowerCase();
-    return COMMANDS.filter(function(c) { return c.label.toLowerCase().includes(f) || c.id.includes(f); });
-  }
+  $("#doc-add-task-template", body)?.addEventListener("click", () => {
+    triggerAddTask();
+  });
 
-  function renderPalette() {
-    const cmds = filteredCmds();
-    if (!cmds.length) { closePalette(); return; }
-    cmdActiveIdx = Math.max(0, Math.min(cmdActiveIdx, cmds.length - 1));
-    palette.innerHTML = cmds.map(function(c, i) {
-      return `<div class="doc-cmd-item${i === cmdActiveIdx ? " active" : ""}" data-cmd-id="${c.id}" role="option" aria-selected="${i === cmdActiveIdx}">
-        <i class="bx ${c.icon} doc-cmd-icon" aria-hidden="true"></i>
-        <div class="doc-cmd-text">
-          <span class="doc-cmd-label">${escapeHtml(c.label)}</span>
-          <span class="doc-cmd-desc">${escapeHtml(c.desc)}</span>
-        </div>
-      </div>`;
-    }).join("");
-    $all(".doc-cmd-item", palette).forEach(function(item, i) {
-      item.addEventListener("mousedown", function(e) { e.preventDefault(); applyCommand(cmds[i]); });
-    });
-  }
+  // Editor events
+  editor.addEventListener("keydown", (e) => {
+    if (cmdOpen) {
+      if (e.key === "ArrowDown") { e.preventDefault(); cmdActiveIdx = Math.min(cmdActiveIdx + 1, filteredCmds().length - 1); renderPalette(); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); cmdActiveIdx = Math.max(0, cmdActiveIdx - 1); renderPalette(); return; }
+      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); const list = filteredCmds(); if (list[cmdActiveIdx]) applySlashCommand(list[cmdActiveIdx]); return; }
+      if (e.key === "Escape") { e.preventDefault(); closePalette(); return; }
+      if (e.key === "Backspace" && !cmdQuery) { closePalette(); return; }
+    }
 
-  function openPalette(blockId) {
-    cmdBlockId = blockId;
-    cmdFilter = "";
-    cmdActiveIdx = 0;
-    cmdOpen = true;
+    const sel = window.getSelection();
+    const anchor = sel && sel.anchorNode;
+    const li = anchor ? (anchor.nodeType === 1 ? anchor.closest("li") : anchor.parentElement?.closest("li")) : null;
+
+    if (e.key === "Backspace") {
+      if (li) {
+        const isEmpty = !li.textContent.trim();
+        const atStart = sel.anchorOffset === 0;
+        if (isEmpty || atStart) {
+          e.preventDefault();
+          const isNested = li.parentElement && li.parentElement.closest("ul ul, ol ol, ul ol, ol ul");
+          if (isNested) {
+            exec("outdent");
+          } else {
+            // Root list item -> convert line back to normal paragraph text
+            if (li.parentElement?.tagName === "OL") {
+              exec("insertOrderedList");
+            } else {
+              exec("insertUnorderedList");
+            }
+            exec("formatBlock", "<p>");
+          }
+          return;
+        }
+      }
+    }
+
+    if (e.key === "Tab") {
+      e.preventDefault();
+      if (li) {
+        if (e.shiftKey) exec("outdent");
+        else exec("indent");
+      } else {
+        if (anchor) {
+          const txt = anchor.textContent || "";
+          const tr = txt.trim();
+          if (tr === "-" || tr === "*" || tr === "•") {
+            if (anchor.nodeType === 3) anchor.textContent = "";
+            else anchor.innerHTML = "<br>";
+            exec("insertUnorderedList");
+            return;
+          } else if (/^\d+\.?$/.test(tr)) {
+            if (anchor.nodeType === 3) anchor.textContent = "";
+            else anchor.innerHTML = "<br>";
+            exec("insertOrderedList");
+            return;
+          }
+        }
+        if (!e.shiftKey) exec("insertUnorderedList");
+      }
+      return;
+    }
+  });
+
+  editor.addEventListener("input", () => {
     const sel = window.getSelection();
     if (sel && sel.rangeCount) {
-      const rect = sel.getRangeAt(0).getBoundingClientRect();
-      const top = rect.height ? rect.bottom : (function() { const row = editor.querySelector(`.doc-block[data-block-id="${blockId}"]`); return row ? row.getBoundingClientRect().bottom : 0; }());
-      const left = rect.width ? rect.left : (function() { const row = editor.querySelector(`.doc-block[data-block-id="${blockId}"]`); return row ? row.getBoundingClientRect().left : 8; }());
-      palette.style.top = (top + 6) + "px";
-      palette.style.left = Math.max(8, left) + "px";
-    }
-    palette.style.display = "block";
-    renderPalette();
-  }
+      const range = sel.getRangeAt(0);
+      const node = range.startContainer;
+      if (node && node.nodeType === Node.TEXT_NODE) {
+        const textBefore = node.textContent.slice(0, range.startOffset);
 
-  function closePalette() {
-    cmdOpen = false;
-    cmdBlockId = null;
-    cmdFilter = "";
-    palette.style.display = "none";
-  }
-
-  // @ mention menu helpers
-  function getAtPeople() {
-    const people = new Set();
-    meetingParticipants(scope).forEach(function(p) { if (p.name) people.add(p.name); });
-    const db = window.AEWTTR.db;
-    (db.projects || []).forEach(function(proj) {
-      ["pm", "engineer", "isso", "rangePoc"].forEach(function(k) {
-        if (proj[k]) String(proj[k]).split(",").map(function(n) { return n.trim(); }).filter(Boolean).forEach(function(n) { people.add(n); });
-      });
-      (proj.people || []).forEach(function(p2) { if (p2 && p2.name) people.add(p2.name); });
-    });
-    return Array.from(people).sort();
-  }
-  function atFilteredPeople() {
-    const q = (atQuery || "").toLowerCase();
-    const all = getAtPeople();
-    if (!q) return all.slice(0, 8);
-    return all.filter(function(n) { return n.toLowerCase().includes(q); }).slice(0, 8);
-  }
-  function renderAtMenu() {
-    const people = atFilteredPeople();
-    if (!people.length) { closeAtMenu(); return; }
-    atActiveIdx = Math.max(0, Math.min(atActiveIdx, people.length - 1));
-    atMenu.innerHTML = people.map(function(name, i) {
-      return `<div class="doc-at-item${i === atActiveIdx ? " active" : ""}" data-at-name="${escapeHtml(name)}">${escapeHtml(name)}</div>`;
-    }).join("");
-    $all(".doc-at-item", atMenu).forEach(function(item, i) {
-      item.addEventListener("mousedown", function(e) { e.preventDefault(); applyAtItem(people[i]); });
-    });
-  }
-  function openAtMenu(fieldEl, query) {
-    atOpen = true;
-    atFieldEl = fieldEl;
-    atQuery = query || "";
-    atActiveIdx = 0;
-    const rect = fieldEl.getBoundingClientRect();
-    atMenu.style.top = (rect.bottom + 4) + "px";
-    atMenu.style.left = Math.max(8, rect.left) + "px";
-    atMenu.style.display = "block";
-    renderAtMenu();
-  }
-  function closeAtMenu() {
-    atOpen = false;
-    atFieldEl = null;
-    atQuery = "";
-    atMenu.style.display = "none";
-  }
-  function applyAtItem(name) {
-    if (!atFieldEl) return;
-    const field = atFieldEl;
-    closeAtMenu();
-    field.textContent = name;
-    placeCursorAtEnd(field);
-    field.dispatchEvent(new Event("input", { bubbles: true }));
-  }
-
-  // Project search menu helpers
-  function getProjects() {
-    const db = window.AEWTTR.db;
-    return (db.projects || []).map(function(p) { return p.name || p.title || ""; }).filter(Boolean).sort();
-  }
-  function projFiltered() {
-    const q = (projQuery || "").toLowerCase();
-    const all = getProjects();
-    if (!q) return all.slice(0, 8);
-    return all.filter(function(n) { return n.toLowerCase().includes(q); }).slice(0, 8);
-  }
-  function renderProjMenu() {
-    const projects = projFiltered();
-    if (!projects.length) { closeProjMenu(); return; }
-    projActiveIdx = Math.max(0, Math.min(projActiveIdx, projects.length - 1));
-    projMenu.innerHTML = projects.map(function(name, i) {
-      return `<div class="doc-at-item${i === projActiveIdx ? " active" : ""}" data-proj-name="${escapeHtml(name)}">${escapeHtml(name)}</div>`;
-    }).join("");
-    $all(".doc-at-item", projMenu).forEach(function(item, i) {
-      item.addEventListener("mousedown", function(e) { e.preventDefault(); applyProjItem(projects[i]); });
-    });
-  }
-  function openProjMenu(fieldEl, query) {
-    projOpen = true;
-    projFieldEl = fieldEl;
-    projQuery = query || "";
-    projActiveIdx = 0;
-    const rect = fieldEl.getBoundingClientRect();
-    projMenu.style.top = (rect.bottom + 4) + "px";
-    projMenu.style.left = Math.max(8, rect.left) + "px";
-    projMenu.style.display = "block";
-    renderProjMenu();
-  }
-  function closeProjMenu() {
-    projOpen = false;
-    projFieldEl = null;
-    projQuery = "";
-    projMenu.style.display = "none";
-  }
-  function applyProjItem(name) {
-    if (!projFieldEl) return;
-    const field = projFieldEl;
-    closeProjMenu();
-    field.textContent = name;
-    placeCursorAtEnd(field);
-    field.dispatchEvent(new Event("input", { bubbles: true }));
-  }
-
-  function clearAllBlocks() {
-    docAllSelected = false;
-    $all(".doc-block", editor).forEach(function(r) { r.classList.remove("is-selected"); });
-    session.docBlocks = [{ id: uid("db"), type: "para", content: "", done: false }];
-    renderAllBlocks();
-    const firstEl = editor.querySelector(".doc-block-content");
-    if (firstEl) firstEl.focus();
-    updateDocMeta();
-    schedSave();
-  }
-
-  function applyCommand(cmd) {
-    const prevBlockId = cmdBlockId;
-    closePalette();
-    const block = session.docBlocks.find(function(b) { return b.id === prevBlockId; });
-    if (!block) return;
-    const opensTaskModal = cmd.id === "task";
-    block.type = opensTaskModal ? "para" : cmd.id;
-    block.content = "";
-    const oldRow = editor.querySelector(`.doc-block[data-block-id="${prevBlockId}"]`);
-    const newRow = buildBlockRow(block);
-    if (oldRow) { oldRow.parentNode.replaceChild(newRow, oldRow); } else { editor.appendChild(newRow); }
-    wireBlock(newRow, block);
-    const c = block.type === "task"
-      ? newRow.querySelector(".doc-task-field[data-field='assignee']")
-      : newRow.querySelector(".doc-block-content");
-    if (c) c.focus();
-    updateDocMeta();
-    schedSave();
-    if (opensTaskModal) {
-      openMeetingAddTaskModal(
-        scope,
-        currentMeetingParticipant(scope),
-        null,
-        scope.type === "project" ? scope.project.id : ""
-      );
-    }
-  }
-
-  function placeCursorAtEnd(el) {
-    if (!el) return;
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    range.collapse(false);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-
-  function addBlockAfter(type, afterId) {
-    const newBlock = { id: uid("db"), type: type || "para", content: "", done: false };
-    const idx = session.docBlocks.findIndex(function(b) { return b.id === afterId; });
-    if (idx >= 0) session.docBlocks.splice(idx + 1, 0, newBlock);
-    else session.docBlocks.push(newBlock);
-    const newRow = buildBlockRow(newBlock);
-    const afterRow = afterId ? editor.querySelector(`.doc-block[data-block-id="${afterId}"]`) : null;
-    if (afterRow && afterRow.nextSibling) { editor.insertBefore(newRow, afterRow.nextSibling); }
-    else if (afterRow) { editor.appendChild(newRow); }
-    else { editor.appendChild(newRow); }
-    wireBlock(newRow, newBlock);
-    const c = newRow.querySelector(".doc-block-content");
-    if (c) { c.focus(); placeCursorAtEnd(c); }
-    updateDocMeta();
-    schedSave();
-    return newBlock;
-  }
-
-  function replaceBlockType(block, nextType) {
-    if (!block || block.type === nextType) return;
-    block.type = nextType;
-    if (nextType !== "action" && nextType !== "task") block.done = false;
-    const oldRow = editor.querySelector(`.doc-block[data-block-id="${block.id}"]`);
-    const newRow = buildBlockRow(block);
-    if (oldRow) oldRow.parentNode.replaceChild(newRow, oldRow);
-    else editor.appendChild(newRow);
-    wireBlock(newRow, block);
-    const content = newRow.querySelector(".doc-block-content");
-    if (content) {
-      content.focus();
-      placeCursorAtEnd(content);
-    }
-    updateDocMeta();
-    schedSave();
-  }
-
-  function deleteBlock(id) {
-    const idx = session.docBlocks.findIndex(function(b) { return b.id === id; });
-    if (idx < 0) return;
-    const oldRow = editor.querySelector(`.doc-block[data-block-id="${id}"]`);
-    session.docBlocks.splice(idx, 1);
-    if (!session.docBlocks.length) {
-      const fallback = { id: uid("db"), type: "para", content: "", done: false };
-      session.docBlocks.push(fallback);
-      if (oldRow) { oldRow.parentNode.replaceChild(buildBlockRowAndWire(fallback), oldRow); }
-      else { editor.innerHTML = ""; const r = buildBlockRow(fallback); editor.appendChild(r); wireBlock(r, fallback); }
-      const fr = editor.querySelector(".doc-block-content");
-      if (fr) fr.focus();
-      updateDocMeta();
-      schedSave();
-      return;
-    }
-    if (oldRow) oldRow.remove();
-    const prevBlock = session.docBlocks[Math.max(0, idx - 1)];
-    if (prevBlock) {
-      const row = editor.querySelector(`.doc-block[data-block-id="${prevBlock.id}"]`);
-      if (row) { const c = row.querySelector(".doc-block-content"); if (c) { c.focus(); placeCursorAtEnd(c); } }
-    }
-    updateDocMeta();
-    schedSave();
-  }
-
-  function buildBlockRowAndWire(block) {
-    const r = buildBlockRow(block);
-    wireBlock(r, block);
-    return r;
-  }
-
-  function wireTaskBlock(row, block) {
-    const fields = $all(".doc-task-field", row);
-    function syncContent() {
-      const vals = fields.map(function(f) { return f.textContent; });
-      const newContent = vals.join("\t");
-      const hidden = row.querySelector(".doc-block-content");
-      if (hidden) hidden.textContent = newContent;
-      const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-      if (b) b.content = newContent;
-      const allFilled = vals.every(function(v) { return v.trim(); });
-      row.classList.toggle("doc-block--task-ready", allFilled);
-    }
-    fields.forEach(function(field, idx) {
-      field.addEventListener("focus", function() {
-        if (field.dataset.field === "project") {
-          openProjMenu(field, field.textContent);
-        }
-      });
-      field.addEventListener("input", function() {
-        const text = field.textContent;
-        if (field.dataset.field === "assignee") {
-          if (text === "@" || (text.startsWith("@") && text.length > 0)) {
-            openAtMenu(field, text.replace(/^@/, ""));
-          } else if (atOpen && atFieldEl === field) {
-            closeAtMenu();
-          }
-        }
-        if (field.dataset.field === "project") {
-          projQuery = text;
-          if (text.length > 0) {
-            openProjMenu(field, text);
-          } else {
-            closeProjMenu();
-          }
-        }
-        syncContent();
-        schedSave();
-      });
-      field.addEventListener("blur", function() {
-        if (field.dataset.field === "project") {
-          setTimeout(function() { if (projFieldEl === field) closeProjMenu(); }, 150);
-        }
-      });
-      field.addEventListener("keydown", function(e) {
-        if (atOpen && atFieldEl === field) {
-          if (e.key === "ArrowDown") { e.preventDefault(); atActiveIdx = Math.min(atActiveIdx + 1, atFilteredPeople().length - 1); renderAtMenu(); return; }
-          if (e.key === "ArrowUp") { e.preventDefault(); atActiveIdx = Math.max(0, atActiveIdx - 1); renderAtMenu(); return; }
-          if (e.key === "Enter") { e.preventDefault(); const people = atFilteredPeople(); if (people[atActiveIdx]) applyAtItem(people[atActiveIdx]); return; }
-          if (e.key === "Escape") { e.preventDefault(); closeAtMenu(); return; }
-        }
-        if (projOpen && projFieldEl === field) {
-          if (e.key === "ArrowDown") { e.preventDefault(); projActiveIdx = Math.min(projActiveIdx + 1, projFiltered().length - 1); renderProjMenu(); return; }
-          if (e.key === "ArrowUp") { e.preventDefault(); projActiveIdx = Math.max(0, projActiveIdx - 1); renderProjMenu(); return; }
-          if (e.key === "Enter") { e.preventDefault(); const projs = projFiltered(); if (projs[projActiveIdx]) applyProjItem(projs[projActiveIdx]); return; }
-          if (e.key === "Escape") { e.preventDefault(); closeProjMenu(); return; }
-        }
-        if (e.key === "Tab") {
-          e.preventDefault();
-          closeProjMenu(); closeAtMenu();
-          const nextIdx = e.shiftKey ? idx - 1 : idx + 1;
-          if (nextIdx >= 0 && nextIdx < fields.length) {
-            fields[nextIdx].focus();
-            placeCursorAtEnd(fields[nextIdx]);
-          } else if (!e.shiftKey) {
-            syncContent();
-            addBlockAfter("task", block.id);
-          }
+        // Auto-bullet formatting on "- " or "* " or "1. "
+        if (/^[-*•]\s$/.test(textBefore)) {
+          node.textContent = node.textContent.slice(2);
+          exec("insertUnorderedList");
+          return;
+        } else if (/^\d+\.\s$/.test(textBefore)) {
+          node.textContent = node.textContent.replace(/^\d+\.\s/, "");
+          exec("insertOrderedList");
           return;
         }
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          closeProjMenu(); closeAtMenu();
-          if (idx < fields.length - 1) {
-            fields[idx + 1].focus();
-            placeCursorAtEnd(fields[idx + 1]);
-          } else {
-            syncContent();
-            addBlockAfter("task", block.id);
-          }
-          return;
+
+        const slashIdx = textBefore.lastIndexOf("/");
+        if (slashIdx >= 0 && (slashIdx === 0 || /\s/.test(textBefore[slashIdx - 1]))) {
+          cmdQuery = textBefore.slice(slashIdx + 1);
+          openPalette();
+        } else if (cmdOpen) {
+          closePalette();
         }
-        if (e.key === "Backspace" && !field.textContent.trim() && idx === 0 && session.docBlocks.length > 1) {
-          e.preventDefault();
-          deleteBlock(block.id);
-          return;
-        }
-      });
-    });
-    const delBtn = row.querySelector(".doc-task-del");
-    if (delBtn) {
-      delBtn.addEventListener("click", function() { deleteBlock(block.id); });
-    }
-    const checkBtn = row.querySelector(".doc-action-check");
-    if (checkBtn) {
-      checkBtn.addEventListener("click", function() {
-        const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-        if (!b) return;
-        b.done = !b.done;
-        row.dataset.done = b.done ? "true" : "false";
-        row.classList.toggle("doc-block--done", b.done);
-        checkBtn.setAttribute("aria-pressed", b.done ? "true" : "false");
-        const icon = checkBtn.querySelector("i");
-        if (icon) icon.className = "bx " + (b.done ? "bxs-check-square" : "bx-checkbox");
-        updateDocMeta();
-        schedSave();
-      });
-    }
-    // set initial ready state
-    const initVals = fields.map(function(f) { return f.textContent.trim(); });
-    row.classList.toggle("doc-block--task-ready", initVals.every(Boolean));
-  }
-
-  function wireBlock(row, block) {
-    if (block.type === "task") { wireTaskBlock(row, block); return; }
-    const contentEl = row.querySelector(".doc-block-content");
-    if (!contentEl) return;
-
-    contentEl.addEventListener("keydown", function(e) {
-      const text = contentEl.textContent;
-      const isEmpty = !text.trim();
-
-      if (cmdOpen) {
-        if (e.key === "ArrowDown") { e.preventDefault(); cmdActiveIdx = Math.min(cmdActiveIdx + 1, filteredCmds().length - 1); renderPalette(); return; }
-        if (e.key === "ArrowUp") { e.preventDefault(); cmdActiveIdx = Math.max(0, cmdActiveIdx - 1); renderPalette(); return; }
-        if (e.key === "Enter") { e.preventDefault(); const cmds = filteredCmds(); if (cmds[cmdActiveIdx]) applyCommand(cmds[cmdActiveIdx]); return; }
-        if (e.key === "Escape") { e.preventDefault(); closePalette(); return; }
-        if (e.key === "Backspace" && !cmdFilter) { closePalette(); return; }
-      }
-
-      // Ctrl+B / Ctrl+I — inline bold / italic
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === "b" || e.key === "B" || e.key === "i" || e.key === "I")) {
-        e.preventDefault();
-        document.execCommand(e.key.toLowerCase() === "b" ? "bold" : "italic");
-        const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-        if (b) b.content = sanitizeInline(contentEl.innerHTML);
-        schedSave();
-        return;
-      }
-
-      // "-" or "*" + Space at start of empty para → bullet
-      if (e.key === " " && block.type === "para" && (contentEl.textContent === "-" || contentEl.textContent === "*")) {
-        e.preventDefault();
-        const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-        if (b) { b.content = ""; block.content = ""; }
-        replaceBlockType(block, "bullet");
-        return;
-      }
-
-      // "#" + Space at start of empty para → heading
-      if (e.key === " " && block.type === "para" && contentEl.textContent === "#") {
-        e.preventDefault();
-        const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-        if (b) { b.content = ""; block.content = ""; }
-        replaceBlockType(block, "h2");
-        return;
-      }
-
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-        if (b) b.content = sanitizeInline(contentEl.innerHTML);
-        const nextType = block.type === "h2" ? "para" : block.type;
-        addBlockAfter(nextType, block.id);
-        return;
-      }
-
-      if (e.key === "Tab" && (block.type === "bullet" || block.type === "bullet-sub")) {
-        e.preventDefault();
-        if (e.shiftKey) replaceBlockType(block, block.type === "bullet-sub" ? "bullet" : "para");
-        else replaceBlockType(block, "bullet-sub");
-        return;
-      }
-
-      if (e.key === "Backspace" && isEmpty) {
-        e.preventDefault();
-        if (block.type !== "para") {
-          replaceBlockType(block, "para");
-        } else if (session.docBlocks.length > 1) {
-          deleteBlock(block.id);
-        }
-        return;
-      }
-    });
-
-    contentEl.addEventListener("input", function() {
-      const text = contentEl.textContent;
-      const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-      if (b) b.content = sanitizeInline(contentEl.innerHTML);
-
-      if (text === "/") {
-        openPalette(block.id);
-        return;
-      }
-      if (cmdOpen && cmdBlockId === block.id) {
-        if (text.startsWith("/")) { cmdFilter = text.slice(1); cmdActiveIdx = 0; renderPalette(); }
-        else closePalette();
-        return;
-      }
-      schedSave();
-    });
-
-    contentEl.addEventListener("paste", function(e) {
-      e.preventDefault();
-      const htmlContent = e.clipboardData && e.clipboardData.getData("text/html");
-      const plainText = (e.clipboardData && e.clipboardData.getData("text/plain")) || "";
-      // Preserve raw lines to detect indentation, then classify each
-      var rawLines = [];
-      if (htmlContent) {
-        const tmp = document.createElement("div");
-        tmp.innerHTML = htmlContent;
-        var htmlLines = [];
-        tmp.querySelectorAll("li, p, h1, h2, h3, h4").forEach(function(el) {
-          const isNested = el.tagName === "LI" && el.parentElement && el.parentElement.closest("ul ul, ol ol, ul ol, ol ul");
-          const t = el.textContent.trim();
-          if (t) htmlLines.push({ text: t, indent: !!isNested });
-        });
-        if (htmlLines.length) {
-          rawLines = htmlLines;
-        } else {
-          rawLines = plainText.split("\n").map(function(s) {
-            const indent = /^[\t]/.test(s) || /^ {2,}/.test(s);
-            return { text: s.trim(), indent: indent };
-          }).filter(function(l) { return l.text; });
-        }
-      } else {
-        rawLines = plainText.split("\n").map(function(s) {
-          const indent = /^[\t]/.test(s) || /^ {2,}/.test(s);
-          return { text: s.trim(), indent: indent };
-        }).filter(function(l) { return l.text; });
-      }
-      if (!rawLines.length) return;
-      const cur = contentEl.textContent;
-      const firstText = cur + rawLines[0].text;
-      contentEl.textContent = firstText;
-      const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-      if (b) b.content = firstText;
-      placeCursorAtEnd(contentEl);
-      if (rawLines.length > 1) {
-        var afterId = block.id;
-        rawLines.slice(1).forEach(function(lineObj) {
-          const lineType = lineObj.indent ? "bullet-sub" : "bullet";
-          const nb = { id: uid("db"), type: lineType, content: lineObj.text, done: false };
-          const idx2 = session.docBlocks.findIndex(function(x) { return x.id === afterId; });
-          if (idx2 >= 0) session.docBlocks.splice(idx2 + 1, 0, nb);
-          else session.docBlocks.push(nb);
-          const afterRow2 = editor.querySelector(`.doc-block[data-block-id="${afterId}"]`);
-          const newRow2 = buildBlockRow(nb);
-          if (afterRow2 && afterRow2.nextSibling) editor.insertBefore(newRow2, afterRow2.nextSibling);
-          else if (afterRow2) editor.appendChild(newRow2);
-          else editor.appendChild(newRow2);
-          wireBlock(newRow2, nb);
-          const nc = newRow2.querySelector(".doc-block-content");
-          if (nc) nc.textContent = lineObj.text;
-          afterId = nb.id;
-        });
-      }
-      updateDocMeta();
-      schedSave();
-    });
-
-    const checkBtn = row.querySelector(".doc-action-check");
-    if (checkBtn) {
-      checkBtn.addEventListener("click", function() {
-        const b = session.docBlocks.find(function(x) { return x.id === block.id; });
-        if (!b) return;
-        b.done = !b.done;
-        row.dataset.done = b.done ? "true" : "false";
-        row.classList.toggle("doc-block--done", b.done);
-        checkBtn.setAttribute("aria-pressed", b.done ? "true" : "false");
-        const icon = checkBtn.querySelector("i");
-        if (icon) icon.className = "bx " + (b.done ? "bxs-check-square" : "bx-checkbox");
-        updateDocMeta();
-        schedSave();
-      });
-    }
-  }
-
-  function sanitizeInline(html) {
-    const div = document.createElement("div");
-    div.innerHTML = html || "";
-    div.querySelectorAll("*").forEach(function(el) {
-      if (!/^(B|I|STRONG|EM|U|S|BR)$/.test(el.tagName)) {
-        while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
-        el.parentNode.removeChild(el);
-      }
-    });
-    return div.innerHTML;
-  }
-
-  function buildBlockRow(block) {
-    if (block.type === "task") {
-      const done = !!block.done;
-      const parts = (block.content || "").split("\t");
-      const assignee = parts[0] || "";
-      const taskText = parts[1] || "";
-      const projectName = parts[2] || "";
-      const row = document.createElement("div");
-      row.className = "doc-block doc-block--task" + (done ? " doc-block--done" : "");
-      row.dataset.blockId = block.id;
-      row.dataset.blockType = "task";
-      row.dataset.done = done ? "true" : "false";
-      row.innerHTML = `
-        <div class="doc-block-gutter">
-          <button type="button" class="doc-action-check" aria-label="${done ? "Mark incomplete" : "Mark complete"}" aria-pressed="${done}"><i class="bx ${done ? "bxs-check-square" : "bx-checkbox"}"></i></button>
-        </div>
-        <div class="doc-task-body">
-          <span class="doc-task-field" contenteditable="true" data-field="assignee" data-placeholder="@name" spellcheck="false">${escapeHtml(assignee)}</span>
-          <span class="doc-task-sep"> — assigned task:</span>
-          <span class="doc-task-field" contenteditable="true" data-field="task" data-placeholder="describe the task" spellcheck="true">${escapeHtml(taskText)}</span>
-          <span class="doc-task-sep"> for project:</span>
-          <span class="doc-task-field" contenteditable="true" data-field="project" data-placeholder="search projects…" spellcheck="false">${escapeHtml(projectName)}</span>
-        </div>
-        <button type="button" class="doc-task-del" aria-label="Delete task" tabindex="-1">×</button>
-        <span class="doc-block-content" style="display:none">${escapeHtml(block.content || "")}</span>
-      `;
-      return row;
-    }
-
-    const done = !!(block.done && block.type === "action");
-    const row = document.createElement("div");
-    row.className = "doc-block doc-block--" + block.type + (done ? " doc-block--done" : "");
-    row.dataset.blockId = block.id;
-    row.dataset.blockType = block.type;
-    row.dataset.done = done ? "true" : "false";
-
-    let gutterHtml = "";
-    if (block.type === "bullet" || block.type === "bullet-sub") {
-      gutterHtml = `<span class="doc-gutter-bullet" aria-hidden="true"></span>`;
-    } else if (block.type === "action") {
-      gutterHtml = `<button type="button" class="doc-action-check" aria-label="${done ? "Mark incomplete" : "Mark complete"}" aria-pressed="${done}"><i class="bx ${done ? "bxs-check-square" : "bx-checkbox"}"></i></button>`;
-    }
-
-    const phMap = { h2: "Heading…", action: "Action item…", bullet: "List item…", "bullet-sub": "Sub-item…", para: "Type, or / for commands…" };
-    const ph = phMap[block.type] || "Type…";
-
-    row.innerHTML = `<div class="doc-block-gutter">${gutterHtml}</div><div class="doc-block-content doc-block-content--${block.type}" contenteditable="true" data-placeholder="${ph}" spellcheck="true">${sanitizeInline(block.content || "")}</div>`;
-    return row;
-  }
-
-  function renderAllBlocks() {
-    editor.innerHTML = "";
-    if (!session.docBlocks.length) session.docBlocks.push({ id: uid("db"), type: "para", content: "", done: false });
-    session.docBlocks.forEach(function(block) {
-      const row = buildBlockRow(block);
-      editor.appendChild(row);
-      wireBlock(row, block);
-    });
-  }
-
-  renderAllBlocks();
-  updateDocMeta();
-
-  // Ctrl+A: select all blocks for bulk delete
-  editor.addEventListener("keydown", function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === "a") {
-      e.preventDefault();
-      docAllSelected = true;
-      $all(".doc-block", editor).forEach(function(r) { r.classList.add("is-selected"); });
-    } else if (docAllSelected) {
-      if (e.key === "Backspace" || e.key === "Delete") {
-        e.preventDefault();
-        clearAllBlocks();
-      } else if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) {
-        // typing a character replaces all
-        clearAllBlocks();
-        const firstEl = editor.querySelector(".doc-block-content");
-        if (firstEl) { firstEl.focus(); firstEl.textContent = e.key; placeCursorAtEnd(firstEl); }
-        e.preventDefault();
-      } else {
-        docAllSelected = false;
-        $all(".doc-block", editor).forEach(function(r) { r.classList.remove("is-selected"); });
       }
     }
-  }, true);
-
-  const addActionBtn = $("#doc-add-action", body);
-  const addBulletBtn = $("#doc-add-bullet", body);
-  if (addActionBtn) addActionBtn.addEventListener("click", function() {
-    const lastBlock = session.docBlocks[session.docBlocks.length - 1];
-    addBlockAfter("action", lastBlock && lastBlock.id);
-  });
-  if (addBulletBtn) addBulletBtn.addEventListener("click", function() {
-    const lastBlock = session.docBlocks[session.docBlocks.length - 1];
-    addBlockAfter("bullet", lastBlock && lastBlock.id);
-  });
-  const addTaskTemplateBtn = $("#doc-add-task-template", body);
-  if (addTaskTemplateBtn) addTaskTemplateBtn.addEventListener("click", function() {
-    openMeetingAddTaskModal(
-      scope,
-      currentMeetingParticipant(scope),
-      null,
-      scope.type === "project" ? scope.project.id : ""
-    );
+    schedSave();
   });
 
-  // Close palette / menus and deselect when clicking outside
-  function onDocClick(e) {
-    if (!isEditorMounted()) {
-      document.removeEventListener("click", onDocClick);
-      if (!document.getElementById("meeting-doc-editor")) {
-        const p = document.getElementById("doc-cmd-palette"); if (p) p.remove();
-        const am = document.getElementById("doc-at-menu"); if (am) am.remove();
-        const pm = document.getElementById("doc-proj-menu"); if (pm) pm.remove();
-      }
-      return;
+  document.addEventListener("click", (e) => {
+    if (cmdOpen && paletteEl && !paletteEl.contains(e.target) && !editor.contains(e.target)) {
+      closePalette();
     }
-    if (cmdOpen && !palette.contains(e.target)) closePalette();
-    if (atOpen && !atMenu.contains(e.target)) closeAtMenu();
-    if (projOpen && !projMenu.contains(e.target)) closeProjMenu();
-    if (docAllSelected && !editor.contains(e.target)) {
-      docAllSelected = false;
-      $all(".doc-block", editor).forEach(function(r) { r.classList.remove("is-selected"); });
-    }
-  }
-  document.addEventListener("click", onDocClick);
+  });
 
-  // Focus first empty block
-  const firstBlock = session.docBlocks[0];
-  if (firstBlock && !firstBlock.content) {
-    const firstRow = editor.querySelector(".doc-block-content");
-    if (firstRow) firstRow.focus();
-  }
+  updateWordCount();
 }
 
 function renderMeetingNotesTab(body, scope, session, opts) {
@@ -3001,7 +2556,7 @@ function openMeetingAddTaskModal(scope, defaultParticipant, onDone, forcedProjec
       }
       closeModal();
       toast("Task added", "success");
-      if (onDone) onDone();
+      if (onDone) onDone(newTask, project);
     } catch (err) {
       const taskIndex = liveDb.ganttTasks[pid].findIndex((task) => task.id === newTask.id);
       if (taskIndex >= 0) liveDb.ganttTasks[pid].splice(taskIndex, 1);

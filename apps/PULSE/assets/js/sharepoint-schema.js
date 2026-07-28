@@ -45,7 +45,7 @@ const SHAREPOINT_SCHEMA = {
       { name: "Stakeholders", type: "Text" },
       { name: "Description", type: "Note" },
       { name: "Scope", type: "Note", numLines: 10 },
-      { name: "Objectives", type: "Note", numLines: 10 },
+      { name: "DeliverablesJson", type: "Note", numLines: 20 },
       { name: "CoverImageUrl", type: "Text" },
       { name: "ProjectImagesJson", type: "Note", numLines: 30 },
       { name: "HistoryJson", type: "Note", numLines: 10 },

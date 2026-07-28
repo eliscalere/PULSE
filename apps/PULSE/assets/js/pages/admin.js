@@ -936,13 +936,13 @@ function drawListsConfig(body) {
   body.innerHTML = requireAdmin(() => {
     const portfolios    = cfg.portfolios || [];
     const endItems      = cfg.configEndItems || [];
-    const atos          = cfg.atos || [];
-    const programs      = cfg.programs || [];
+    const atos          = typeof getKnownAtoNames === "function" ? getKnownAtoNames() : (cfg.atos || []);
+    const programs      = typeof getKnownProgramNames === "function" ? getKnownProgramNames() : (cfg.programs || []);
     const locations     = cfg.locations || [];
-    const taskOrders    = cfg.taskOrders || [];
-    const fundingTypes  = cfg.fundingTypes || [];
-    const fiscalYears   = cfg.fiscalYears || [];
-    const fundingStatuses = cfg.fundingStatuses || [];
+    const taskOrders    = typeof getKnownTaskOrderNames === "function" ? getKnownTaskOrderNames() : (cfg.taskOrders || []);
+    const fundingTypes  = typeof getKnownFundingTypeNames === "function" ? getKnownFundingTypeNames() : (cfg.fundingTypes || []);
+    const fiscalYears   = typeof getKnownFiscalYearNames === "function" ? getKnownFiscalYearNames() : (cfg.fiscalYears || []);
+    const fundingStatuses = typeof getKnownFundingStatusNames === "function" ? getKnownFundingStatusNames() : (cfg.fundingStatuses || []);
     return `<div class="al-grid">
       ${renderSection("portfolios",      "Portfolios",        "Portfolio picker on projects.",          portfolios)}
       ${renderSection("endItems",        "End Item Configs",  "Config End Item picker on projects.",    endItems)}

@@ -1787,3 +1787,1142 @@ html[data-theme="dark"] .docreview-submit-card.docreview-submit-upload {
   .co-gen-dot--upper,
   .co-gen-dot--lower { animation: none !important; }
 }
+
+/* ── Travel density ────────────────────────────────────────────────────────
+   Travel is an operational register: tighten its local rhythm without changing
+   the shared form and table density used by the rest of PULSE. */
+.travel-spo-main {
+  --travel-space-1: 6px;
+  --travel-space-2: 8px;
+  --travel-space-3: 10px;
+  --travel-space-4: 12px;
+}
+
+.travel-spo-main .travel-wizard-step-head--compact {
+  margin-bottom: var(--travel-space-3);
+}
+
+.travel-spo-main .travel-wizard-panel--compact .travel-wizard-step-card,
+.travel-spo-main .travel-debrief-section {
+  padding: 12px 14px 3px;
+}
+
+.travel-spo-main .travel-wizard-panel--compact .form-row {
+  margin-bottom: var(--travel-space-2);
+}
+
+.travel-spo-main .travel-wizard-panel--compact .form-grid-2 {
+  gap: var(--travel-space-2) var(--travel-space-3);
+}
+
+.travel-spo-main .travel-wizard-textarea {
+  min-height: 64px;
+}
+
+.travel-spo-main .travel-wizard-textarea--short {
+  min-height: 48px;
+}
+
+.travel-spo-main .travel-wizard-progress {
+  gap: 5px;
+  margin-bottom: var(--travel-space-2);
+}
+
+.travel-spo-main .travel-wizard-pill {
+  gap: 6px;
+  padding: 5px 9px;
+}
+
+.travel-spo-main .travel-type-cards {
+  gap: var(--travel-space-3);
+}
+
+.travel-spo-main .travel-type-card {
+  gap: var(--travel-space-2);
+  padding: 12px;
+}
+
+.travel-spo-main .travel-type-card i {
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+}
+
+.travel-spo-main .travel-wizard-step-card + .travel-wizard-step-card,
+.travel-spo-main .travel-review-stack,
+.travel-spo-main .travel-debrief-form {
+  gap: var(--travel-space-3);
+}
+
+.travel-spo-main .travel-wizard-step-card + .travel-wizard-step-card {
+  margin-top: var(--travel-space-3);
+}
+
+.travel-spo-main .travel-wizard-step-card-title,
+.travel-spo-main .travel-debrief-section h3 {
+  margin-bottom: var(--travel-space-2);
+}
+
+.travel-spo-main .travel-review-head {
+  padding: 9px 12px;
+}
+
+.travel-spo-main .travel-review-body {
+  padding: 9px 12px 11px;
+}
+
+.travel-spo-main .travel-review-row {
+  padding: 5px 0;
+}
+
+.travel-spo-main .travel-wizard-actions {
+  gap: var(--travel-space-3);
+  margin-top: 16px;
+  padding-top: 12px;
+}
+
+.travel-spo-main .travel-wizard-actions-right,
+.travel-spo-main .travel-row-actions {
+  gap: 4px;
+}
+
+.travel-spo-main .travel-list-toolbar {
+  padding: 9px 10px;
+}
+
+.travel-spo-main .aewttr-table th {
+  padding: 9px 11px;
+}
+
+.travel-spo-main .aewttr-table td {
+  padding: 9px 11px;
+}
+
+.travel-spo-main .aewttr-table td.travel-actions-cell {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.travel-spo-main .travel-row-actions {
+  min-width: 7.25rem;
+  max-width: 8.25rem;
+}
+
+.travel-spo-main .btn-travel-action,
+.travel-spo-main a.btn-travel-action {
+  min-height: 1.75rem;
+  padding: 4px 8px;
+}
+
+.travel-spo-main .travel-debrief-head {
+  margin-bottom: var(--travel-space-3);
+}
+
+.travel-spo-main .travel-debrief-trip-card {
+  gap: var(--travel-space-2);
+  margin-top: var(--travel-space-2);
+  padding: 10px;
+}
+
+.travel-spo-main .travel-debrief-textarea {
+  min-height: 88px;
+}
+
+.travel-spo-main .travel-debrief-textarea--short {
+  min-height: 64px;
+}
+
+.travel-spo-main .travel-debrief-actions {
+  margin-top: var(--travel-space-3);
+  padding-top: var(--travel-space-3);
+}
+
+.travel-calendar-page {
+  gap: 14px;
+  padding: 22px 26px 28px;
+}
+
+.travel-calendar-head {
+  gap: 18px;
+  padding: 4px 0 18px;
+}
+
+.travel-calendar-copy h2 {
+  margin: 16px 0 6px;
+}
+
+.travel-calendar-legend {
+  padding: 9px 12px;
+}
+
+.travel-calendar-surface {
+  padding: 14px;
+}
+
+.travel-calendar-page .fc .fc-toolbar {
+  margin-bottom: 14px;
+}
+
+.travel-calendar-page .fc .fc-col-header-cell-cushion {
+  padding: 8px 5px;
+}
+
+.travel-calendar-page .fc .fc-daygrid-day-number {
+  padding: 6px;
+}
+
+@media (max-width: 700px) {
+  .travel-spo-main .travel-wizard-actions {
+    margin-top: var(--travel-space-3);
+  }
+
+  .travel-calendar-page {
+    padding: 20px 18px 24px;
+  }
+}
+
+/* ── Projects screen-fit pass ──────────────────────────────────────────────
+   Projects is used as an operational workbench, not a brochure. These rules
+   establish one compact rhythm for the catalog and every project sub-tool so
+   more useful work remains in view without making controls hard to scan. */
+.aewttr-content:has(.projects-catalog),
+.aewttr-content:has(.project-spo-layout) {
+  padding-top: 16px;
+  padding-bottom: 20px;
+}
+
+.projects-catalog,
+.pgroup-catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.projects-catalog-head,
+.pgroup-catalog-head {
+  gap: 16px;
+  padding-bottom: 12px;
+}
+
+.projects-catalog-head h2,
+.pgroup-catalog-head h2,
+.pgroup-list-title {
+  font-size: 22px;
+}
+
+.projects-catalog-head p,
+.pgroup-catalog-head p {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.projects-catalog-summary {
+  gap: 12px;
+  font-size: 11.5px;
+}
+
+.projects-catalog-controls {
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.projects-catalog-grid,
+.pgroup-card-grid {
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.projects-catalog-card,
+.pgroup-card {
+  min-height: 0;
+  padding: 13px 14px;
+}
+
+.projects-catalog-card-head {
+  margin-bottom: 9px;
+}
+
+.projects-catalog-name {
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.projects-catalog-meta,
+.projects-catalog-signals {
+  gap: 5px 12px;
+  margin-top: 6px;
+  font-size: 11.5px;
+}
+
+.projects-catalog-foot {
+  margin-top: 10px;
+  padding-top: 9px;
+  font-size: 11px;
+}
+
+.project-spo-layout {
+  grid-template-columns: 204px minmax(0, 1fr);
+}
+
+.project-spo-nav-head {
+  padding: 14px 14px 10px;
+}
+
+.project-spo-name,
+.project-spo-identity .pgroup-detail-name {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.project-spo-summary {
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.project-spo-menu {
+  gap: 2px;
+  padding: 9px;
+}
+
+.project-spo-link {
+  min-height: 36px;
+  gap: 8px;
+  padding: 7px 8px;
+  font-size: 12.5px;
+}
+
+.project-spo-link i {
+  font-size: 16px;
+}
+
+.project-spo-nav.pgroup-workspace-sidebar {
+  gap: 12px;
+  padding: 14px 10px;
+}
+
+.project-spo-tab-body {
+  padding: 14px 16px 18px;
+}
+
+.project-spo-tab-body > .tracker-shell,
+.project-spo-tab-body > .board-shell {
+  max-height: none;
+}
+
+.project-home {
+  gap: 12px;
+}
+
+.project-home-header {
+  padding: 2px 0 12px;
+}
+
+.project-home-header-top {
+  gap: 8px 12px;
+  margin-bottom: 7px;
+}
+
+.project-home-header h1,
+.project-home-header-top h1 {
+  font-size: 20px;
+}
+
+.project-home-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.project-home-header-meta {
+  gap: 6px 14px;
+  margin-top: 9px;
+  font-size: 11.5px;
+}
+
+.project-home-metric {
+  padding: 9px 11px;
+}
+
+.project-home-metric strong {
+  font-size: 18px;
+}
+
+.project-home-panels {
+  gap: 10px;
+}
+
+.project-home-panel {
+  gap: 9px;
+  padding: 11px 12px 12px;
+}
+
+.project-home-panel--risk,
+.project-home-panel--boards,
+.project-home-panel--notes {
+  min-height: 240px;
+}
+
+.project-home-panel-head {
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.project-home-text-grid,
+.project-home-roles {
+  gap: 8px;
+}
+
+.project-home-text-block,
+.project-home-role-chip {
+  padding: 9px 10px;
+}
+
+.tracker-toolbar,
+.board-toolbar {
+  padding: 9px 12px;
+}
+
+.tracker-shell,
+.board-shell,
+.monday-table-wrap {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.monday-table {
+  font-size: 12px;
+}
+
+.monday-table thead th {
+  padding: 7px 9px;
+  font-size: 9.5px;
+}
+
+.monday-row td {
+  padding: 6px 9px;
+}
+
+.monday-item-cell {
+  min-width: 190px;
+}
+
+.monday-owner-td {
+  min-width: 130px;
+}
+
+.monday-table--tracker .monday-row--tracker td {
+  height: 26px;
+  padding: 1px 7px;
+}
+
+.monday-table--tracker .monday-sub-row-item td {
+  height: 24px;
+}
+
+.monday-table--tracker .monday-inline-text,
+.monday-table--tracker .monday-date-input,
+.monday-table--tracker .monday-status-select {
+  height: 22px;
+  min-height: 22px;
+  font-size: 11px;
+}
+
+.tracker-gantt-toolbar {
+  min-height: 42px;
+  padding: 7px 10px 7px 12px;
+}
+
+.tracker-gantt-head-label {
+  padding: 8px 10px;
+}
+
+.tracker-gantt-day {
+  height: 32px;
+}
+
+.tracker-gantt-row {
+  min-height: 36px;
+}
+
+.tracker-gantt-row.is-subtask {
+  min-height: 31px;
+}
+
+.tracker-gantt-bar {
+  top: 8px;
+  height: 18px;
+}
+
+.tracker-gantt-row.is-subtask .tracker-gantt-bar {
+  top: 6px;
+  height: 16px;
+}
+
+.board-shell-head {
+  padding: 12px 14px 0;
+}
+
+.board-shell-title-row {
+  margin-bottom: 10px;
+}
+
+.board-shell-title h2 {
+  font-size: 18px;
+}
+
+.board-view-tab {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.board-body {
+  padding: 12px 14px 14px;
+}
+
+.project-docs-shell,
+.project-photos-shell,
+.project-people-page {
+  gap: 10px;
+}
+
+.project-docs-toolbar-left {
+  gap: 7px;
+}
+
+.project-docs-grid {
+  gap: 9px;
+  padding: 11px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.project-docs-item {
+  gap: 6px;
+  min-height: 112px;
+  padding: 11px;
+}
+
+.project-docs-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  font-size: 18px;
+}
+
+.project-photos-grid {
+  gap: 9px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.project-people-page {
+  gap: 10px;
+}
+
+.project-people-head,
+.project-contractors-head {
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .project-spo-layout {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+
+  .project-home-panels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-home-panel--scope,
+  .project-home-panel--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .aewttr-content:has(.projects-catalog),
+  .aewttr-content:has(.project-spo-layout) {
+    padding-top: 12px;
+    padding-bottom: 14px;
+  }
+
+  .projects-catalog-grid,
+  .pgroup-card-grid,
+  .project-home-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .project-spo-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .project-spo-nav {
+    height: auto;
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--aewttr-border);
+  }
+
+  .project-spo-nav-head {
+    padding: 11px 12px 8px;
+  }
+
+  .project-spo-menu {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 7px;
+  }
+
+  .project-spo-tab-body {
+    padding: 12px;
+  }
+
+  .project-home-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-home-metric:nth-child(2) {
+    border-right: none;
+  }
+
+  .project-home-metric:nth-child(n + 3) {
+    border-top: 1px solid var(--aewttr-border);
+  }
+}
+
+/* ── Project home + settings hierarchy ──────────────────────────────────── */
+.project-spo-main--settings > .pgroup-workspace-head {
+  display: none;
+}
+
+.project-spo-main--settings .project-spo-tab-body {
+  padding-top: 12px;
+}
+
+.project-spo-main--workspace > .pgroup-workspace-head {
+  min-height: 82px;
+  padding: 17px 18px 12px;
+  border-bottom: 1px solid var(--aewttr-border);
+  background: var(--aewttr-surface);
+}
+
+.project-spo-main--workspace > .pgroup-workspace-head h3 {
+  margin-top: 3px;
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+.pgroup-workspace-head-sub {
+  margin: 4px 0 0;
+  color: var(--aewttr-muted);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.project-spo-main--workspace .project-spo-tab-body {
+  padding-top: 12px;
+}
+
+/* Match the delivery-overview hierarchy: three equal information columns,
+   a full-width scope band, then three compact working panels. */
+.project-home-panels {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+
+.project-home-panel--roles {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.project-home-panel--program {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.project-home-panel--schedule {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.project-home-panel--scope {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.project-home-panel--risk {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.project-home-panel--notes {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+.project-home-panel--links {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.project-home-panel--risk,
+.project-home-panel--notes,
+.project-home-panel--roles,
+.project-home-panel--program,
+.project-home-panel--schedule {
+  min-height: 0;
+}
+
+.project-home-header {
+  padding: 14px 16px 15px;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 10px;
+  background: var(--aewttr-surface);
+  box-shadow: none;
+}
+
+.project-home-header-meta {
+  padding-top: 9px;
+  border-top: 1px solid var(--aewttr-border);
+}
+
+.project-home-panel {
+  border-color: var(--aewttr-border);
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+.project-home-panel--roles .project-home-roles {
+  grid-template-columns: 1fr;
+}
+
+.project-home-panel--program .project-home-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+}
+
+.project-home-panel--links .project-home-quick-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.project-home-panel--links .btn-aewttr-ghost {
+  justify-content: flex-start;
+  border: 1px solid var(--aewttr-border);
+  background: var(--aewttr-surface);
+  color: var(--aewttr-text);
+}
+
+.project-home-panel--links .btn-aewttr-ghost:hover {
+  border-color: var(--aewttr-border-strong);
+  background: var(--aewttr-surface);
+}
+
+.project-home-metrics {
+  width: 100%;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 0;
+  background: transparent;
+}
+
+.project-home-metric {
+  position: relative;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 7px;
+  min-height: 66px;
+  padding: 12px 15px 17px;
+  overflow: hidden;
+  border: 1px solid var(--aewttr-border) !important;
+  border-radius: 9px;
+  background: var(--aewttr-surface);
+}
+
+.project-home-metric::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  bottom: 9px;
+  left: 14px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--aewttr-border);
+}
+
+.project-home-metric--open::after {
+  background: linear-gradient(90deg, var(--aewttr-blue) 0 16%, var(--aewttr-border) 16%);
+}
+
+.project-home-metric--complete::after {
+  background: linear-gradient(90deg, #16a34a 0 16%, var(--aewttr-border) 16%);
+}
+
+.project-home-metric--people::after {
+  background: linear-gradient(90deg, #7c3aed 0 16%, var(--aewttr-border) 16%);
+}
+
+.project-home-metric--risk::after {
+  background: linear-gradient(90deg, #dc2626 0 16%, var(--aewttr-border) 16%);
+}
+
+.project-home-metric .k {
+  font-size: 11.5px;
+}
+
+.project-home-deliverables {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--aewttr-text);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* Settings: one persistent header, a real horizontal tab strip, and one
+   visible content surface. The previous markup had no tab styling at all. */
+.project-settings-shell {
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+}
+
+.project-settings-bar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 14px 0;
+  border-radius: 10px;
+  background: var(--aewttr-surface);
+}
+
+.project-settings-bar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.project-settings-bar-copy h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.25;
+  color: var(--aewttr-text);
+}
+
+.project-settings-bar-copy p {
+  margin: 3px 0 0;
+  color: var(--aewttr-muted);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.ps-bar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ps-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.ps-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 10px 10px;
+  border: 0;
+  border-radius: 7px 7px 0 0;
+  background: transparent;
+  color: var(--aewttr-muted);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.ps-tab::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  left: 8px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+}
+
+.ps-tab i {
+  font-size: 15px;
+}
+
+.ps-tab:hover {
+  background: var(--aewttr-surface-2);
+  color: var(--aewttr-text);
+}
+
+.ps-tab.is-active {
+  background: var(--aewttr-surface-2);
+  color: var(--aewttr-text);
+}
+
+.ps-tab.is-active::after {
+  background: var(--aewttr-blue);
+}
+
+.ps-tab:focus-visible {
+  outline: 2px solid var(--aewttr-blue);
+  outline-offset: -2px;
+}
+
+.ps-tab-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 10px;
+  background: var(--aewttr-surface);
+}
+
+.ps-tab-panel {
+  display: none;
+  width: 100%;
+  max-width: 1040px;
+  padding: 18px;
+}
+
+.ps-tab-panel.is-active {
+  display: block;
+}
+
+.ps-tab-panel[hidden] {
+  display: none !important;
+}
+
+.ps-tab-panel .form-row {
+  margin-bottom: 12px;
+}
+
+.ps-tab-panel .form-grid-2 {
+  gap: 10px 14px;
+}
+
+.ps-tab-panel .textarea-aewttr {
+  min-height: 76px;
+}
+
+.ps-tab-panel[data-pspanel="scope"] .textarea-aewttr,
+.ps-tab-panel[data-pspanel="misc"] .textarea-aewttr {
+  min-height: 132px;
+}
+
+.ps-field-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 9px;
+}
+
+.ps-field-heading label {
+  display: block;
+  margin: 0;
+}
+
+.ps-field-heading p {
+  margin: 3px 0 0;
+  color: var(--aewttr-muted);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.ps-deliverables-list {
+  display: grid;
+  gap: 7px;
+}
+
+.ps-deliverable-row {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 7px 6px 11px;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 8px;
+  background: var(--aewttr-surface-2);
+}
+
+.ps-deliverable-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--aewttr-blue);
+}
+
+.ps-deliverable-row .ps-deliverable-input {
+  min-height: 34px;
+  padding: 6px 8px;
+  border-color: transparent;
+  background: var(--aewttr-surface);
+}
+
+.ps-deliverable-row .ps-deliverable-input:focus {
+  border-color: var(--aewttr-blue);
+}
+
+.ps-deliverable-remove {
+  width: 30px;
+  min-width: 30px;
+  padding: 0;
+  color: var(--aewttr-muted);
+}
+
+.ps-deliverables-empty {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 58px;
+  padding: 12px 14px;
+  border: 1px dashed var(--aewttr-border-strong);
+  border-radius: 8px;
+  color: var(--aewttr-muted);
+  font-size: 12px;
+}
+
+.ps-deliverables-empty i {
+  font-size: 18px;
+  color: var(--aewttr-blue);
+}
+
+.ps-tab-panel[data-pspanel="roles"] {
+  max-width: 1180px;
+}
+
+.ps-tab-panel[data-pspanel="roles"] .project-role-picker-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.ps-tab-panel[data-pspanel="roles"] .project-role-picker {
+  padding: 10px;
+}
+
+.ps-identity-row {
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.cover-upload-row.ps-cover-compact {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ps-cover-compact .cover-upload-preview {
+  width: 144px;
+  height: 88px;
+}
+
+@media (max-width: 980px) {
+  .project-home-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .project-home-panel--scope,
+  .project-home-panel--risk,
+  .project-home-panel--notes,
+  .project-home-panel--roles,
+  .project-home-panel--program,
+  .project-home-panel--schedule,
+  .project-home-panel--links {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .project-home-panel--roles .project-home-roles,
+  .project-home-panel--program .project-home-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-home-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .project-settings-shell {
+    height: auto;
+  }
+
+  .project-settings-bar {
+    position: static;
+    padding: 11px 11px 0;
+  }
+
+  .project-settings-bar-head {
+    align-items: flex-start;
+  }
+
+  .ps-bar-actions {
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ps-tab span {
+    white-space: nowrap;
+  }
+
+  .ps-tab-panel {
+    padding: 14px 12px;
+  }
+
+  .ps-identity-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ps-field-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cover-upload-row.ps-cover-compact {
+    flex-direction: row;
+  }
+
+  .project-home-panel--roles .project-home-roles,
+  .project-home-panel--program .project-home-facts,
+  .project-home-panel--links .project-home-quick-nav {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-tab {
+    transition: none;
+  }
+}

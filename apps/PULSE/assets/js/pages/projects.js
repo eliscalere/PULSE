@@ -75,7 +75,7 @@ function renderProjectGallery() {
       <section class="projects-catalog">
         <header class="projects-catalog-head">
           <div><h2>${st.scope === "mine" ? "My project workspaces" : "All project workspaces"}</h2><p>Open a project to manage its tracker, workstreams, documents, meetings, and supporting tools.</p></div>
-          <div class="projects-catalog-summary"><span><b>${rows.length}</b> projects</span><span><b>${rollup.openTasks}</b> open tasks</span><span><b>${Math.max(0, rollup.totalTasks - rollup.openTasks)}</b> closed tasks</span></div>
+          <div class="projects-catalog-summary"><span><b>${rows.length}</b> projects</span></div>
         </header>
         <div class="projects-catalog-controls">
           <div class="filter-pills" id="scope-pills">
@@ -93,7 +93,7 @@ function renderProjectGallery() {
             return `<button type="button" class="projects-catalog-card projects-catalog-card--${stats.worstHealth}" data-id="${escapeHtml(p.id)}">
               <div class="projects-catalog-card-head"><span class="projects-catalog-health">${pgroupHealthDotHtml(stats.worstHealth, healthLabel)}${healthLabel}</span>${priorityTag(p.priority)}</div>
               <div class="projects-catalog-name">${escapeHtml(p.name)}</div><div class="projects-catalog-meta"><span>${escapeHtml(lifecycle)}</span></div>
-              <div class="projects-catalog-signals"><span>${stats.openTasks} open task${stats.openTasks === 1 ? "" : "s"}</span><span>${Math.max(0, stats.totalTasks - stats.openTasks)} closed task${Math.max(0, stats.totalTasks - stats.openTasks) === 1 ? "" : "s"}</span><span>${stats.openRisks} open risk${stats.openRisks === 1 ? "" : "s"}</span></div>
+              <div class="projects-catalog-signals"><span>${stats.openRisks} open risk${stats.openRisks === 1 ? "" : "s"}</span></div>
               <div class="projects-catalog-foot"><span>Updated ${p.updated ? fmtDate(p.updated) : "—"}</span><i class="bx bx-chevron-right"></i></div>
             </button>`;
           }).join("") : `<div class="empty-state projects-catalog-empty">${st.scope === "mine" ? "No projects you're a member of match your filters." : "No projects match your filters."}</div>`}
@@ -420,9 +420,7 @@ function renderGroupCardGrid(groupNames, groupType) {
               <span class="pgroup-chip">${projs.length} project${projs.length !== 1 ? "s" : ""}</span>
             </div>
             ${rs.redRisks ? `<div class="pgroup-card-alert"><i class="bx bx-error-circle"></i> ${rs.redRisks} high risk${rs.redRisks !== 1 ? "s" : ""} · ${healthLabel}</div>` : ""}
-            ${pgroupProgressBarHtml(rs.doneTasks, rs.totalTasks, rs.totalTasks ? `${rs.donePct}% done` : "No tasks")}
             <div class="pgroup-card-chips">
-              <span class="pgroup-chip">${rs.openTasks} open task${rs.openTasks !== 1 ? "s" : ""}</span>
               <span class="pgroup-chip">${rs.openRisks} open risk${rs.openRisks !== 1 ? "s" : ""}</span>
             </div>
             ${rs.lastActivity ? `<div class="pgroup-card-foot">Last activity ${pGroupFmtDate(rs.lastActivity)}</div>` : ""}
@@ -477,7 +475,7 @@ function renderEicView(eicName) {
 
 function renderGroupDetail(groupName, groupType, projects) {
   const stKey = `pgroup-tab:${groupType}:${groupName}`;
-  if (!window.AEWTTR.state[stKey]) window.AEWTTR.state[stKey] = "overview";
+  if (!window.AEWTTR.state[stKey] || window.AEWTTR.state[stKey] === "tasks") window.AEWTTR.state[stKey] = "overview";
   let activeTab = window.AEWTTR.state[stKey];
   const backRoute = groupType === "portfolio" ? "projects/~portfolios" : groupType === "program" ? "projects/~program" : "projects/~eic";
   const topNavActive = groupType === "portfolio" ? "portfolios" : groupType === "program" ? "program" : "eic";
@@ -513,8 +511,6 @@ function renderGroupDetail(groupName, groupType, projects) {
           </div>` : ""}
         <div class="pgroup-stat-row">
           <div class="pgroup-stat"><span class="pgroup-stat-num">${projects.length}</span><span class="pgroup-stat-label">Projects</span></div>
-          <div class="pgroup-stat"><span class="pgroup-stat-num">${rs.openTasks}</span><span class="pgroup-stat-label">Open tasks</span></div>
-          <div class="pgroup-stat"><span class="pgroup-stat-num">${rs.doneTasks}</span><span class="pgroup-stat-label">Done</span></div>
           <div class="pgroup-stat"><span class="pgroup-stat-num">${rs.openRisks}</span><span class="pgroup-stat-label">Open risks</span></div>
           <div class="pgroup-stat ${rs.redRisks ? "pgroup-stat--red" : ""}"><span class="pgroup-stat-num">${rs.redRisks}</span><span class="pgroup-stat-label">High risks</span></div>
         </div>
@@ -523,19 +519,11 @@ function renderGroupDetail(groupName, groupType, projects) {
             <h4 class="pgroup-section-head">Project health</h4>
             ${pgroupHealthStripHtml(rs.healthCounts, projects.length)}
           </div>
-          <div class="aewttr-card pgroup-rollup-card">
-            <h4 class="pgroup-section-head">Task progress</h4>
-            ${pgroupProgressBarHtml(rs.doneTasks, rs.totalTasks, rs.totalTasks ? `${rs.donePct}% complete` : "No tasks")}
-            <div class="pgroup-rollup-legend">
-              <span><span class="pgroup-legend-swatch pgroup-legend-swatch--done"></span>${rs.doneTasks} done</span>
-              <span><span class="pgroup-legend-swatch pgroup-legend-swatch--open"></span>${rs.openTasks} open</span>
-            </div>
-          </div>
         </div>
         <h4 class="pgroup-section-head">Projects in this group</h4>
         <div class="aewttr-card">
           <table class="aewttr-table">
-            <thead><tr><th style="width:24px;"></th><th>Name</th><th>Lifecycle</th><th>Priority</th><th>Progress</th><th>Tasks</th><th>Risks</th><th>Schedule</th></tr></thead>
+            <thead><tr><th style="width:24px;"></th><th>Name</th><th>Lifecycle</th><th>Priority</th><th>Risks</th><th>Schedule</th></tr></thead>
             <tbody>
               ${projects.length ? rs.projectRollups.map(r => {
                 const p = projects.find(pp => pp.id === r.id) || {};
@@ -545,12 +533,10 @@ function renderGroupDetail(groupName, groupType, projects) {
                   <td><strong>${escapeHtml(r.name)}</strong></td>
                   <td>${r.lifecycleStatus ? lifecyclePill(r.lifecycleStatus) : "—"}</td>
                   <td>${priorityTag(r.priority)}</td>
-                  <td style="min-width:140px;">${pgroupProgressBarHtml(r.doneTasks, r.totalTasks, r.totalTasks ? `${Math.round((r.doneTasks / r.totalTasks) * 100)}%` : "—")}</td>
-                  <td>${r.openTasks} open</td>
                   <td>${r.openRisks}${r.redRisks ? ` <span class="pgroup-inline-red">${r.redRisks} high</span>` : ""}</td>
                   <td>${r.startDate ? fmtDate(r.startDate) : "—"} → ${r.dueDate ? `<span class="${r.slipped ? "pgroup-inline-red" : ""}">${fmtDate(r.dueDate)}</span>` : "—"}</td>
                 </tr>`;
-              }).join("") : `<tr><td colspan="8"><div class="empty-state">No projects in this group.</div></td></tr>`}
+              }).join("") : `<tr><td colspan="6"><div class="empty-state">No projects in this group.</div></td></tr>`}
             </tbody>
           </table>
         </div>
@@ -645,13 +631,12 @@ function renderGroupDetail(groupName, groupType, projects) {
         }
       });
     });
-    const people = [...roster.values()].sort((a, b) => b.activeTasks - a.activeTasks || a.name.localeCompare(b.name));
+    const people = [...roster.values()].sort((a, b) => a.name.localeCompare(b.name));
     peopleSnapshot = people;
     return `<div class="pgroup-tab-body"><div class="pgroup-people-list">
       ${people.length ? people.map((person) => `<button type="button" class="pgroup-person-row" data-pgroup-person="${escapeHtml(person.name)}">
         ${userAvatarHtml(person.name, "", 32)}
         <span class="pgroup-person-copy"><strong>${escapeHtml(person.name)}</strong><small>${escapeHtml([...person.roles].join(", ") || "Team member")} · ${person.projects.size} project${person.projects.size === 1 ? "" : "s"}</small></span>
-        <span class="pgroup-person-work"><b>${person.activeTasks}</b><small>active tasks</small></span>
         <i class="bx bx-chevron-right pgroup-person-open"></i>
       </button>`).join("") : `<div class="empty-state">No assigned people in this group yet.</div>`}
     </div></div>`;
@@ -661,16 +646,12 @@ function renderGroupDetail(groupName, groupType, projects) {
     const person = peopleSnapshot.find((row) => row.name === personName);
     if (!person) return;
     const projectNames = [...person.projects].map((id) => (projects.find((project) => project.id === id) || {}).name || id);
-    const openTasks = person.tasks.filter((task) => task.status !== "Done" && task.status !== "Cancelled").sort((a, b) => String(a.end || "9999").localeCompare(String(b.end || "9999")));
-    const modal = openModal(`<div class="aewttr-modal-head"><div><span class="pgroup-kicker">Team workload</span><h3>${escapeHtml(person.name)}</h3></div><button class="aewttr-modal-close" type="button">&times;</button></div>
+    const modal = openModal(`<div class="aewttr-modal-head"><div><span class="pgroup-kicker">Team member</span><h3>${escapeHtml(person.name)}</h3></div><button class="aewttr-modal-close" type="button">&times;</button></div>
       <div class="pgroup-person-profile">
         <div class="pgroup-person-profile-lead">${userAvatarHtml(person.name, "", 48)}<div><strong>${escapeHtml([...person.roles].join(", ") || "Team member")}</strong><p>${projectNames.length} project${projectNames.length === 1 ? "" : "s"} in this workspace</p></div></div>
-        <div class="pgroup-person-stats"><div><b>${person.activeTasks}</b><span>Open work</span></div><div><b>${person.completedTasks}</b><span>Completed</span></div><div><b>${person.totalTasks ? Math.round((person.completedTasks / person.totalTasks) * 100) : 0}%</b><span>Completion</span></div></div>
         <div class="pgroup-person-profile-section"><h4>Projects</h4><div class="pgroup-person-projects">${projectNames.map((name) => `<span>${escapeHtml(name)}</span>`).join("") || "<span>None assigned</span>"}</div></div>
-        <div class="pgroup-person-profile-section"><h4>Open work</h4><div class="pgroup-person-task-list">${openTasks.length ? openTasks.map((task) => `<button type="button" data-person-task-project="${escapeHtml(task._projectId)}"><span><strong>${escapeHtml(task.name || task.title || "Untitled task")}</strong><small>${escapeHtml(task._projectName)}</small></span><span class="pgroup-person-task-meta">${escapeHtml(task.priority || "Normal")} · ${task.end ? fmtDate(task.end) : "No due date"}</span></button>`).join("") : "<div class=\"empty-state\">No open assigned work.</div>"}</div></div>
       </div>`, { wide: true });
     $(".aewttr-modal-close", modal).addEventListener("click", closeModal);
-    $all("[data-person-task-project]", modal).forEach((button) => button.addEventListener("click", () => { closeModal(); navigate(`projects/${button.dataset.personTaskProject}/tracker`); }));
   }
 
   function exportPanelHtml() {
@@ -706,7 +687,7 @@ function renderGroupDetail(groupName, groupType, projects) {
       return `<button type="button" class="grp-sb-item${isFocused ? " is-focused" : ""}${isExportSelected ? " is-export-selected" : ""}" data-sb-proj-id="${escapeHtml(proj.id)}" title="${escapeHtml(proj.name || "Untitled project")}">
         <span class="grp-sb-dot ${ragDotCls}">●</span>
         <span class="grp-sb-name">${escapeHtml(proj.name || "Untitled project")}</span>
-        <span class="grp-sb-meta">${rollup.openTasks || 0} tasks · ${rollup.openRisks || 0} risks</span>
+        <span class="grp-sb-meta">${rollup.openRisks || 0} risks</span>
       </button>`;
     }).join("");
 
@@ -867,7 +848,6 @@ function renderGroupDetail(groupName, groupType, projects) {
   }
 
   function tabContentHtml() {
-    if (activeTab === "tasks") return tasksHtml();
     if (activeTab === "risks") return risksHtml();
     if (activeTab === "people") return peopleHtml();
     if (activeTab === "export") return exportPanelHtml();
@@ -877,7 +857,6 @@ function renderGroupDetail(groupName, groupType, projects) {
   function draw() {
     const stats = pGroupStats(projects);
     const richStats = pGroupRichStats(projects);
-    const openTaskCount = pGroupAllTasks(projects).filter(t => t.status !== "Done" && t.status !== "Cancelled").length;
     const openRiskCount = pGroupAllRisks(projects).filter(r => r.status !== "Closed").length;
     const groupLabel = groupType === "portfolio" ? "Portfolio" : groupType === "program" ? "Program Office" : "End item configuration";
     const healthLabel = richStats.worstHealth === "red" ? "Needs attention" : richStats.worstHealth === "amber" ? "Watch" : "On track";
@@ -892,11 +871,10 @@ function renderGroupDetail(groupName, groupType, projects) {
             <span class="pgroup-workspace-health pgroup-workspace-health--${richStats.worstHealth}">${pgroupHealthDotHtml(richStats.worstHealth, healthLabel)}${healthLabel}</span>
           </div>
           <div class="pgroup-workspace-summary">
-            <span><b>${projects.length}</b> projects</span><span><b>${stats.openTasks}</b> open tasks</span><span><b>${stats.openRisks}</b> open risks</span>
+            <span><b>${projects.length}</b> projects</span><span><b>${stats.openRisks}</b> open risks</span>
           </div>
           <nav class="pgroup-workspace-nav" aria-label="${groupLabel} workspace views">
             <button class="pgroup-workspace-nav-btn ${activeTab === "overview" ? "active" : ""}" data-detail-tab="overview"><i class="bx bx-grid-alt"></i> Overview</button>
-            <button class="pgroup-workspace-nav-btn ${activeTab === "tasks" ? "active" : ""}" data-detail-tab="tasks"><i class="bx bx-task"></i> Workload <span>${openTaskCount}</span></button>
             <button class="pgroup-workspace-nav-btn ${activeTab === "people" ? "active" : ""}" data-detail-tab="people"><i class="bx bx-group"></i> People</button>
             <button class="pgroup-workspace-nav-btn ${activeTab === "risks" ? "active" : ""}" data-detail-tab="risks"><i class="bx bx-shield-quarter"></i> Risks <span>${openRiskCount}</span></button>
             <button class="pgroup-workspace-nav-btn ${activeTab === "export" ? "active" : ""}" data-detail-tab="export"><i class="bx bxs-slideshow"></i> Reporting</button>
@@ -904,7 +882,7 @@ function renderGroupDetail(groupName, groupType, projects) {
         </aside>
         <main class="pgroup-workspace-main">
           ${activeTab !== "export" ? `<header class="pgroup-workspace-head">
-            <div><span class="pgroup-kicker">${activeTab === "tasks" ? "Workload" : activeTab === "people" ? "Team capacity" : activeTab === "risks" ? "Risk register" : "Delivery overview"}</span><h3>${activeTab === "tasks" ? "Work across this " + groupLabel.toLowerCase() : activeTab === "people" ? "People and assigned work" : activeTab === "risks" ? "Risks across projects" : groupLabel + " delivery at a glance"}</h3></div>
+            <div><span class="pgroup-kicker">${activeTab === "people" ? "Team capacity" : activeTab === "risks" ? "Risk register" : "Delivery overview"}</span><h3>${activeTab === "people" ? "People and assigned work" : activeTab === "risks" ? "Risks across projects" : groupLabel + " delivery at a glance"}</h3></div>
             <div class="pgroup-workspace-actions"><button class="btn-aewttr btn-aewttr-outline" data-detail-tab="export"><i class="bx bxs-slideshow"></i> Reporting</button><button class="btn-aewttr" id="pgroup-new-project"><i class="bx bx-plus"></i> New Project</button></div>
           </header>` : ""}
           <div class="pgroup-workspace-content pgroup-detail-body${activeTab === "export" ? " pgroup-reporting-full" : ""}">${tabContentHtml()}</div>
