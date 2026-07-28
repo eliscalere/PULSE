@@ -26,6 +26,14 @@ tmp/
 # Personal / admin documents
 AEWTTR_AoA_Scalere.docx
 
+# AI tooling (Claude Code, graphify, OpenAI canvas)
+.claude/
+graphify-out/
+**/graphify-out/
+.openai/
+**/.openai/
+PRODUCT.md
+
 # Generated zips (sources are tracked; zips are redundant)
 deliverables/PULSE-Documentation-SOURCE.zip
 
