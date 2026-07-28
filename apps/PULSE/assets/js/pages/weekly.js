@@ -638,50 +638,197 @@ function renderMeetingApp(mount, scope) {
     scope.type === "global" ? "Weekly Meeting" : `${scope.project.name} — Meeting`,
     scope.type === "global" ? "Cross-project pulse with a live participant work queue." : "Project-specific operating meeting with a live task queue."
   );
-  const view = meetingViewState(scope);
+
+  if (!window.AEWTTR.state.onenoteSelectedPage) window.AEWTTR.state.onenoteSelectedPage = {};
+  if (!window.AEWTTR.state.onenoteSidebarSearch) window.AEWTTR.state.onenoteSidebarSearch = {};
+
   const key = meetingScopeKey(scope);
   const active = meetingIsActive(scope);
+  const data = meetingData(scope);
   const canFacilitate = canManageMeetings();
-  const routeIntent = typeof consumeRouteIntent === "function" ? consumeRouteIntent(`meeting:${key}`) : null;
+  const liveTab = meetingLiveTab(scope);
+
+  const hasLivePage = active || (data.currentSession && (data.currentSession.sessionStatus === "active" || data.currentSession.sessionStatus === "planned"));
+
+  let selectedPage = window.AEWTTR.state.onenoteSelectedPage[key];
+  if (!selectedPage || (selectedPage === "live" && !hasLivePage)) {
+    const allSessions = (data.sessions || []).slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+    selectedPage = hasLivePage ? "live" : (allSessions.length ? (allSessions[0].id || allSessions[0].date) : null);
+    window.AEWTTR.state.onenoteSelectedPage[key] = selectedPage;
+  }
+
+  const search = window.AEWTTR.state.onenoteSidebarSearch[key] || "";
+  const q = search.toLowerCase();
+  const sessions = (data.sessions || []).slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const filteredSessions = q ? sessions.filter(s => {
+    const notes = meetingHistoryNotesForSession(s);
+    return fmtDate(s.date || "").toLowerCase().includes(q) ||
+           notes.some(n => (n.text || "").toLowerCase().includes(q)) ||
+           (s.attendees || []).join(" ").toLowerCase().includes(q);
+  }) : sessions;
+
+  const liveSectionHtml = hasLivePage ? (() => {
+    const cs = data.currentSession;
+    const isLive = active;
+    return `
+      <button type="button" class="on-page-item${selectedPage === "live" ? " is-active" : ""}${isLive ? " on-page-item--live" : ""}" data-onpage="live">
+        <div class="on-page-icon">${isLive ? '<span class="on-live-dot"></span>' : '<i class="bx bx-calendar-event"></i>'}</div>
+        <div class="on-page-meta"><div class="on-page-date">${escapeHtml(fmtDate(cs.date))}</div><div class="on-page-sub">${isLive ? "In progress" : "Upcoming"}</div></div>
+      </button>`;
+  })() : "";
+
+  const pastPagesHtml = filteredSessions.map(s => {
+    const notes = meetingHistoryNotesForSession(s);
+    const preview = (notes[0] ? (notes[0].text || "").slice(0, 55) : "");
+    const sid = s.id || s.date;
+    return `
+      <button type="button" class="on-page-item${selectedPage === sid ? " is-active" : ""}" data-onpage="${escapeHtml(sid)}">
+        <div class="on-page-icon"><i class="bx bx-file-blank"></i></div>
+        <div class="on-page-meta"><div class="on-page-date">${escapeHtml(fmtDate(s.date))}</div>${preview ? `<div class="on-page-sub">${escapeHtml(preview)}</div>` : ""}</div>
+      </button>`;
+  }).join("");
+
+  mount.classList.remove("meeting-app--live");
   mount.innerHTML = `
-    <div class="meeting-toolbar">
-      <div class="segmented">
-        <button class="segmented-opt ${view === "live" ? "active" : ""}" data-view="live"${tip("Live meeting view")}>Meeting</button>
-        <button class="segmented-opt ${view === "history" ? "active" : ""}" data-view="history"${tip("Past meeting history")}>History</button>
-      </div>
-      ${view === "live" && active ? `
-        <div class="segmented meeting-live-tabs">
-          <button class="segmented-opt ${meetingLiveTab(scope) === "notes" ? "active" : ""}" data-live-tab="notes"${tip("Meeting Minutes — Word document editor")}><i class="bx bx-file"></i> Meeting Minutes</button>
-          <button class="segmented-opt ${meetingLiveTab(scope) === "project" ? "active" : ""}" data-live-tab="project"${tip("Major updates, project health, and status changes")}><i class="bx bx-list-check"></i> Major Updates & Status</button>
-          <button class="segmented-opt ${meetingLiveTab(scope) === "room" ? "active" : ""}" data-live-tab="room"${tip("Walk the room person by person")}><i class="bx bx-group"></i> Around the Room</button>
+    <div class="onenote-frame">
+      <div class="onenote-topbar">
+        <div class="on-nb-title"><i class="bx bx-book-open" aria-hidden="true"></i><span>${scope.type === "global" ? "Weekly Meeting Notes" : escapeHtml(scope.project.name) + " · Meeting Notes"}</span></div>
+        <div class="on-topbar-actions">
+          ${active ? `<span class="on-live-badge"><span class="on-live-dot-sm"></span>Live</span>` : ""}
+          ${active ? `<button class="on-ctrl-btn" id="mtg-attendance"${tip("Review attendance")}><i class="bx bx-check-square"></i> Attendance</button>` : ""}
+          ${canFacilitate && active ? `<button class="on-ctrl-btn" id="mtg-end"${tip("End meeting")}><i class="bx bx-archive"></i> End Meeting</button>` : ""}
+          ${canFacilitate && !active ? `<button class="on-ctrl-btn on-ctrl-btn--primary" id="mtg-start-toolbar"${tip("Start a new meeting")}><i class="bx bx-play"></i> Start Meeting</button>` : ""}
         </div>
-      ` : ""}
-      ${active ? `<button class="btn-aewttr-outline btn-aewttr-sm" id="mtg-attendance"${tip("Review and update meeting attendance")}><i class="bx bx-check-square"></i> Attendance</button>` : ""}
-      ${view === "live" && canFacilitate && active ? `<button class="btn-aewttr-outline btn-aewttr-sm" id="mtg-end"${tip("End the current meeting session")}><i class="bx bx-archive"></i> End Meeting</button>` : ""}
-      ${view === "live" && canFacilitate && !active ? `<button class="btn-aewttr btn-aewttr-sm" id="mtg-start-toolbar"${tip("Start a new meeting session")}><i class="bx bx-play"></i> Start Meeting</button>` : ""}
-      ${view === "live" && active ? `<span class="kc-badge" style="margin-left:auto;">Meeting active</span>` : ""}
-      ${view === "live" && !active && meetingStatus(scope) === "ended" ? `<span class="kc-badge" style="margin-left:auto;opacity:.85;">Meeting ended</span>` : ""}
+      </div>
+      <div class="onenote-body">
+        <div class="onenote-sidebar">
+          <div class="on-sidebar-search"><i class="bx bx-search"></i><input id="on-sidebar-search" type="search" placeholder="Search sessions…" value="${escapeHtml(search)}"></div>
+          <div class="on-page-list">
+            ${liveSectionHtml}
+            ${filteredSessions.length && hasLivePage ? `<div class="on-section-divider">Past Sessions</div>` : ""}
+            ${pastPagesHtml}
+            ${!liveSectionHtml && !pastPagesHtml ? `<div class="on-pages-empty">No sessions yet.<br>Start a meeting to begin.</div>` : ""}
+          </div>
+        </div>
+        <div class="onenote-main">
+          ${active && selectedPage === "live" ? `
+            <div class="on-section-bar">
+              <button type="button" class="on-section-tab${liveTab === "notes" ? " is-active" : ""}" data-on-tab="notes"><i class="bx bx-file" aria-hidden="true"></i> Meeting Minutes</button>
+              <button type="button" class="on-section-tab${liveTab === "project" ? " is-active" : ""}" data-on-tab="project"><i class="bx bx-list-check" aria-hidden="true"></i> Major Updates</button>
+              <button type="button" class="on-section-tab${liveTab === "room" ? " is-active" : ""}" data-on-tab="room"><i class="bx bx-group" aria-hidden="true"></i> Around the Room</button>
+            </div>` : ""}
+          <div class="on-content-body" id="on-content-body"></div>
+        </div>
+      </div>
     </div>
-    <div id="mtg-body"></div>
   `;
-  $all("[data-view]", mount).forEach(b => b.addEventListener("click", () => {
-    window.AEWTTR.state.meetingView[key] = b.dataset.view;
-    renderMeetingApp(mount, scope);
-  }));
-  $all("[data-live-tab]", mount).forEach(b => b.addEventListener("click", () => {
-    window.AEWTTR.state.meetingLiveTab[key] = b.dataset.liveTab;
-    renderMeetingApp(mount, scope);
-  }));
-  const body = $("#mtg-body", mount);
-  mount.classList.toggle("meeting-app--live", view === "live");
-  const attendanceBtn = $("#mtg-attendance", mount);
-  if (attendanceBtn) attendanceBtn.addEventListener("click", () => openMeetingAttendanceModal(scope, () => renderMeetingApp(mount, scope)));
-  if (view === "history") return renderMeetingHistory(body, scope);
-  renderMeetingLive(body, scope);
+
+  // Controls
+  const attendBtn = $("#mtg-attendance", mount);
+  if (attendBtn) attendBtn.addEventListener("click", () => openMeetingAttendanceModal(scope, () => renderMeetingApp(mount, scope)));
   const endBtn = $("#mtg-end", mount);
   if (endBtn) endBtn.addEventListener("click", () => openEndMeetingModal(scope, () => renderMeetingApp(mount, scope)));
-  const startToolbarBtn = $("#mtg-start-toolbar", mount);
-  if (startToolbarBtn) startToolbarBtn.addEventListener("click", () => startMeeting(scope, () => renderMeetingApp(mount, scope)));
+  const startBtn = $("#mtg-start-toolbar", mount);
+  if (startBtn) startBtn.addEventListener("click", () => startMeeting(scope, () => renderMeetingApp(mount, scope)));
+
+  // Page list clicks
+  $all("[data-onpage]", mount).forEach(btn => {
+    btn.addEventListener("click", () => {
+      window.AEWTTR.state.onenoteSelectedPage[key] = btn.dataset.onpage;
+      renderMeetingApp(mount, scope);
+    });
+  });
+
+  // Section tab clicks
+  $all("[data-on-tab]", mount).forEach(btn => {
+    btn.addEventListener("click", () => {
+      window.AEWTTR.state.meetingLiveTab[key] = btn.dataset.onTab;
+      renderMeetingApp(mount, scope);
+    });
+  });
+
+  // Sidebar search
+  let _searchTimer = null;
+  const searchInput = $("#on-sidebar-search", mount);
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      window.AEWTTR.state.onenoteSidebarSearch[key] = e.target.value;
+      clearTimeout(_searchTimer);
+      _searchTimer = setTimeout(() => {
+        const cursor = e.target.selectionStart;
+        renderMeetingApp(mount, scope);
+        const el = $("#on-sidebar-search", mount);
+        if (el) { el.focus(); try { el.setSelectionRange(cursor, cursor); } catch (_) {} }
+      }, 200);
+    });
+  }
+
+  // Render content
+  const contentBody = $("#on-content-body", mount);
+  if (!contentBody) return;
+
+  if (selectedPage === "live") {
+    if (active && liveTab === "notes") {
+      const session = ensureMeetingSession(scope);
+      renderMeetingDocEditor(contentBody, scope, session);
+    } else {
+      renderMeetingLive(contentBody, scope);
+    }
+  } else if (selectedPage) {
+    const session = sessions.find(s => (s.id || s.date) === selectedPage);
+    if (session) {
+      renderOnenoteHistoryPage(contentBody, session, scope);
+    } else {
+      contentBody.innerHTML = `<div class="on-no-page"><i class="bx bx-error-circle"></i><p>Session not found.</p></div>`;
+    }
+  } else {
+    contentBody.innerHTML = `<div class="on-no-page"><i class="bx bx-note"></i><p>Select a session from the left to view its notes.</p></div>`;
+  }
+}
+
+function renderOnenoteHistoryPage(body, session, scope) {
+  const notes = meetingHistoryNotesForSession(session);
+  const changes = session.ganttChanges || [];
+  const minutesHtml = meetingHistoryMinutesHtml(session, scope);
+
+  body.innerHTML = `
+    <div class="on-history-page">
+      <div class="on-hist-title-area">
+        <h1 class="on-hist-title">${scope.type === "global" ? "Weekly Meeting" : escapeHtml(scope.project.name)}</h1>
+        <div class="on-hist-dateline">${escapeHtml(fmtDate(session.date))}</div>
+        <div class="on-hist-stats">
+          ${(session.attendees || []).length + (session.guestAttendees || []).length > 0 ? `<span><i class="bx bx-group" aria-hidden="true"></i> ${(session.attendees || []).length + (session.guestAttendees || []).length} present</span>` : ""}
+          ${changes.length ? `<span><i class="bx bx-list-check" aria-hidden="true"></i> ${changes.length} items reviewed</span>` : ""}
+          ${notes.length ? `<span><i class="bx bx-note" aria-hidden="true"></i> ${notes.length} note${notes.length === 1 ? "" : "s"}</span>` : ""}
+        </div>
+      </div>
+      <div class="on-hist-tabs" role="tablist">
+        <button type="button" class="on-hist-tab is-active" data-histtab="minutes">Minutes</button>
+        ${notes.length ? `<button type="button" class="on-hist-tab" data-histtab="notes">Notes (${notes.length})</button>` : ""}
+        ${changes.length ? `<button type="button" class="on-hist-tab" data-histtab="updates">Project Updates (${changes.length})</button>` : ""}
+      </div>
+      <div class="on-hist-content">${minutesHtml}</div>
+    </div>
+  `;
+
+  $all("[data-histtab]", body).forEach(btn => {
+    btn.addEventListener("click", () => {
+      $all(".on-hist-tab", body).forEach(b => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      const tab = btn.dataset.histtab;
+      const contentEl = $(".on-hist-content", body);
+      if (!contentEl) return;
+      if (tab === "minutes") {
+        contentEl.innerHTML = minutesHtml;
+      } else if (tab === "notes") {
+        contentEl.innerHTML = notes.length
+          ? `<div class="meeting-history-notes-hub proj-notes-hub"><div class="meeting-history-notes-list proj-notes-main-body">${notes.map(meetingHistoryCapturedNoteCardHtml).join("")}</div></div>`
+          : `<div class="empty-state">No notes captured.</div>`;
+      } else if (tab === "updates") {
+        contentEl.innerHTML = `<div class="meeting-history-gantt">${meetingHistoryProjectUpdatesHtml(changes)}</div>`;
+      }
+    });
+  });
 }
 
 function wireMeetingNotesComposer(mount, session, scope) {
@@ -931,65 +1078,53 @@ function renderMeetingDocEditor(body, scope, session, opts) {
     { id: "para", label: "Normal text", icon: "bx-text", desc: "Plain text paragraph" }
   ];
 
-  // Left side context info
   const docTitle = opts.title || "Meeting Minutes";
-  const ribbonLeftHtml = `
-    <div class="doc-ribbon-context">
-      <span class="doc-ribbon-context-title">${escapeHtml(docTitle)}</span>
-      ${opts.subtitle ? `<span class="doc-ribbon-context-sub">${escapeHtml(opts.subtitle)}</span>` : ""}
-    </div>
-    ${opts.action ? `<button type="button" class="doc-ribbon-action doc-ribbon-action--primary" id="${escapeHtml(opts.action.id)}">${opts.action.icon ? `<i class="bx ${escapeHtml(opts.action.icon)}" aria-hidden="true"></i> ` : ""}${escapeHtml(opts.action.label)}</button>` : ""}
-    <div class="doc-ribbon-sep" aria-hidden="true"></div>
-  `;
+  const docDate = session && session.date ? fmtDate(session.date) : (opts.subtitle || "");
+  const actionBtnHtml = opts.action ? `<button type="button" class="on-fmt-action on-fmt-action--primary" id="${escapeHtml(opts.action.id)}">${opts.action.icon ? `<i class="bx ${escapeHtml(opts.action.icon)}" aria-hidden="true"></i> ` : ""}${escapeHtml(opts.action.label)}</button><span class="on-fmt-sep" aria-hidden="true"></span>` : "";
 
   body.innerHTML = `
-    <div class="meeting-doc-shell">
-      <div class="meeting-doc-ribbon" role="toolbar" aria-label="Document formatting">
-        ${ribbonLeftHtml}
-        <!-- Undo / Redo group -->
-        <div class="doc-ribbon-group" aria-label="Undo and Redo">
-          <button type="button" class="doc-fmt-btn" id="doc-fmt-undo" title="Undo (Ctrl+Z)" aria-label="Undo"><i class="bx bx-undo" aria-hidden="true"></i></button>
-          <button type="button" class="doc-fmt-btn" id="doc-fmt-redo" title="Redo (Ctrl+Y)" aria-label="Redo"><i class="bx bx-redo" aria-hidden="true"></i></button>
+    <div class="on-doc-frame">
+      <div class="on-doc-bar" role="toolbar" aria-label="Document formatting">
+        ${actionBtnHtml}
+        <div class="on-fmt-group">
+          <button type="button" class="on-fmt-btn" id="doc-fmt-undo" title="Undo (Ctrl+Z)" aria-label="Undo"><i class="bx bx-undo" aria-hidden="true"></i></button>
+          <button type="button" class="on-fmt-btn" id="doc-fmt-redo" title="Redo (Ctrl+Y)" aria-label="Redo"><i class="bx bx-redo" aria-hidden="true"></i></button>
         </div>
-        <div class="doc-ribbon-sep" aria-hidden="true"></div>
-        <!-- Format group -->
-        <div class="doc-ribbon-group" aria-label="Text formatting">
-          <button type="button" class="doc-fmt-btn" id="doc-fmt-bold" title="Bold (Ctrl+B)" aria-label="Bold"><b>B</b></button>
-          <button type="button" class="doc-fmt-btn" id="doc-fmt-italic" title="Italic (Ctrl+I)" aria-label="Italic"><i>I</i></button>
-          <button type="button" class="doc-fmt-btn" id="doc-fmt-underline" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
-          <button type="button" class="doc-fmt-btn" id="doc-fmt-strike" title="Strikethrough" aria-label="Strikethrough"><s>S</s></button>
+        <span class="on-fmt-sep" aria-hidden="true"></span>
+        <select class="on-style-select" id="doc-style-select" title="Paragraph Style" aria-label="Paragraph Style">
+          <option value="p">Normal</option>
+          <option value="h1">Heading 1</option>
+          <option value="h2">Heading 2</option>
+          <option value="blockquote">Quote</option>
+        </select>
+        <span class="on-fmt-sep" aria-hidden="true"></span>
+        <div class="on-fmt-group">
+          <button type="button" class="on-fmt-btn" id="doc-fmt-bold" title="Bold (Ctrl+B)" aria-label="Bold"><b>B</b></button>
+          <button type="button" class="on-fmt-btn" id="doc-fmt-italic" title="Italic (Ctrl+I)" aria-label="Italic"><i>I</i></button>
+          <button type="button" class="on-fmt-btn" id="doc-fmt-underline" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
+          <button type="button" class="on-fmt-btn" id="doc-fmt-strike" title="Strikethrough" aria-label="Strikethrough"><s>S</s></button>
         </div>
-        <div class="doc-ribbon-sep" aria-hidden="true"></div>
-        <!-- Style dropdown group -->
-        <div class="doc-ribbon-group" aria-label="Style">
-          <select class="doc-ribbon-select" id="doc-style-select" title="Paragraph Style" aria-label="Paragraph Style">
-            <option value="p">Normal Text</option>
-            <option value="h1">Heading 1</option>
-            <option value="h2">Heading 2</option>
-            <option value="blockquote">Quote</option>
-          </select>
+        <span class="on-fmt-sep" aria-hidden="true"></span>
+        <div class="on-fmt-group">
+          <button type="button" class="on-fmt-btn" id="doc-list-bullet" title="Bullet List" aria-label="Bullet List"><i class="bx bx-list-ul" aria-hidden="true"></i></button>
+          <button type="button" class="on-fmt-btn" id="doc-list-num" title="Numbered List" aria-label="Numbered List"><i class="bx bx-list-ol" aria-hidden="true"></i></button>
         </div>
-        <div class="doc-ribbon-sep" aria-hidden="true"></div>
-        <!-- Lists group -->
-        <div class="doc-ribbon-group" aria-label="Lists">
-          <button type="button" class="doc-fmt-btn" id="doc-list-bullet" title="Bullet List" aria-label="Bullet List"><i class="bx bx-list-ul" aria-hidden="true"></i></button>
-          <button type="button" class="doc-fmt-btn" id="doc-list-num" title="Numbered List" aria-label="Numbered List"><i class="bx bx-list-ol" aria-hidden="true"></i></button>
+        <span class="on-fmt-sep" aria-hidden="true"></span>
+        <div class="on-fmt-group">
+          <button type="button" class="on-fmt-action" id="doc-add-action"><i class="bx bx-check-square" aria-hidden="true"></i> Checkbox</button>
+          <button type="button" class="on-fmt-action" id="doc-add-task-template"><i class="bx bx-user-check" aria-hidden="true"></i> Add Task</button>
         </div>
-        <div class="doc-ribbon-sep" aria-hidden="true"></div>
-        <!-- Insert group -->
-        <div class="doc-ribbon-group" aria-label="Insert">
-          <button type="button" class="doc-ribbon-action" id="doc-add-action"><i class="bx bx-check-square" aria-hidden="true"></i> Checkbox</button>
-          <button type="button" class="doc-ribbon-action" id="doc-add-task-template"><i class="bx bx-user-check" aria-hidden="true"></i> Add Task</button>
-        </div>
-        <!-- Right side -->
-        <div class="doc-ribbon-sep" aria-hidden="true"></div>
-        <span class="doc-ribbon-meta" id="doc-word-count"></span>
-        <span class="doc-save-status" id="doc-save-status" aria-live="polite"></span>
+        <span class="on-doc-meta-group">
+          <span class="on-doc-wc" id="doc-word-count"></span>
+          <span class="doc-save-status" id="doc-save-status" aria-live="polite"></span>
+        </span>
       </div>
-      <div class="meeting-doc-canvas">
-        <div class="meeting-doc-page">
-          <div class="word-document-editor" id="meeting-doc-editor" contenteditable="true" spellcheck="true" data-placeholder="Type or paste your meeting document here… (use / for commands)"></div>
+      <div class="on-doc-canvas">
+        <div class="on-doc-title-area">
+          <h1 class="on-doc-page-title">${escapeHtml(docTitle)}</h1>
+          ${docDate ? `<div class="on-doc-page-date">${escapeHtml(docDate)}</div>` : ""}
         </div>
+        <div class="word-document-editor" id="meeting-doc-editor" contenteditable="true" spellcheck="true" data-placeholder="Type or paste your meeting notes here… (use / for commands)"></div>
       </div>
     </div>
   `;
