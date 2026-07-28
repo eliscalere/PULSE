@@ -2347,6 +2347,7 @@ a.btn-travel-action {
 .form-row label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--aewttr-text); }
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 
 /* ---------- Tabs ---------- */
 .project-banner {
@@ -2495,16 +2496,23 @@ a.btn-travel-action {
 .monday-status-select.risk-status-Mitigating { background-color: var(--aewttr-amber); color: #3a2c00; }
 .monday-status-select.risk-status-Escalated { background-color: var(--aewttr-red); }
 .monday-status-select.risk-status-Closed { background-color: #8590A2; }
-.monday-status-select.risk-li-select {
+.monday-status-select.risk-li-select,
+.risk-li-select {
   background-color: var(--aewttr-surface);
   color: var(--aewttr-text);
   border: 1px solid var(--aewttr-border);
-  font-weight: 700;
+  border-radius: var(--aewttr-radius-sm);
+  font-size: 12px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   min-width: 52px;
+  width: 100%;
   text-align: center;
   padding: 6px 8px;
   background-image: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
 }
 .monday-inline-add-row td { padding: 0 !important; border-bottom: none; }
 .monday-inline-add-btn {
@@ -3288,19 +3296,10 @@ html[data-theme="dark"] .docreview-submit-note {
 .monday-table--risk .risk-th-severity { min-width: 84px; text-align: center; }
 .monday-table--risk .risk-th-status { min-width: 118px; }
 .monday-table--risk .risk-th-owner { min-width: 120px; }
-.monday-table--risk .risk-th-due,
-.monday-table--risk .risk-th-reviewed { min-width: 110px; }
-.monday-table--risk .risk-th-li { min-width: 72px; text-align: center; }
+.monday-table--risk .risk-th-due { min-width: 110px; }
+.monday-table--risk .risk-th-li { min-width: 80px; text-align: center; }
 .monday-table--risk .risk-th-notes { width: 44px; }
-.monday-table--risk .risk-li-select { min-width: 52px; }
 .monday-table--risk td.risk-rating-td { text-align: center; }
-.monday-table--risk td.risk-reviewed-td {
-  font-size: 12px;
-  color: var(--aewttr-muted);
-  white-space: nowrap;
-  padding: 0 10px;
-  font-variant-numeric: tabular-nums;
-}
 .monday-table--risk select.monday-status-select { min-width: 108px; }
 .monday-table--risk .monday-owner-td { min-width: 120px; }
 .monday-table--risk .risk-title-td .monday-inline-text { font-weight: 600; }
@@ -3478,6 +3477,18 @@ html[data-theme="dark"] .docreview-submit-note {
 .risk-review-history-text {
   font-size: 12.5px;
   line-height: 1.4;
+}
+/* Wide risk modal two-column layout */
+.risk-modal-body { padding: 20px 24px !important; }
+.risk-modal-cols { display: grid; grid-template-columns: 1fr 320px; gap: 20px; margin-top: 16px; }
+.risk-modal-col-main { min-width: 0; }
+.risk-modal-col-side { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.risk-modal-review-section { border: 1px solid var(--aewttr-border); border-radius: var(--aewttr-radius-sm); padding: 10px 12px; }
+.risk-modal-review-section .risk-review-history-head { margin: 0 0 8px; }
+.risk-modal-review-section .risk-review-history-list { max-height: 120px; }
+@media (max-width: 860px) {
+  .risk-modal-cols { grid-template-columns: 1fr; }
+  .form-grid-3 { grid-template-columns: 1fr; }
 }
 .dashboard-risk-section {
   margin-top: 20px;
@@ -17606,6 +17617,8 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 
 /* RIGHT: editing cards */
 .rep-dual-right { padding: 14px 16px 28px 12px; display: flex; flex-direction: column; gap: 10px; }
+.rep-cards-only { padding: 14px 16px 28px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+@media (max-width: 900px) { .rep-cards-only { grid-template-columns: 1fr; } }
 
 /* Quadrant cards */
 .rep-qcard { background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: 8px; overflow: hidden; }

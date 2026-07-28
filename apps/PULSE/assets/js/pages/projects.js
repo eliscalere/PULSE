@@ -2504,14 +2504,13 @@ function riskInlineTableHtml(risks, owners) {
         </td>
         <td class="monday-owner-td"><input type="text" class="monday-inline-text" list="${ownerListId}" data-risk-field="owner" data-risk-id="${escapeHtml(risk.id)}" value="${escapeHtml(risk.owner)}" placeholder="Unassigned"></td>
         <td class="monday-date-td"><input type="date" class="monday-date-input" data-risk-field="due" data-risk-id="${escapeHtml(risk.id)}" value="${escapeHtml(risk.due || "")}" aria-label="Due date"></td>
-        <td class="risk-reviewed-td" data-risk-reviewed-cell="${escapeHtml(risk.id)}">${risk.lastReviewedDate ? escapeHtml(fmtDate(risk.lastReviewedDate)) : "—"}</td>
         <td class="monday-select-cell">
-          <select class="monday-status-select risk-li-select" data-risk-field="likelihood" data-risk-id="${escapeHtml(risk.id)}" aria-label="Likelihood">
+          <select class="risk-li-select" data-risk-field="likelihood" data-risk-id="${escapeHtml(risk.id)}" aria-label="Likelihood">
             ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}" ${Number(risk.likelihood) === n ? "selected" : ""}>${n}</option>`).join("")}
           </select>
         </td>
         <td class="monday-select-cell">
-          <select class="monday-status-select risk-li-select" data-risk-field="impact" data-risk-id="${escapeHtml(risk.id)}" aria-label="Impact">
+          <select class="risk-li-select" data-risk-field="impact" data-risk-id="${escapeHtml(risk.id)}" aria-label="Impact">
             ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}" ${Number(risk.impact) === n ? "selected" : ""}>${n}</option>`).join("")}
           </select>
         </td>
@@ -2522,7 +2521,7 @@ function riskInlineTableHtml(risks, owners) {
         </td>
       </tr>
       <tr class="risk-detail-row risk-detail-row--hidden" data-detail-for="${escapeHtml(risk.id)}">
-        <td colspan="10" class="risk-detail-td"></td>
+        <td colspan="9" class="risk-detail-td"></td>
       </tr>`;
   }).join("");
   return `
@@ -2536,14 +2535,13 @@ function riskInlineTableHtml(risks, owners) {
           <th class="risk-th-status"><button class="risk-col-filter-btn" data-col-filter="status">Status <i class="bx bx-filter-alt"></i></button></th>
           <th class="risk-th-owner"><button class="risk-col-filter-btn" data-col-filter="owner">Owner <i class="bx bx-filter-alt"></i></button></th>
           <th class="risk-th-due"><button class="risk-col-filter-btn" data-col-filter="due">Due <i class="bx bx-filter-alt"></i></button></th>
-          <th class="risk-th-reviewed"><button class="risk-col-filter-btn" data-col-filter="lastReviewedDate">Reviewed <i class="bx bx-filter-alt"></i></button></th>
           <th class="risk-th-li"><button class="risk-col-filter-btn" data-col-filter="likelihood">Likelihood <i class="bx bx-filter-alt"></i></button></th>
           <th class="risk-th-li"><button class="risk-col-filter-btn" data-col-filter="impact">Impact <i class="bx bx-filter-alt"></i></button></th>
           <th class="risk-th-notes">Notes</th>
         </tr></thead>
         <tbody>
           ${rowsHtml}
-          <tr class="monday-inline-add-row"><td colspan="10"><button type="button" class="monday-inline-add-btn" id="risk-inline-add"><i class="bx bx-plus"></i> Add risk</button></td></tr>
+          <tr class="monday-inline-add-row"><td colspan="9"><button type="button" class="monday-inline-add-btn" id="risk-inline-add"><i class="bx bx-plus"></i> Add risk</button></td></tr>
         </tbody>
       </table>
       ${risks.length ? "" : `<div class="monday-table-empty">No risks match this view. Click "Add risk" to log one.</div>`}
@@ -3298,71 +3296,81 @@ function openRiskModal(proj, riskId, onDone) {
   const modal = openModal(`
     <div class="aewttr-modal-head">
       <div>
-        <div class="risk-details-subline">${riskRatingPill(rating)} <span>L${Number(risk.likelihood || 0)} / I${Number(risk.impact || 0)}</span> <span>${escapeHtml(risk.owner || "Unassigned")}</span></div>
+        <div style="font-size:13px;font-weight:600;color:var(--aewttr-text);margin-bottom:4px;">${escapeHtml(risk.name || "New Risk")}</div>
+        <div class="risk-details-subline">${riskRatingPill(rating)} <span>L${Number(risk.likelihood || 0)} · I${Number(risk.impact || 0)}</span> <span>${escapeHtml(risk.owner || "Unassigned")}</span></div>
       </div>
       <button class="aewttr-modal-close">&times;</button>
     </div>
-    <div class="aewttr-modal-body">
+    <div class="aewttr-modal-body risk-modal-body">
       <div class="form-row"><label>Risk title <span class="required-star">*</span></label><input class="input-aewttr" id="risk-name" value="${escapeHtml(risk.name)}" placeholder="Describe this risk in a few words…"></div>
-      <div class="form-row"><label>Description</label><textarea class="textarea-aewttr" id="risk-description" placeholder="More detail on the risk and its context…">${escapeHtml(risk.description)}</textarea></div>
-      <div class="form-grid-2">
+      <div class="form-row"><label>Description</label><textarea class="textarea-aewttr" id="risk-description" rows="3" placeholder="More detail on the risk and its context…">${escapeHtml(risk.description)}</textarea></div>
+      <div class="form-grid-3">
         <div class="form-row"><label>Category</label><select class="select-aewttr" id="risk-category">${RISK_CATEGORY_OPTIONS.map((option) => `<option ${risk.category === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select></div>
         <div class="form-row"><label>Response strategy</label><select class="select-aewttr" id="risk-response">${RISK_RESPONSE_OPTIONS.map((option) => `<option ${risk.responseStrategy === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select></div>
-      </div>
-      <div class="form-row"><label>Portfolio / project link</label><input class="input-aewttr" id="risk-portfolio" list="risk-portfolio-options" value="${escapeHtml(risk.portfolio || portfolios[0] || "")}" placeholder="${escapeHtml(proj.name || "Project")}"><datalist id="risk-portfolio-options">${portfolios.map((portfolio) => `<option value="${escapeHtml(portfolio)}"></option>`).join("")}</datalist></div>
-      <div class="risk-mitigations-section">
-        <div class="risk-mitigations-head">
-          <span>Mitigation actions <span class="risk-mit-progress" id="risk-mit-progress" style="display:none;"></span></span>
-          <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="risk-add-mitigation"><i class="bx bx-plus"></i> Add action</button>
-        </div>
-        <div id="risk-mitigations-list" class="risk-mitigations-list"></div>
+        <div class="form-row"><label>Portfolio / project link</label><input class="input-aewttr" id="risk-portfolio" list="risk-portfolio-options" value="${escapeHtml(risk.portfolio || portfolios[0] || "")}" placeholder="${escapeHtml(proj.name || "Project")}"><datalist id="risk-portfolio-options">${portfolios.map((portfolio) => `<option value="${escapeHtml(portfolio)}"></option>`).join("")}</datalist></div>
       </div>
 
-      <div class="risk-residual-section">
-        <div class="risk-residual-head">
-          <span>Residual risk</span>
-          <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="risk-residual-suggest"${tip("Calculate residual from mitigation completion progress")}>Suggest from mitigations</button>
+      <div class="risk-modal-cols">
+        <div class="risk-modal-col-main">
+          <div class="risk-mitigations-section">
+            <div class="risk-mitigations-head">
+              <span>Mitigation actions <span class="risk-mit-progress" id="risk-mit-progress" style="display:none;"></span></span>
+              <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="risk-add-mitigation"><i class="bx bx-plus"></i> Add action</button>
+            </div>
+            <div id="risk-mitigations-list" class="risk-mitigations-list"></div>
+          </div>
         </div>
-        <div class="risk-residual-body">
-          <div class="risk-residual-controls">
-            <div class="risk-residual-field">
-              <label>Residual likelihood</label>
-              <select class="select-aewttr" id="risk-residual-l">
-                <option value="0"${!risk.residualLikelihood ? " selected" : ""}>Not set</option>
-                ${[1,2,3,4,5].map((n) => `<option value="${n}"${Number(risk.residualLikelihood) === n ? " selected" : ""}>${n}</option>`).join("")}
-              </select>
+
+        <div class="risk-modal-col-side">
+          <div class="risk-residual-section">
+            <div class="risk-residual-head">
+              <span>Residual risk</span>
+              <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="risk-residual-suggest"${tip("Calculate residual from mitigation completion progress")}>Suggest</button>
             </div>
-            <div class="risk-residual-field">
-              <label>Residual impact</label>
-              <select class="select-aewttr" id="risk-residual-i">
-                <option value="0"${!risk.residualImpact ? " selected" : ""}>Not set</option>
-                ${[1,2,3,4,5].map((n) => `<option value="${n}"${Number(risk.residualImpact) === n ? " selected" : ""}>${n}</option>`).join("")}
-              </select>
+            <div class="risk-residual-body">
+              <div class="risk-residual-controls">
+                <div class="risk-residual-field">
+                  <label>Likelihood</label>
+                  <select class="select-aewttr" id="risk-residual-l">
+                    <option value="0"${!risk.residualLikelihood ? " selected" : ""}>—</option>
+                    ${[1,2,3,4,5].map((n) => `<option value="${n}"${Number(risk.residualLikelihood) === n ? " selected" : ""}>${n}</option>`).join("")}
+                  </select>
+                </div>
+                <div class="risk-residual-field">
+                  <label>Impact</label>
+                  <select class="select-aewttr" id="risk-residual-i">
+                    <option value="0"${!risk.residualImpact ? " selected" : ""}>—</option>
+                    ${[1,2,3,4,5].map((n) => `<option value="${n}"${Number(risk.residualImpact) === n ? " selected" : ""}>${n}</option>`).join("")}
+                  </select>
+                </div>
+                <div class="risk-residual-rating-wrap">
+                  <div class="risk-residual-rating-display" id="risk-residual-rating-display" style="display:none;"></div>
+                  <div class="risk-residual-hint">Inherent risk remaining after mitigations.</div>
+                </div>
+              </div>
             </div>
-            <div class="risk-residual-rating-wrap">
-              <div class="risk-residual-rating-display" id="risk-residual-rating-display" style="display:none;"></div>
-              <div class="risk-residual-hint">Residual = inherent risk remaining after mitigations are applied.</div>
+          </div>
+
+          <div class="risk-modal-review-section">
+            <div class="risk-review-history-head">Review history</div>
+            <div class="risk-review-history-list">
+              ${(risk.reviewNotes || []).length ? risk.reviewNotes.map((entry) => `
+                <div class="risk-review-history-item">
+                  <div class="risk-review-history-meta">${fmtDate(entry.date)} · ${escapeHtml(entry.author || "Unknown")}</div>
+                  <div class="risk-review-history-text">${escapeHtml(entry.note)}</div>
+                </div>`).join("") : `<div class="empty-state" style="padding:6px 0;font-size:12px;">No review notes yet.</div>`}
             </div>
+            <div class="form-row" style="margin-bottom:0;margin-top:8px;"><label>Add review note <small style="font-weight:400;color:var(--aewttr-muted);">(optional)</small></label><textarea class="textarea-aewttr" id="risk-review-note" placeholder="Dated review note…" rows="2"></textarea></div>
           </div>
         </div>
       </div>
-
-      <div class="risk-review-history-head">Review history</div>
-      <div class="risk-review-history-list">
-        ${(risk.reviewNotes || []).length ? risk.reviewNotes.map((entry) => `
-          <div class="risk-review-history-item">
-            <div class="risk-review-history-meta">${fmtDate(entry.date)} · ${escapeHtml(entry.author || "Unknown")}</div>
-            <div class="risk-review-history-text">${escapeHtml(entry.note)}</div>
-          </div>`).join("") : `<div class="empty-state" style="padding:8px 0;font-size:12px;">No review notes yet.</div>`}
-      </div>
-      <div class="form-row" style="margin-bottom:0;"><label>Add review note <small style="font-weight:400;color:var(--aewttr-muted);">(optional)</small></label><textarea class="textarea-aewttr" id="risk-review-note" placeholder="Add a dated review note..." rows="2"></textarea></div>
     </div>
     <div class="aewttr-modal-foot">
       <button class="btn-aewttr-ghost" id="risk-delete">Delete</button>
       <button class="btn-aewttr-ghost" id="risk-cancel">Cancel</button>
       <button class="btn-aewttr" id="risk-save">Save</button>
     </div>
-  `);
+  `, { wide: true });
   let mitigations = (risk.mitigations || []).map((m) => Object.assign({}, m));
   const notesOpen = new Set();
 
@@ -9926,21 +9934,7 @@ function drawProjectReporting(body, proj) {
     return '<div class="rep-sld-gantt">' + hdrHtml + '<div class="rep-sld-gantt-body">' + rowsHtml + '</div>' + legendHtml + '</div>';
   }
 
-  function scaleSlidePreview() {
-    var previewEl = $("#rep-slide-preview", body);
-    if (!previewEl) return;
-    var frame = previewEl.querySelector(".rep-slide-frame");
-    var mock = frame && frame.querySelector(".rep-sld-mock");
-    if (!frame || !mock) return;
-    var w = frame.getBoundingClientRect().width;
-    if (!w) return;
-    var scale = w / 960;
-    mock.style.transformOrigin = "top left";
-    mock.style.transform = "scale(" + scale + ")";
-    frame.style.height = Math.ceil(540 * scale) + "px";
-  }
-
-  function renderSlidePreview() {
+  function renderSlidePreview() { /* preview removed */ return;
     var wrap = $("#rep-slide-preview", body);
     if (!wrap) return;
     function ragBg(v) { return RAG_BG[v] || "transparent"; }
@@ -10087,9 +10081,6 @@ function drawProjectReporting(body, proj) {
   var _listedPh   = Array.isArray(proj.images) ? proj.images.map(function(img) { return typeof img === "string" ? img : (img.url || img.fileUrl || ""); }).filter(Boolean) : [];
   var _photoUrls  = (_selPhotos.length ? _selPhotos : (proj.coverImage ? [proj.coverImage] : []).concat(_listedPh)).filter(Boolean).filter(function(u, i, a) { return a.indexOf(u) === i; }).slice(0, 4);
 
-  // Preview visibility state
-  if (cfg.previewVisible === undefined) cfg.previewVisible = true;
-
   // Risk register for per-risk selection
   var _allRisks = (typeof projectRisks === "function" ? projectRisks(proj.id) : []).filter(function(r) { return r.status !== "Closed"; });
   if (!cfg.selectedRisks) cfg.selectedRisks = [];
@@ -10100,30 +10091,13 @@ function drawProjectReporting(body, proj) {
       <!-- Action bar -->
       <div class="rep-bar">
         <div class="rep-bar-right">
-          <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="rep-toggle-preview">
-            <i class="bx ${cfg.previewVisible ? "bx-hide" : "bx-show"}"></i> ${cfg.previewVisible ? "Hide" : "Show"} Preview
-          </button>
           <button type="button" class="btn-aewttr-outline btn-aewttr-sm" id="rep-export-project-slide"><i class="bx bx-file"></i> Export project slide</button>
           <button type="button" class="btn-aewttr btn-aewttr-sm" id="rep-export-full-deck"><i class="bx bxs-slideshow"></i> Export full deck</button>
         </div>
       </div>
 
-      <!-- Two-column layout -->
-      <div class="rep-dual ${cfg.previewVisible ? "" : "rep-dual--no-preview"}">
-
-        <!-- LEFT: sticky slide preview -->
-        <div class="rep-dual-left" style="${cfg.previewVisible ? "" : "display:none"}">
-          <div class="rep-preview-eyebrow">
-            <i class="bx bx-slideshow"></i> Slide Preview
-            <span class="rep-preview-eyebrow-hint">— updates as you edit</span>
-          </div>
-          <div class="rep-preview-wrap">
-            <div id="rep-slide-preview"></div>
-          </div>
-        </div>
-
-        <!-- RIGHT: quadrant editing cards -->
-        <div class="rep-dual-right">
+        <!-- Quadrant editing cards -->
+        <div class="rep-dual-right rep-cards-only">
 
           <!-- ↖ TOP LEFT — Photos -->
           <div class="rep-qcard">
@@ -10225,8 +10199,7 @@ function drawProjectReporting(body, proj) {
             </div>
           </div>
 
-        </div><!-- /rep-dual-right -->
-      </div><!-- /rep-dual -->
+        </div><!-- /rep-cards-only -->
     </div><!-- /rep-shell -->
   `;
 
@@ -10259,19 +10232,9 @@ function drawProjectReporting(body, proj) {
       const idx = parseInt(inp.dataset.riskIdx, 10);
       if (sc.riskRows[idx]) sc.riskRows[idx].notes = inp.value;
       clearTimeout(t);
-      t = setTimeout(function() { saveConfig(); renderSlidePreview(); }, 25);
+      t = setTimeout(function() { saveConfig(); }, 25);
     });
   });
-
-  // Preview toggle
-  const togglePreviewBtn = $("#rep-toggle-preview", body);
-  if (togglePreviewBtn) {
-    togglePreviewBtn.addEventListener("click", function() {
-      cfg.previewVisible = !cfg.previewVisible;
-      saveConfig();
-      drawProjectReporting(body, proj);
-    });
-  }
 
   // Per-risk selection checkboxes
   $all(".rep-risk-check-cb", body).forEach(function(cb) {
