@@ -3089,16 +3089,18 @@ const sharePointAdapter = (function () {
   async function queueTeamsNotification(siteUrl, { to, subject, bodyHtml, emailBodyHtml, teamsText, area }) {
     const recipients = (Array.isArray(to) ? to : [to]).filter(Boolean);
     if (!recipients.length) return { queued: false, reason: "no-recipients" };
-    await createItem(siteUrl, "PULSE Notifications", {
-      Title: String(subject || "PULSE notification").slice(0, 255),
-      ToEmails: recipients.join(";"),
-      Subject: subject || "",
-      BodyHtml: bodyHtml || "",
-      EmailBodyHtml: emailBodyHtml || "",
-      TeamsText: teamsText || "",
-      NotificationArea: area || "General",
-      DeliveryStatus: "Pending"
-    });
+    await Promise.all(recipients.map((email) =>
+      createItem(siteUrl, "PULSE Notifications", {
+        Title: String(subject || "PULSE notification").slice(0, 255),
+        ToEmails: email,
+        Subject: subject || "",
+        BodyHtml: bodyHtml || "",
+        EmailBodyHtml: emailBodyHtml || "",
+        TeamsText: teamsText || "",
+        NotificationArea: area || "General",
+        DeliveryStatus: "Pending"
+      })
+    ));
     return { queued: true, count: recipients.length };
   }
 
