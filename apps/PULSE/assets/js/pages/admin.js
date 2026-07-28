@@ -19,8 +19,7 @@ function canManageSharePointSetup() {
 }
 
 const ADMIN_TOOLS = [
-  { key: "lists", title: "Lists", sub: "Manage selectable Portfolios and End Item Configs without opening a project.", icon: "bx-list-ul" },
-  { key: "locations", title: "Locations", sub: "Manage the selectable list of ranges/locations projects can use.", icon: "bx-map-pin" },
+  { key: "lists", title: "Lists", sub: "Manage selectable Portfolios, End Item Configs, Locations, and ATO values.", icon: "bx-list-ul" },
   { key: "groups", title: "Groups", sub: "Create people groups used in pickers app-wide. Project members sync into a group named after the project.", icon: "bx-group" },
   { key: "spsetup", title: "SharePoint Setup", sub: "Check list/column status, pull the SharePoint people directory, and run setup.", icon: "bx-data" },
   { key: "notifications", title: "Notification Settings", sub: "Choose your own delivery channels, areas, and message tone.", icon: "bx-bell", externalRoute: "notification-settings" },
@@ -64,7 +63,6 @@ function renderAdminPage(sub, recordId) {
   const body = $("#admin-body");
 
   if (sub === "lists") return drawListsConfig(body);
-  if (sub === "locations") return drawLocationConfig(body);
   if (sub === "groups") return drawGroupsConfig(body);
   if (sub === "meetingadmins") return drawMeetingAdminsConfig(body);
   if (sub === "issues") return reviewingIssue ? drawIssueReviewPage(body, decodeURIComponent(recordId)) : drawIssueReports(body);
@@ -915,7 +913,7 @@ function openAdminGroupEditor(group, onDone) {
 function drawListsConfig(body) {
   const cfg = getLocationConfig();
 
-  function renderSection(id, title, hint, items, addLabel, onAdd, onRename, onRemove) {
+  function renderSection(id, title, hint, items, addLabel) {
     return `
       <div class="aewttr-card aewttr-card-pad" style="margin-bottom:16px;">
         <div class="toolbar-row" style="margin-bottom:12px;">
@@ -944,9 +942,13 @@ function drawListsConfig(body) {
   body.innerHTML = requireAdmin(() => {
     const portfolios = getKnownPortfolioNames ? getKnownPortfolioNames() : (cfg.portfolios || []);
     const endItems = getKnownConfigEndItemNames ? getKnownConfigEndItemNames() : (cfg.configEndItems || []);
+    const locations = cfg.locations || [];
+    const atos = cfg.atos || [];
     return `
-      ${renderSection("portfolios", "Portfolios", "These appear in the Portfolio picker when editing or creating a project.", portfolios, "Add Portfolio", null, null, null)}
-      ${renderSection("endItems", "End Item Configurations", "These appear in the Config End Item picker when editing a project.", endItems, "Add End Item", null, null, null)}
+      ${renderSection("portfolios", "Portfolios", "These appear in the Portfolio picker when editing or creating a project.", portfolios, "Add Portfolio")}
+      ${renderSection("endItems", "End Item Configurations", "These appear in the Config End Item picker when editing a project.", endItems, "Add End Item")}
+      ${renderSection("locations", "Ranges / Locations", "These appear in the Location picker when editing a project.", locations, "Add Location")}
+      ${renderSection("atos", "ATO Values", "These appear in the ATO dropdown when editing a project's classification settings.", atos, "Add ATO")}
     `;
   });
 
@@ -959,39 +961,36 @@ function drawListsConfig(body) {
     drawListsConfig(body);
   };
 
+  const SECTION_META = {
+    portfolios: { singular: "Portfolio", label: "Portfolio name", placeholder: "e.g. AEWTTR", list: () => cfg.portfolios || (cfg.portfolios = []) },
+    endItems:   { singular: "End Item Config", label: "End item name", placeholder: "e.g. AN/ALQ-217", list: () => cfg.configEndItems || (cfg.configEndItems = []) },
+    locations:  { singular: "Location", label: "Location name", placeholder: "e.g. White Sands Missile Range", list: () => cfg.locations || (cfg.locations = []) },
+    atos:       { singular: "ATO", label: "ATO value", placeholder: "e.g. ATO-2024-001", list: () => cfg.atos || (cfg.atos = []) },
+  };
+
   $all("[data-lists-add]", body).forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const section = btn.dataset.listsAdd;
-      if (section === "portfolios") {
-        const name = (await promptDialog({ title: "Add Portfolio", label: "Portfolio name", placeholder: "e.g. AEWTTR" }) || "").trim();
-        if (!name) return;
-        if ((cfg.portfolios || []).some((n) => n.toLowerCase() === name.toLowerCase())) { toast("That portfolio already exists.", "error"); return; }
-        cfg.portfolios = cfg.portfolios || [];
-        cfg.portfolios.push(name);
-        cfg.portfolios.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-        await saveAndRefresh();
-        toast("Portfolio added", "success");
-      } else if (section === "endItems") {
-        const name = (await promptDialog({ title: "Add End Item Config", label: "End item name", placeholder: "e.g. AN/ALQ-217" }) || "").trim();
-        if (!name) return;
-        if ((cfg.configEndItems || []).some((n) => n.toLowerCase() === name.toLowerCase())) { toast("That end item already exists.", "error"); return; }
-        cfg.configEndItems = cfg.configEndItems || [];
-        cfg.configEndItems.push(name);
-        cfg.configEndItems.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-        await saveAndRefresh();
-        toast("End item config added", "success");
-      }
+      const meta = SECTION_META[btn.dataset.listsAdd];
+      if (!meta) return;
+      const name = (await promptDialog({ title: `Add ${meta.singular}`, label: meta.label, placeholder: meta.placeholder }) || "").trim();
+      if (!name) return;
+      const list = meta.list();
+      if (list.some((n) => n.toLowerCase() === name.toLowerCase())) { toast(`That ${meta.singular.toLowerCase()} already exists.`, "error"); return; }
+      list.push(name);
+      list.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+      await saveAndRefresh();
+      toast(`${meta.singular} added`, "success");
     });
   });
 
   $all("[data-lists-rename]", body).forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const section = btn.dataset.listsRename;
+      const meta = SECTION_META[btn.dataset.listsRename];
+      if (!meta) return;
       const idx = Number(btn.dataset.listsIdx);
-      const list = section === "portfolios" ? (cfg.portfolios || []) : (cfg.configEndItems || []);
+      const list = meta.list();
       const current = list[idx];
-      const title = section === "portfolios" ? "Rename Portfolio" : "Rename End Item Config";
-      const name = (await promptDialog({ title, label: "Name", value: current }) || "").trim();
+      const name = (await promptDialog({ title: `Rename ${meta.singular}`, label: "Name", value: current }) || "").trim();
       if (!name || name === current) return;
       if (list.some((n, i) => i !== idx && n.toLowerCase() === name.toLowerCase())) { toast("That name already exists.", "error"); return; }
       list[idx] = name;
@@ -1003,12 +1002,12 @@ function drawListsConfig(body) {
 
   $all("[data-lists-remove]", body).forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const section = btn.dataset.listsRemove;
+      const meta = SECTION_META[btn.dataset.listsRemove];
+      if (!meta) return;
       const idx = Number(btn.dataset.listsIdx);
-      const list = section === "portfolios" ? (cfg.portfolios || []) : (cfg.configEndItems || []);
+      const list = meta.list();
       const item = list[idx];
-      const title = section === "portfolios" ? "Remove Portfolio" : "Remove End Item Config";
-      const ok = await confirmDialog({ title, message: `Remove "${item}" from the selectable list? Projects that already use it keep it until edited.`, confirmLabel: "Remove", danger: true });
+      const ok = await confirmDialog({ title: `Remove ${meta.singular}`, message: `Remove "${item}" from the selectable list? Projects that already use it keep it until edited.`, confirmLabel: "Remove", danger: true });
       if (!ok) return;
       list.splice(idx, 1);
       await saveAndRefresh();
@@ -1269,7 +1268,7 @@ function drawDemoData(body) {
       <div class="side-panel-title">Demo Portfolio Seed</div>
       <p style="margin-top:0;color:var(--aewttr-muted);">Creates sample projects with tracker tasks, status notes, and tasks assigned to <strong>${escapeHtml(window.AEWTTR.db.user.name)}</strong> for Monday demos.</p>
       <button class="btn-aewttr" id="demo-seed-btn"><i class="bx bx-data"></i> Load Demo Projects</button>
-      <p style="font-size:12px;color:var(--aewttr-muted);margin-top:14px;">Safe to run multiple times — skips project IDs that already exist.</p>
+      <p style="font-size:12px;color:var(--aewttr-muted);margin-top:14px;">Safe to run multiple times — existing projects are skipped.</p>
     </div>
   `);
   if (!canCurrentUserAccessAdmin()) return;

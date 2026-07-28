@@ -62,7 +62,7 @@ function renderProjectGallery() {
     return (window.AEWTTR.db.projects || []).filter(p => {
       if (st.scope === "mine" && !isCurrentUserOnProject(p)) return false;
       if (st.priority !== "All" && p.priority !== st.priority) return false;
-      if (st.search && !(p.name.toLowerCase().includes(st.search.toLowerCase()) || p.id.toLowerCase().includes(st.search.toLowerCase()))) return false;
+      if (st.search && !p.name.toLowerCase().includes(st.search.toLowerCase())) return false;
       return true;
     });
   }
@@ -92,7 +92,7 @@ function renderProjectGallery() {
             const lifecycle = p.lifecycleStatus || p.status || "Active";
             return `<button type="button" class="projects-catalog-card projects-catalog-card--${stats.worstHealth}" data-id="${escapeHtml(p.id)}">
               <div class="projects-catalog-card-head"><span class="projects-catalog-health">${pgroupHealthDotHtml(stats.worstHealth, healthLabel)}${healthLabel}</span>${priorityTag(p.priority)}</div>
-              <div class="projects-catalog-name">${escapeHtml(p.name)}</div><div class="projects-catalog-meta"><span>${escapeHtml(p.id)}</span><span>${escapeHtml(lifecycle)}</span></div>
+              <div class="projects-catalog-name">${escapeHtml(p.name)}</div><div class="projects-catalog-meta"><span>${escapeHtml(lifecycle)}</span></div>
               <div class="projects-catalog-signals"><span>${stats.openTasks} open task${stats.openTasks === 1 ? "" : "s"}</span><span>${Math.max(0, stats.totalTasks - stats.openTasks)} closed task${Math.max(0, stats.totalTasks - stats.openTasks) === 1 ? "" : "s"}</span><span>${stats.openRisks} open risk${stats.openRisks === 1 ? "" : "s"}</span></div>
               <div class="projects-catalog-foot"><span>Updated ${p.updated ? fmtDate(p.updated) : "—"}</span><i class="bx bx-chevron-right"></i></div>
             </button>`;
@@ -703,9 +703,9 @@ function renderGroupDetail(groupName, groupType, projects) {
       const isExportSelected = selectedProjectIds().includes(proj.id);
       const isFocused = proj.id === focusedProjId;
       const rollup = richStats.projectRollups.find(function(r) { return r.id === proj.id; }) || {};
-      return `<button type="button" class="grp-sb-item${isFocused ? " is-focused" : ""}${isExportSelected ? " is-export-selected" : ""}" data-sb-proj-id="${escapeHtml(proj.id)}" title="${escapeHtml(proj.name || proj.id)}">
+      return `<button type="button" class="grp-sb-item${isFocused ? " is-focused" : ""}${isExportSelected ? " is-export-selected" : ""}" data-sb-proj-id="${escapeHtml(proj.id)}" title="${escapeHtml(proj.name || "Untitled project")}">
         <span class="grp-sb-dot ${ragDotCls}">●</span>
-        <span class="grp-sb-name">${escapeHtml(proj.name || proj.id)}</span>
+        <span class="grp-sb-name">${escapeHtml(proj.name || "Untitled project")}</span>
         <span class="grp-sb-meta">${rollup.openTasks || 0} tasks · ${rollup.openRisks || 0} risks</span>
       </button>`;
     }).join("");
@@ -716,7 +716,7 @@ function renderGroupDetail(groupName, groupType, projects) {
       const ctrl = isProjectSlide
         ? `<input type="radio" name="grp-exp-proj" class="grp-exp-proj-ctrl" data-proj-id="${escapeHtml(proj.id)}" ${checked ? "checked" : ""}>`
         : `<input type="checkbox" class="grp-exp-proj-ctrl" data-proj-id="${escapeHtml(proj.id)}" ${checked ? "checked" : ""}>`;
-      return `<label class="grp-exp-proj-row${checked ? " is-checked" : ""}">${ctrl}<span>${escapeHtml(proj.name || proj.id)}</span></label>`;
+      return `<label class="grp-exp-proj-row${checked ? " is-checked" : ""}">${ctrl}<span>${escapeHtml(proj.name || "Untitled project")}</span></label>`;
     }).join("");
 
     mount.innerHTML = `
@@ -1361,7 +1361,7 @@ function openNewProjectModal() {
       coverImage: "", description: $("#np-desc", modal).value.trim(),
       pm: "", engineer: "", isso: "", rangePoc: "", contractor: "", taskOrder: "",
       fundingType: "", fiscalYear: "", fundingStatus: "", changeRequestRequired: false,
-      configEndItem: "", locations: [], portfolios, startDate: "", dueDate: "", completionDate: ""
+      configEndItem: "", locations: [], portfolios, deliverables: [], startDate: "", dueDate: "", completionDate: ""
     };
     if (newCoverFile || newCoverImage) {
       try {
@@ -1437,7 +1437,7 @@ function renderProjectDetail(id, tab, boardId) {
   // now lives inside the Home tab's own content (see drawWorkspace) instead
   // of sitting above every tab — it was eating vertical space on tabs like
   // Tracker/Boards where you want to see content, not a re-statement of
-  // which project you're already in (the left nav already shows the ID).
+  // which project you're already in (the left nav already shows its name).
   const navItems = [
     { key: "workspace", label: "Home", icon: "bx-home-alt" },
     { key: "notes", label: "Notes", icon: "bx-notepad" },
@@ -1458,7 +1458,7 @@ function renderProjectDetail(id, tab, boardId) {
   const projectHealth = proj.technicalStatus || computeProjectTechStatus(proj) || "On Track";
   const projectHealthTone = /off track|blocked|red/i.test(projectHealth) ? "red" : /at risk|watch|amber/i.test(projectHealth) ? "amber" : "green";
   const projectHeadings = {
-    workspace: { kicker: "Delivery overview", title: "Project delivery at a glance" },
+    workspace: { kicker: "Delivery overview", title: "Project delivery at a glance", sub: "Track progress, manage tasks, and monitor project health in real time." },
     notes: { kicker: "Project record", title: "Notes, decisions, and risk context" },
     people: { kicker: "Team capacity", title: "People and project roles" },
     documents: { kicker: "Working files", title: "Project documents" },
@@ -1477,11 +1477,10 @@ function renderProjectDetail(id, tab, boardId) {
         <button type="button" class="project-spo-back pgroup-back-btn" id="project-sidebar-back"><i class="bx bx-chevron-left"></i> All projects</button>
         <div class="pgroup-workspace-identity project-spo-identity">
           <span class="pgroup-kicker">Project</span>
-          <h2 class="pgroup-detail-name">${escapeHtml(proj.name || proj.id)}</h2>
+          <h2 class="pgroup-detail-name">${escapeHtml(proj.name || "Untitled project")}</h2>
           <span class="pgroup-workspace-health pgroup-workspace-health--${projectHealthTone}">${pgroupHealthDotHtml(projectHealthTone, projectHealth)}${escapeHtml(projectHealth)}</span>
         </div>
         <div class="pgroup-workspace-summary project-spo-summary">
-          <span><b>${escapeHtml(proj.id)}</b> project ID</span>
           <span><b>${openTrackerCount}</b> open task${openTrackerCount === 1 ? "" : "s"}</span>
           <span><b>${riskCount}</b> open risk${riskCount === 1 ? "" : "s"}</span>
         </div>
@@ -1495,8 +1494,8 @@ function renderProjectDetail(id, tab, boardId) {
             </button>`).join("")}
         </nav>
       </aside>
-      <main class="project-spo-main pgroup-workspace-main">
-        <header class="project-spo-main-head pgroup-workspace-head"><div><span class="pgroup-kicker">${escapeHtml(activeHeading.kicker)}</span><h3>${escapeHtml(activeHeading.title)}</h3></div><div class="project-spo-main-actions"><button type="button" class="btn-aewttr-outline btn-aewttr-sm" id="project-workspace-back"><i class="bx bx-grid-alt"></i> All Projects</button><button type="button" class="btn-aewttr btn-aewttr-sm" id="project-workspace-settings"><i class="bx bx-cog"></i> Project Settings</button></div></header>
+      <main class="project-spo-main pgroup-workspace-main project-spo-main--${escapeHtml(activeTab)}">
+        <header class="project-spo-main-head pgroup-workspace-head"><div><span class="pgroup-kicker">${escapeHtml(activeHeading.kicker)}</span><h3>${escapeHtml(activeHeading.title)}</h3>${activeHeading.sub ? `<p class="pgroup-workspace-head-sub">${escapeHtml(activeHeading.sub)}</p>` : ""}</div><div class="project-spo-main-actions"><button type="button" class="btn-aewttr-outline btn-aewttr-sm" id="project-workspace-back"><i class="bx bx-grid-alt"></i> All Projects</button><button type="button" class="btn-aewttr btn-aewttr-sm" id="project-workspace-settings"><i class="bx bx-cog"></i> Project Settings</button></div></header>
         <div id="proj-tab-body" class="project-spo-tab-body"></div>
       </main>
     </div>
@@ -1545,7 +1544,7 @@ async function exportProjectXlsx(proj) {
   }
   const pmName = typeof projectPMDisplayName === "function" ? projectPMDisplayName(proj) : "";
   const status = computeProjectStatus(proj);
-  const fileName = `project-${proj.id}-tracker.xlsx`;
+  const fileName = `${String(proj.name || "project").replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "") || "project"}-tracker.xlsx`;
   const popup = typeof service.reserveOpen === "function"
     ? service.reserveOpen(fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     : null;
@@ -1554,7 +1553,7 @@ async function exportProjectXlsx(proj) {
       popup,
       folderName: "Project Exports",
       title: proj.name || "PULSE Project Tracker",
-      subtitle: [proj.id, pmName ? `POC: ${pmName}` : null, status ? `Status: ${status}` : null].filter(Boolean).join("  |  "),
+      subtitle: [pmName ? `POC: ${pmName}` : null, status ? `Status: ${status}` : null].filter(Boolean).join("  |  "),
       sectionLabel: "PROJECT TASK INVENTORY",
       footerLabel: "PULSE PROJECT TRACKER",
       sheetName: "Project Tracker"
@@ -1607,7 +1606,7 @@ async function exportProjectPptx(proj) {
     toast("PowerPoint export is unavailable in this package.", "error");
     return;
   }
-  const openTarget = reserveStatusExportOpen(`${proj.id || "project"}-project-update.pptx`);
+  const openTarget = reserveStatusExportOpen(`${String(proj.name || "project").replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "") || "project"}-project-update.pptx`);
   try {
     toast("Building status PowerPoint…", "info");
     const result = await api.exportProjectStatusPptxToSharePoint(proj, { popup: openTarget });
@@ -1967,9 +1966,9 @@ function drawWorkspace(body, proj) {
   if (!extra.notes) extra.notes = [];
   const trackerTasks = (db.ganttTasks && db.ganttTasks[proj.id]) || [];
   const people = (db.projectPeople && db.projectPeople[proj.id]) || [];
-  const doneStatus = "Complete";
-  const doneTasks = trackerTasks.filter((t) => (t.status || "") === doneStatus).length;
-  const openTasks = Math.max(0, trackerTasks.length - doneTasks);
+  const actionableTasks = trackerTasks.filter((task) => task && !isTrackerDivider(task));
+  const doneTasks = actionableTasks.filter((task) => ["Complete", "Done"].includes(task.status || "")).length;
+  const openTasks = actionableTasks.filter((task) => !["Complete", "Done", "Cancelled"].includes(task.status || "")).length;
   const homeRisks = projectRisks(proj.id);
 
   const headerActions = `
@@ -2003,22 +2002,26 @@ function drawWorkspace(body, proj) {
       </header>
 
       <div class="project-home-metrics" role="list" aria-label="Project snapshot">
-        <div class="project-home-metric" role="listitem">
+        <div class="project-home-metric project-home-metric--open" role="listitem">
           <strong>${openTasks}</strong>
           <span class="k">Open tasks</span>
         </div>
-        <div class="project-home-metric" role="listitem">
+        <div class="project-home-metric project-home-metric--complete" role="listitem">
           <strong>${doneTasks}</strong>
           <span class="k">Complete</span>
         </div>
-        <div class="project-home-metric" role="listitem">
+        <div class="project-home-metric project-home-metric--people" role="listitem">
           <strong>${people.length}</strong>
           <span class="k">People</span>
+        </div>
+        <div class="project-home-metric project-home-metric--risk" role="listitem">
+          <strong>${openRisks}</strong>
+          <span class="k">Open risks</span>
         </div>
       </div>
 
       <div class="project-home-panels">
-        <section class="project-home-panel">
+        <section class="project-home-panel project-home-panel--roles">
           <div class="project-home-panel-head">
             <h2>Key roles</h2>
             <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" data-route="projects/${proj.id}/settings">Edit</button>
@@ -2028,7 +2031,7 @@ function drawWorkspace(body, proj) {
           </div>
         </section>
 
-        <section class="project-home-panel">
+        <section class="project-home-panel project-home-panel--program">
           <div class="project-home-panel-head">
             <h2>Program &amp; funding</h2>
             <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" data-route="projects/${proj.id}/settings">Edit</button>
@@ -2049,7 +2052,7 @@ function drawWorkspace(body, proj) {
           </dl>
         </section>
 
-        <section class="project-home-panel">
+        <section class="project-home-panel project-home-panel--schedule">
           <div class="project-home-panel-head">
             <h2>Schedule &amp; location</h2>
             <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" data-route="projects/${proj.id}/settings">Edit</button>
@@ -2067,7 +2070,7 @@ function drawWorkspace(body, proj) {
 
         <section class="project-home-panel project-home-panel--scope">
           <div class="project-home-panel-head">
-            <h2>Scope &amp; objectives</h2>
+            <h2>Scope &amp; deliverables</h2>
             <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" data-route="projects/${proj.id}/settings">Edit</button>
           </div>
           <div class="project-home-text-grid">
@@ -2075,9 +2078,11 @@ function drawWorkspace(body, proj) {
               <h3>Scope</h3>
               <p>${proj.scope ? escapeHtml(proj.scope) : "No scope defined yet."}</p>
             </div>
-            <div class="project-home-text-block${proj.objectives ? "" : " is-empty"}">
-              <h3>Objectives</h3>
-              <p>${proj.objectives ? escapeHtml(proj.objectives) : "No objectives defined yet."}</p>
+            <div class="project-home-text-block${projectDeliverables(proj).length ? "" : " is-empty"}">
+              <h3>Deliverables</h3>
+              ${projectDeliverables(proj).length
+                ? `<ul class="project-home-deliverables">${projectDeliverables(proj).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+                : `<p>No deliverables added yet.</p>`}
             </div>
           </div>
         </section>
@@ -2101,7 +2106,7 @@ function drawWorkspace(body, proj) {
           </div>
         </section>
 
-        <section class="project-home-panel">
+        <section class="project-home-panel project-home-panel--links">
           <div class="project-home-panel-head">
             <h2>Quick links</h2>
           </div>
@@ -3294,7 +3299,7 @@ function openRiskModal(proj, riskId, onDone) {
         <div class="form-row"><label>Category</label><select class="select-aewttr" id="risk-category">${RISK_CATEGORY_OPTIONS.map((option) => `<option ${risk.category === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select></div>
         <div class="form-row"><label>Response strategy</label><select class="select-aewttr" id="risk-response">${RISK_RESPONSE_OPTIONS.map((option) => `<option ${risk.responseStrategy === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select></div>
       </div>
-      <div class="form-row"><label>Portfolio / project link</label><input class="input-aewttr" id="risk-portfolio" list="risk-portfolio-options" value="${escapeHtml(risk.portfolio || portfolios[0] || "")}" placeholder="${escapeHtml(proj.id + " — " + (proj.name || ""))}"><datalist id="risk-portfolio-options">${portfolios.map((portfolio) => `<option value="${escapeHtml(portfolio)}"></option>`).join("")}</datalist></div>
+      <div class="form-row"><label>Portfolio / project link</label><input class="input-aewttr" id="risk-portfolio" list="risk-portfolio-options" value="${escapeHtml(risk.portfolio || portfolios[0] || "")}" placeholder="${escapeHtml(proj.name || "Project")}"><datalist id="risk-portfolio-options">${portfolios.map((portfolio) => `<option value="${escapeHtml(portfolio)}"></option>`).join("")}</datalist></div>
       <div class="risk-mitigations-section">
         <div class="risk-mitigations-head">
           <span>Mitigation actions <span class="risk-mit-progress" id="risk-mit-progress" style="display:none;"></span></span>
@@ -4941,13 +4946,13 @@ async function notifyTaskAssignee(task, projectCode) {
   try {
     await notifyUsers({
       to: [member.email],
-      subject: `PULSE Projects: "${task.title}" assigned to you${proj ? ` — ${proj.id}` : ""}`,
+      subject: `PULSE Projects: "${task.title}" assigned to you${proj ? ` — ${proj.name}` : ""}`,
       area: "Projects",
       kind: "action",
-      preview: `${db.user.name} assigned you a task${proj ? ` on ${proj.id} — ${proj.name}` : ""}.`,
+      preview: `${db.user.name} assigned you a task${proj ? ` on ${proj.name}` : ""}.`,
       facts: [
         { title: "Task", value: task.title },
-        { title: "Project", value: proj ? `${proj.id} — ${proj.name}` : (projectCode || "—") },
+        { title: "Project", value: proj ? proj.name : "—" },
         { title: "Due", value: task.end ? fmtDate(task.end) : "—" },
         { title: "Assigned by", value: db.user.name }
       ],
@@ -4975,12 +4980,12 @@ async function notifyPersonAssignedToProjectRole(proj, fieldLabel, entry) {
   try {
     await notifyUsers({
       to: [entry.email],
-      subject: `PULSE Projects: You're the ${fieldLabel} on ${proj.id} — ${proj.name}`,
+      subject: `PULSE Projects: You're the ${fieldLabel} on ${proj.name}`,
       area: "Projects",
       kind: "action",
-      preview: `${db.user.name} assigned you as ${fieldLabel} on ${proj.id} — ${proj.name}.`,
+      preview: `${db.user.name} assigned you as ${fieldLabel} on ${proj.name}.`,
       facts: [
-        { title: "Project", value: `${proj.id} — ${proj.name}` },
+        { title: "Project", value: proj.name },
         { title: "Role", value: fieldLabel },
         { title: "Portfolios", value: (typeof projectPortfolios === "function" ? projectPortfolios(proj) : (proj.portfolios || [])).join(", ") || "—" },
         { title: "Assigned by", value: db.user.name }
@@ -6186,7 +6191,10 @@ function renderTrackerWorkspace(mount, config) {
               <button type="button" class="gantt-search-clear" id="tracker-assignee-clear-${mountId}"${tip("Clear assignee filter")} style="${filterState.assignee ? "" : "display:none;"}">&times;</button>
             </div>
           </div>
-          <span class="tracker-save-status" id="tracker-save-status-${mountId}" data-state="idle"></span>
+          <div class="monday-tracker-toolbar-right">
+            <span class="tracker-save-status" id="tracker-save-status-${mountId}" data-state="idle" aria-live="polite"></span>
+            ${showAdd ? `<button type="button" class="btn-aewttr btn-aewttr-sm" id="btn-add-gantt-task-${mountId}"><i class="bx bx-plus" aria-hidden="true"></i> Add task</button>` : ""}
+          </div>
         </div>`}
       </div>`}
       <div class="tracker-view-mount tracker-view-mount--monday ${meetingMode ? "tracker-view-mount--meeting" : ""} ${view === "timeline" ? "tracker-view-mount--gantt" : ""} ${view === "risks" ? "tracker-view-mount--risks" : ""}" id="${mountId}"></div>
@@ -8330,7 +8338,7 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
   const visibleIds = new Set(visiblePlain.map((t) => t.id));
   const sections = [{
     kind: "ungrouped",
-    label: proj ? `${proj.name || proj.id} — Tracker` : "Tasks",
+    label: proj ? `${proj.name || "Untitled project"} — Tracker` : "Tasks",
     tasks: visiblePlain,
     collapsed: false
   }];
@@ -9022,6 +9030,21 @@ function drawEngChecklists(body, proj) {
 function drawProjectSettings(body, proj) {
   const db = window.AEWTTR.db;
   const extra = ensureProjectExtra(proj.id);
+  if (!window.AEWTTR.state.projectSettingsTabs) window.AEWTTR.state.projectSettingsTabs = {};
+  const settingsTabs = [
+    { key: "identity", label: "Identity", icon: "bx-id-card" },
+    { key: "status", label: "Status & dates", icon: "bx-pulse" },
+    { key: "roles", label: "Roles", icon: "bx-group" },
+    { key: "funding", label: "Funding", icon: "bx-dollar-circle" },
+    { key: "classification", label: "Classification", icon: "bx-shield-quarter" },
+    { key: "scope", label: "Scope", icon: "bx-target-lock" },
+    { key: "misc", label: "Links & handoff", icon: "bx-link" }
+  ];
+  const validSettingsTabs = new Set(settingsTabs.map((item) => item.key));
+  const activeSettingsTab = validSettingsTabs.has(window.AEWTTR.state.projectSettingsTabs[proj.id])
+    ? window.AEWTTR.state.projectSettingsTabs[proj.id]
+    : "identity";
+  window.AEWTTR.state.projectSettingsTabs[proj.id] = activeSettingsTab;
   const selectedPortfolios = new Set(projectPortfolios(proj));
   const selectedLocations = new Set(projectLocations(proj));
   const selectedConfigEnd = new Set();
@@ -9035,6 +9058,7 @@ function drawProjectSettings(body, proj) {
 
   let pendingCover = proj.coverImage || "";
   let pendingCoverFile = null;
+  let pendingDeliverables = projectDeliverables(proj);
   let saveTimer = null;
   let savePendingLabel = null;
   let saving = false;
@@ -9042,23 +9066,35 @@ function drawProjectSettings(body, proj) {
   body.innerHTML = `
     <div class="project-settings-shell">
       <div class="project-settings-bar">
-        <nav class="ps-tabs">
-          <button class="ps-tab is-active" data-pstab="identity">Identity</button>
-          <button class="ps-tab" data-pstab="status">Status</button>
-          <button class="ps-tab" data-pstab="roles">Roles</button>
-          <button class="ps-tab" data-pstab="funding">Funding</button>
-          <button class="ps-tab" data-pstab="classification">Classification</button>
-          <button class="ps-tab" data-pstab="scope">Scope</button>
-          <button class="ps-tab" data-pstab="misc">Misc</button>
-        </nav>
-        <div class="ps-bar-actions">
-          <span class="ps-autosave-status" id="ps-autosave-status" data-state="saved">All changes saved</span>
-          <button type="button" class="btn-danger-outline btn-aewttr-sm" id="ps-delete"><i class="bx bx-trash"></i> Delete</button>
+        <div class="project-settings-bar-head">
+          <div class="project-settings-bar-copy">
+            <h2>Project settings</h2>
+            <p>Update the project record. Changes save automatically.</p>
+          </div>
+          <div class="ps-bar-actions">
+            <span class="ps-autosave-status" id="ps-autosave-status" data-state="saved">All changes saved</span>
+            <button type="button" class="btn-danger-outline btn-aewttr-sm" id="ps-delete"><i class="bx bx-trash"></i> Delete</button>
+          </div>
         </div>
+        <nav class="ps-tabs" role="tablist" aria-label="Project settings sections">
+          ${settingsTabs.map((item) => `
+            <button
+              type="button"
+              class="ps-tab ${activeSettingsTab === item.key ? "is-active" : ""}"
+              id="ps-tab-${item.key}"
+              data-pstab="${item.key}"
+              role="tab"
+              aria-controls="ps-panel-${item.key}"
+              aria-selected="${activeSettingsTab === item.key ? "true" : "false"}"
+              tabindex="${activeSettingsTab === item.key ? "0" : "-1"}">
+              <i class="bx ${item.icon}" aria-hidden="true"></i>
+              <span>${item.label}</span>
+            </button>`).join("")}
+        </nav>
       </div>
 
       <div class="ps-tab-body">
-        <div class="ps-tab-panel is-active" data-pspanel="identity">
+        <div class="ps-tab-panel ${activeSettingsTab === "identity" ? "is-active" : ""}" id="ps-panel-identity" data-pspanel="identity" role="tabpanel" aria-labelledby="ps-tab-identity" ${activeSettingsTab === "identity" ? "" : "hidden"}>
           <div class="ps-identity-row">
             <div class="cover-upload-row ps-cover-compact">
               <div class="cover-upload-preview" id="ps-cover-preview" style="${proj.coverImage ? `background-image:url('${proj.coverImage}');` : `background:${projectBannerColor(proj)};`}"></div>
@@ -9079,7 +9115,7 @@ function drawProjectSettings(body, proj) {
           </div>
         </div>
 
-        <div class="ps-tab-panel" data-pspanel="status">
+        <div class="ps-tab-panel ${activeSettingsTab === "status" ? "is-active" : ""}" id="ps-panel-status" data-pspanel="status" role="tabpanel" aria-labelledby="ps-tab-status" ${activeSettingsTab === "status" ? "" : "hidden"}>
           <div class="form-grid-2">
             <div class="form-row"><label>Technical Status ${glossaryTip("Lifecycle")}</label>
               <select class="select-aewttr" id="ps-tech-status">
@@ -9121,14 +9157,14 @@ function drawProjectSettings(body, proj) {
           </div>
         </div>
 
-        <div class="ps-tab-panel" data-pspanel="roles">
+        <div class="ps-tab-panel ${activeSettingsTab === "roles" ? "is-active" : ""}" id="ps-panel-roles" data-pspanel="roles" role="tabpanel" aria-labelledby="ps-tab-roles" ${activeSettingsTab === "roles" ? "" : "hidden"}>
           <div class="project-role-picker-grid">
             ${ASSIGNABLE_PROJECT_ROLE_FIELDS.filter((f) => f.key !== "contractor").map((field) => projectRolePickerHtml(proj, field)).join("")}
             ${projectContractorCompanyPickerHtml(proj)}
           </div>
         </div>
 
-        <div class="ps-tab-panel" data-pspanel="funding">
+        <div class="ps-tab-panel ${activeSettingsTab === "funding" ? "is-active" : ""}" id="ps-panel-funding" data-pspanel="funding" role="tabpanel" aria-labelledby="ps-tab-funding" ${activeSettingsTab === "funding" ? "" : "hidden"}>
           <div class="form-grid-2">
             <div class="form-row"><label>Program Office ${glossaryTip("Program")}</label>${tagPickerHtml(Array.from(selectedProgram), "ps-program", { emptyText: "No program office set.", placeholder: "Search or add program office…", hint: "" })}</div>
             <div class="form-row"><label>Contract ${glossaryTip("Contract")}</label><input class="input-aewttr" id="ps-contract" value="${escapeHtml(proj.contract)}"></div>
@@ -9143,7 +9179,7 @@ function drawProjectSettings(body, proj) {
           <div class="form-row" style="margin-bottom:0;"><label>Configuration End Item ${glossaryTip("End-item config")}</label>${configEndItemPickerHtml(Array.from(selectedConfigEnd), "ps-config")}</div>
         </div>
 
-        <div class="ps-tab-panel" data-pspanel="classification">
+        <div class="ps-tab-panel ${activeSettingsTab === "classification" ? "is-active" : ""}" id="ps-panel-classification" data-pspanel="classification" role="tabpanel" aria-labelledby="ps-tab-classification" ${activeSettingsTab === "classification" ? "" : "hidden"}>
           <div class="form-grid-2">
             <div class="form-row"><label>Project Type</label>
               <select class="select-aewttr" id="ps-project-type">
@@ -9154,21 +9190,26 @@ function drawProjectSettings(body, proj) {
                 <option value="Other" ${proj.projectType === "Other" ? "selected" : ""}>Other</option>
               </select>
             </div>
-            <div class="form-row"><label>ATO</label><input class="input-aewttr" id="ps-ato" value="${escapeHtml(proj.ato || "")}" placeholder="e.g. ATO reference or expiration date"></div>
-            <div class="form-row">
-              <label>Aqu Only</label>
-              <div class="travel-choice-row">${travelChoiceGroup("ps-aquonly", ["Yes", "No"], proj.aquOnly ? "Yes" : "No")}</div>
+            <div class="form-row"><label>ATO</label>
+              <input class="input-aewttr" id="ps-ato" list="ps-ato-list" value="${escapeHtml(proj.ato || "")}" placeholder="Select or type ATO value" autocomplete="off">
+              <datalist id="ps-ato-list">${(getLocationConfig().atos || []).map(a => `<option value="${escapeHtml(a)}"></option>`).join("")}</datalist>
             </div>
             <div class="form-row"><label>Related Projects</label><input class="input-aewttr" id="ps-projects" value="${escapeHtml(proj.projects || "")}" placeholder="Related projects"></div>
           </div>
         </div>
 
-        <div class="ps-tab-panel" data-pspanel="scope">
+        <div class="ps-tab-panel ${activeSettingsTab === "scope" ? "is-active" : ""}" id="ps-panel-scope" data-pspanel="scope" role="tabpanel" aria-labelledby="ps-tab-scope" ${activeSettingsTab === "scope" ? "" : "hidden"}>
           <div class="form-row"><label>Scope</label><textarea class="textarea-aewttr" id="ps-scope" rows="5" placeholder="What this project covers.">${escapeHtml(proj.scope || "")}</textarea></div>
-          <div class="form-row" style="margin-bottom:0;"><label>Objectives</label><textarea class="textarea-aewttr" id="ps-objectives" rows="5" placeholder="What this project is trying to achieve.">${escapeHtml(proj.objectives || "")}</textarea></div>
+          <div class="form-row ps-deliverables-field" style="margin-bottom:0;">
+            <div class="ps-field-heading">
+              <div><label>Deliverables</label><p>Add the concrete outputs this project must produce.</p></div>
+              <button type="button" class="btn-aewttr-outline btn-aewttr-sm" id="ps-add-deliverable"><i class="bx bx-plus"></i> Add deliverable</button>
+            </div>
+            <div class="ps-deliverables-list" id="ps-deliverables-list"></div>
+          </div>
         </div>
 
-        <div class="ps-tab-panel" data-pspanel="misc">
+        <div class="ps-tab-panel ${activeSettingsTab === "misc" ? "is-active" : ""}" id="ps-panel-misc" data-pspanel="misc" role="tabpanel" aria-labelledby="ps-tab-misc" ${activeSettingsTab === "misc" ? "" : "hidden"}>
           <div class="form-row">
             <label>SharePoint folder URL</label>
             <input class="input-aewttr" id="ps-spo-folder" value="${escapeHtml(proj.sharepointFolderUrl || "")}" placeholder="https://tenant.sharepoint.com/sites/…/Shared Documents/…">
@@ -9180,14 +9221,36 @@ function drawProjectSettings(body, proj) {
     </div>
   `;
 
-  // Tab switching
-  $all("[data-pstab]", body).forEach(tab => {
-    tab.addEventListener("click", () => {
-      $all("[data-pstab]", body).forEach(t => t.classList.remove("is-active"));
-      $all("[data-pspanel]", body).forEach(p => p.classList.remove("is-active"));
-      tab.classList.add("is-active");
-      const panel = $(`[data-pspanel="${tab.dataset.pstab}"]`, body);
-      if (panel) panel.classList.add("is-active");
+  // Settings tabs retain their active section across live refreshes and expose
+  // the standard Left/Right/Home/End keyboard behavior expected of a tablist.
+  const settingsTabNodes = $all("[data-pstab]", body);
+  function activateSettingsTab(tab, { focus = false } = {}) {
+    if (!tab) return;
+      window.AEWTTR.state.projectSettingsTabs[proj.id] = tab.dataset.pstab;
+      settingsTabNodes.forEach(t => {
+        const isActive = t === tab;
+        t.classList.toggle("is-active", isActive);
+        t.setAttribute("aria-selected", isActive ? "true" : "false");
+        t.tabIndex = isActive ? 0 : -1;
+      });
+      $all("[data-pspanel]", body).forEach(p => {
+        const isActive = p.dataset.pspanel === tab.dataset.pstab;
+        p.classList.toggle("is-active", isActive);
+        p.hidden = !isActive;
+      });
+      if (focus) tab.focus();
+  }
+  settingsTabNodes.forEach((tab, index) => {
+    tab.addEventListener("click", () => activateSettingsTab(tab));
+    tab.addEventListener("keydown", (event) => {
+      let nextIndex = null;
+      if (event.key === "ArrowRight") nextIndex = (index + 1) % settingsTabNodes.length;
+      if (event.key === "ArrowLeft") nextIndex = (index - 1 + settingsTabNodes.length) % settingsTabNodes.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = settingsTabNodes.length - 1;
+      if (nextIndex === null) return;
+      event.preventDefault();
+      activateSettingsTab(settingsTabNodes[nextIndex], { focus: true });
     });
   });
 
@@ -9197,6 +9260,42 @@ function drawProjectSettings(body, proj) {
     statusEl.dataset.state = state;
     statusEl.textContent = message;
   }
+
+  function renderDeliverablesEditor({ focusLast = false } = {}) {
+    const list = $("#ps-deliverables-list", body);
+    if (!list) return;
+    list.innerHTML = pendingDeliverables.length
+      ? pendingDeliverables.map((item, index) => `
+          <div class="ps-deliverable-row">
+            <span class="ps-deliverable-bullet" aria-hidden="true"></span>
+            <input class="input-aewttr ps-deliverable-input" data-deliverable-index="${index}" value="${escapeHtml(item)}" placeholder="Describe a deliverable">
+            <button type="button" class="btn-aewttr-ghost btn-aewttr-sm ps-deliverable-remove" data-deliverable-remove="${index}" aria-label="Remove deliverable"${tip("Remove deliverable")}><i class="bx bx-x"></i></button>
+          </div>`).join("")
+      : `<div class="ps-deliverables-empty"><i class="bx bx-list-ul" aria-hidden="true"></i><span>No deliverables yet. Add the first project output.</span></div>`;
+    $all(".ps-deliverable-input", list).forEach((input) => {
+      input.addEventListener("input", () => {
+        pendingDeliverables[Number(input.dataset.deliverableIndex)] = input.value;
+        scheduleAutosave();
+      });
+      input.addEventListener("change", () => scheduleAutosave());
+    });
+    $all("[data-deliverable-remove]", list).forEach((button) => {
+      button.addEventListener("click", () => {
+        pendingDeliverables.splice(Number(button.dataset.deliverableRemove), 1);
+        renderDeliverablesEditor();
+        scheduleAutosave();
+      });
+    });
+    if (focusLast) {
+      const inputs = $all(".ps-deliverable-input", list);
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    }
+  }
+  renderDeliverablesEditor();
+  $("#ps-add-deliverable", body).addEventListener("click", () => {
+    pendingDeliverables.push("");
+    renderDeliverablesEditor({ focusLast: true });
+  });
 
   async function persistSettings({ fromCover } = {}) {
     if (typeof reanchorProject === "function") reanchorProject(proj);
@@ -9227,7 +9326,8 @@ function drawProjectSettings(body, proj) {
     proj.configEndItem = Array.from(selectedConfigEnd)[0] || "";
     if (proj.configEndItem) rememberConfigEndItemNames([proj.configEndItem]);
     proj.scope = $("#ps-scope", body).value.trim();
-    proj.objectives = $("#ps-objectives", body).value.trim();
+    proj.deliverables = pendingDeliverables.map((item) => item.trim()).filter(Boolean);
+    delete proj.objectives;
     proj.technicalStatus = $("#ps-tech-status", body).value;
     proj.priority = $("#ps-priority", body).value;
     proj.lifecycleStatus = $("#ps-lifecycle", body).value;
@@ -9244,8 +9344,6 @@ function drawProjectSettings(body, proj) {
     if (projTypeEl) proj.projectType = projTypeEl.value;
     const atoEl = $("#ps-ato", body);
     if (atoEl) proj.ato = atoEl.value.trim();
-    const aquOnlyChecked = $(`input[name="ps-aquonly"]:checked`, body);
-    proj.aquOnly = !!aquOnlyChecked && aquOnlyChecked.value === "Yes";
     const projectsEl = $("#ps-projects", body);
     if (projectsEl) proj.projects = projectsEl.value.trim();
     if (fromCover || pendingCoverFile || pendingCover !== (proj.coverImage || "")) {
@@ -9309,17 +9407,18 @@ function drawProjectSettings(body, proj) {
   wireTagPicker(body, selectedFiscalYear, "ps-fiscalyear", { normalize: normalizeFiscalYearName, getKnown: getKnownFiscalYearNames, remember: rememberFiscalYearNames, singleSelect: false, onChange: () => scheduleAutosave() });
   wireTagPicker(body, selectedFundingStatus, "ps-fundingstatus", { normalize: normalizeFundingStatusName, getKnown: getKnownFundingStatusNames, remember: rememberFundingStatusNames, singleSelect: false, onChange: () => scheduleAutosave() });
 
-  ["ps-name", "ps-desc", "ps-contract", "ps-scope", "ps-objectives", "ps-handoff", "ps-funded-amount", "ps-reimb-amount", "ps-fundingnotes"].forEach((id) => {
+  ["ps-name", "ps-desc", "ps-contract", "ps-scope", "ps-handoff", "ps-funded-amount", "ps-reimb-amount", "ps-fundingnotes", "ps-ato", "ps-projects", "ps-spo-folder"].forEach((id) => {
     const field = $(`#${id}`, body);
     if (!field) return;
     field.addEventListener("input", () => scheduleAutosave());
     field.addEventListener("change", () => scheduleAutosave());
   });
-  ["ps-tech-status", "ps-priority", "ps-lifecycle", "ps-startdate", "ps-duedate", "ps-completiondate"].forEach((id) => {
+  ["ps-tech-status", "ps-priority", "ps-lifecycle", "ps-startdate", "ps-duedate", "ps-completiondate", "ps-project-type"].forEach((id) => {
     const field = $(`#${id}`, body);
     if (field) field.addEventListener("change", () => scheduleAutosave());
   });
   $all(`input[name="ps-crr"]`, body).forEach((input) => input.addEventListener("change", () => scheduleAutosave()));
+  $all(`input[name="ps-aquonly"]`, body).forEach((input) => input.addEventListener("change", () => scheduleAutosave()));
 
   $("#ps-cover-pick", body).addEventListener("click", () => $("#ps-cover-file", body).click());
   $("#ps-cover-file", body).addEventListener("change", (e) => {
@@ -9349,7 +9448,7 @@ function drawProjectSettings(body, proj) {
   $("#ps-delete", body).addEventListener("click", async () => {
     const ok = await confirmDialog({
       title: "Delete project",
-      message: `Delete ${proj.id} — ${proj.name}? This cannot be undone in this session.`,
+      message: `Delete ${proj.name}? This cannot be undone in this session.`,
       confirmLabel: "Delete",
       danger: true
     });
@@ -9791,7 +9890,7 @@ function drawProjectReporting(body, proj) {
       '<div class="rep-sld-cui-top">CONTROLLED UNCLASSIFIED INFORMATION</div>' +
       '<div class="rep-sld-title-area">' +
         '<img class="rep-sld-seal" src="assets/images/ttsd-seal-template.png" alt="TTSD seal">' +
-        '<div class="rep-sld-title-text">' + escapeHtml(proj.name || proj.id || "PROJECT") + '</div>' +
+        '<div class="rep-sld-title-text">' + escapeHtml(proj.name || "PROJECT") + '</div>' +
         '<div class="rep-sld-poc-col">' +
           (poc ? '<div class="rep-sld-poc-line"><strong>POC:</strong> ' + escapeHtml(poc) + '</div>' : "") +
           (pocPhone ? '<div class="rep-sld-poc-line">Ph: ' + escapeHtml(pocPhone) + '</div>' : "") +
@@ -10114,11 +10213,12 @@ function drawProjectReporting(body, proj) {
     button.disabled = true;
     if (otherButton) otherButton.disabled = true;
     button.innerHTML = `<i class="bx bx-loader-alt bx-spin"></i> Building…`;
-    const openTarget = reserveStatusExportOpen(`${proj.id || "project"}-${isFullDeck ? "status-briefing" : "project-update"}.pptx`);
+    const safeProjectName = String(proj.name || "project").replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "") || "project";
+    const openTarget = reserveStatusExportOpen(`${safeProjectName}-${isFullDeck ? "status-briefing" : "project-update"}.pptx`);
     try {
       const result = await exp.exportProjectStatusPptxToSharePoint(proj, isFullDeck ? {
         exportMode: "fullDeck",
-        groupName: proj.name || proj.id,
+        groupName: proj.name || "Project",
         groupType: "project",
         includePhotos: true,
         includeRisks: Array.isArray(cfg.selectedRisks) && cfg.selectedRisks.length > 0,
