@@ -1501,7 +1501,7 @@ function drawReleases(body) {
       badgeClass: "kc-badge",
       icon: "bx-book-open",
       description: "Interactive technical handoff, SOPs, architectural reference, and user guide application.",
-      command: "node output/pulse-documentation/scripts/build-sharepoint-package.mjs"
+      command: "node apps/pulse-documentation/scripts/build-sharepoint-package.mjs"
     }
   ];
 

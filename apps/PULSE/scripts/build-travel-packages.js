@@ -59,7 +59,7 @@ const externalPackages = [
   },
   {
     name: "PULSE Documentation",
-    script: path.join(ROOT, "..", "..", "output", "pulse-documentation", "scripts", "build-sharepoint-package.mjs"),
+    script: path.join(APPS, "pulse-documentation", "scripts", "build-sharepoint-package.mjs"),
     fsOutput: "PULSE-Documentation-v1.0.0.html",
     releaseOutput: "PULSE-Documentation-v1.0.0.html",
     useNode: "node"
