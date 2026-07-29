@@ -181,6 +181,21 @@ main { display:flex; min-height:100vh; }.sidebar { position:fixed; z-index:10; i
 .search-empty p { margin:0; color:var(--graphite); font-size:13px; line-height:1.75; }
 .search-empty button { padding:0; border:0; background:transparent; color:#2355df; font-size:13px; font-weight:600; text-decoration:underline; text-underline-offset:2px; }
 
+/* Figures inside a document section. Screenshots sit in a bordered frame;
+   diagrams are line art already and would only be boxed twice. */
+.doc-figure { max-width:820px; margin:22px 0 26px; }
+.doc-figure > a { display:block; border:1px solid var(--line); background:var(--mist); line-height:0; transition:border-color 160ms ease-out; }
+.doc-figure > a:hover { border-color:#a9adb6; }
+.doc-figure > a:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.doc-figure img { width:100%; height:auto; display:block; }
+.doc-figure figcaption { margin-top:10px; display:grid; gap:4px; }
+.doc-figure figcaption b { font-size:12.5px; letter-spacing:-.15px; }
+.doc-figure figcaption code { color:var(--graphite); font:10.5px ui-monospace,SFMono-Regular,Menlo,monospace; }
+.doc-figure figcaption p { max-width:72ch; margin:0; color:var(--graphite); font-size:12px; line-height:1.6; }
+.doc-figure--diagram { max-width:100%; }
+.doc-figure--diagram > a { border:0; background:transparent; overflow-x:auto; }
+.doc-figure--diagram img { min-width:0; }
+
 /* Process flows. Monochrome structure, one accent for entry and completion,
    dashed grey for exception routes so the happy path reads first. */
 .flows-page { padding:58px 9.5% 100px; background:var(--field); }

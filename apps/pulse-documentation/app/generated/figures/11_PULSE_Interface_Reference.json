@@ -1,0 +1,138 @@
+{
+  "2": [
+    {
+      "file": "/screenshots/01-dashboard.webp",
+      "caption": "Dashboard",
+      "meta": "#/dashboard",
+      "description": "Counts, quick access into each area, and assigned work across projects.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/02-overview-portfolio.webp",
+      "caption": "Overview — portfolio",
+      "meta": "#/overview",
+      "description": "Team and portfolio roll-up for status, workload, and approvals.",
+      "hideCaption": false
+    }
+  ],
+  "3": [
+    {
+      "file": "/screenshots/03-projects-workspaces.webp",
+      "caption": "All workspaces",
+      "meta": "#/projects",
+      "description": "Project list with health and entry points into each workspace.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/04-project-workspace.webp",
+      "caption": "Workspace home",
+      "meta": "#/projects/<code>",
+      "description": "Project landing view with the workspace section rail.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/05-project-tracker.webp",
+      "caption": "Tracker",
+      "meta": "#/projects/<code>/tracker",
+      "description": "Tasks and milestones with owner, dates, health, and timeline and risk tabs.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/06-project-checklist.webp",
+      "caption": "Checklist",
+      "meta": "#/projects/<code>/checklist",
+      "description": "Column-based checklist for repeatable delivery steps.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/07-project-documents.webp",
+      "caption": "Documents",
+      "meta": "#/projects/<code>/documents",
+      "description": "Project document surface backed by the SharePoint library.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/08-project-people.webp",
+      "caption": "People",
+      "meta": "#/projects/<code>/people",
+      "description": "Assigned members and roles for the workspace.",
+      "hideCaption": false
+    }
+  ],
+  "4": [
+    {
+      "file": "/screenshots/09-weekly-meeting.webp",
+      "caption": "Weekly meeting",
+      "meta": "#/weekly",
+      "description": "Live session with attendance, minutes, project updates, and around-the-room.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/14-document-review.webp",
+      "caption": "Document review",
+      "meta": "#/docreview",
+      "description": "Review packages moving through concurrence and signature.",
+      "hideCaption": false
+    }
+  ],
+  "5": [
+    {
+      "file": "/screenshots/10-travel-request-form.webp",
+      "caption": "Travel request form",
+      "meta": "#/travel/submit",
+      "description": "Guided TDY, conference, training, and leave request intake.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/11-travel-my-travel.webp",
+      "caption": "My travel",
+      "meta": "#/travel/mytravel",
+      "description": "A traveler's own requests by state, with concurrence and charge-object status.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/12-travel-calendar.webp",
+      "caption": "Travel calendar",
+      "meta": "#/travel/calendar",
+      "description": "Team travel and events on a shared calendar.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/13-travel-debrief.webp",
+      "caption": "Travel debrief",
+      "meta": "#/travel/debrief",
+      "description": "Post-trip debrief capture against an approved request.",
+      "hideCaption": false
+    }
+  ],
+  "6": [
+    {
+      "file": "/screenshots/15-tickets.webp",
+      "caption": "Tickets",
+      "meta": "#/tickets",
+      "description": "Blockers, bugs, access needs, and questions tracked to resolution.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/16-admin.webp",
+      "caption": "Admin",
+      "meta": "#/admin",
+      "description": "SharePoint setup, users and roles, configuration, and diagnostics.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/17-notification-settings.webp",
+      "caption": "Notification settings",
+      "meta": "#/notification-settings",
+      "description": "Per-user areas, tone, and channel preferences.",
+      "hideCaption": false
+    },
+    {
+      "file": "/screenshots/18-logs.webp",
+      "caption": "Activity log",
+      "meta": "#/logs",
+      "description": "Audit record of actions by actor, area, and time.",
+      "hideCaption": false
+    }
+  ]
+}

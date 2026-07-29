@@ -1,0 +1,34 @@
+{
+  "3": [
+    {
+      "file": "/figures/flow-travel.svg",
+      "caption": "Travel request",
+      "meta": "Source: Travel request status values and the travel module",
+      "hideCaption": true
+    }
+  ],
+  "4": [
+    {
+      "file": "/figures/flow-docreview.svg",
+      "caption": "Document review",
+      "meta": "Source: Document Review workflow values",
+      "hideCaption": true
+    }
+  ],
+  "5": [
+    {
+      "file": "/figures/flow-ticket.svg",
+      "caption": "Support ticket",
+      "meta": "Source: Ticket status values and the repository mapping",
+      "hideCaption": true
+    }
+  ],
+  "6": [
+    {
+      "file": "/figures/flow-site.svg",
+      "caption": "Site resolution in a web part",
+      "meta": "Source: getSiteUrl in the SharePoint adapter",
+      "hideCaption": true
+    }
+  ]
+}

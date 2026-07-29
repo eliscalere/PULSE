@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 0 624 100" width="624" height="100" role="img" aria-label="Support ticket: Open, then In Progress, then Resolved">
+<style>
+    .n rect { fill:#ffffff; stroke:#d5d7dc; stroke-width:1; }
+    .n.start rect { fill:#eaf0ff; stroke:#2f66ff; }
+    .n.done rect { fill:#e7f2ed; stroke:#2b7a5e; }
+    .n.exception rect { fill:#ecedef; stroke:#9aa0a8; stroke-dasharray:4 3; }
+    .lbl { fill:#070708; font:650 12.5px Inter,Arial,Helvetica,sans-serif; }
+    .note { fill:#51545a; font:10.5px Inter,Arial,Helvetica,sans-serif; }
+    .edge { fill:#51545a; font:10px Inter,Arial,Helvetica,sans-serif; }
+    .edge.muted { fill:#767b83; }
+    .idx { fill:#a4a8b0; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; }
+  </style>
+<defs>
+    <marker id="a-ticket" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#51545a"/></marker>
+    <marker id="am-ticket" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#9aa0a8"/></marker>
+  </defs>
+<line x1="176" y1="49" x2="219" y2="49" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-ticket)"/>
+<line x1="398" y1="49" x2="441" y2="49" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-ticket)"/>
+<g class="n start">
+      <rect x="0" y="12" width="176" height="74" rx="2"/>
+      <text class="lbl" x="14" y="42">Open</text>
+      <text class="note" x="14" y="63">Raised by any user</text>
+    </g>
+<g class="n step">
+      <rect x="222" y="12" width="176" height="74" rx="2"/>
+      <text class="lbl" x="236" y="42">In Progress</text>
+      <text class="note" x="236" y="63">Being worked</text>
+    </g>
+<g class="n done">
+      <rect x="444" y="12" width="176" height="74" rx="2"/>
+      <text class="lbl" x="458" y="42">Resolved</text>
+      <text class="note" x="458" y="63">Outcome recorded</text>
+    </g>
+</svg>

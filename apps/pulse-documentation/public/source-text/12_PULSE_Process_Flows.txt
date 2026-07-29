@@ -1,0 +1,143 @@
+HOW WORK MOVES
+
+
+Process Flows
+Four sequences that answer most of what people ask: what happens to a travel request, how a
+document reaches signature, where a ticket goes, and how a hosted tool finds its SharePoint
+site.
+
+
+NOTE
+
+A diagram shows the route, not the rules. Who may move a record between these states, and what
+evidence each move requires, is in the Standard Operating Procedures.
+
+
+Flows        Four sequences
+States       As the app displays them
+Exceptions   Shown, not hidden
+Authority    SOPs, not this document
+
+                                            PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 01
+PULSE                                                                              PROCESS FLOWS
+
+
+01 / HOW TO READ A FLOW
+
+Each diagram runs from the entry point to the closed state. States and labels are the values the
+application actually displays, so a diagram can be checked against a record rather than trusted.
+
+SHOWN AS         MEANS
+Blue outline     Entry point — where the record is created
+Plain outline    In progress — the record is being worked
+Green outline    Closed with an outcome recorded
+Dashed outline   Exception — the record left the normal route
+Solid arrow      The normal progression
+Dashed arrow     An exception or a loop back for rework
+
+IMPORTANT
+
+A state on a diagram is not a permission. Reaching a state says nothing about who was entitled
+to move the record there; role boundaries are defined in the procedures and enforced by the
+application.
+
+                                            PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 02
+PULSE                                                                              PROCESS FLOWS
+
+
+02 / TRAVEL REQUEST
+
+A request moves through approval and funding before travel, and is not closed until every
+traveller has filed a debrief.
+
+FIGURE  Travel request
+Source: Travel request status values and the travel module
+01  New request — Travel → Submit
+02  Pending — Awaiting approval
+03  Pending Finance — Funding and charge object
+04  Approved — Appears on the calendar
+05  Debrief filed — One per traveller
+Leaves the flow from Pending: Denied · Cancelled · Withdrawn
+Leaves the flow from Approved: Revoked
+
+WHAT CLOSES A TRIP
+
+Approval is not the end of the record. A trip stays flagged in My Travel until every traveller
+has filed a debrief, which is why the closed state here is the debrief rather than the approval.
+
+                                            PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 03
+PULSE                                                                              PROCESS FLOWS
+
+
+03 / DOCUMENT REVIEW
+
+Formal review is a controlled loop: requested changes produce a new revision and the review runs
+again. Storing a file under a project is not review.
+
+FIGURE  Document review
+Source: Document Review workflow values
+01  Not Started
+02  In Review — Reviewers decide
+03  Review Complete
+04  Awaiting Final Pack — Then Signing in Progress
+05  Signed — Then Archived
+Loop at In Review: Changes Requested → new revision
+
+WHY THE LOOP MATTERS
+
+Requested changes produce a new revision and the review runs again; the reviewed revision is
+never overwritten. A file stored under a project has not been through this loop and is not
+review evidence.
+
+                                            PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 04
+PULSE                                                                              PROCESS FLOWS
+
+
+04 / SUPPORT TICKET
+
+Tickets and issue reports are the same records in the PULSE Issues list, so a ticket raised in
+the standalone tool is the one the full application shows.
+
+FIGURE  Support ticket
+Source: Ticket status values and the repository mapping
+01  Open — Raised by any user
+02  In Progress — Being worked
+03  Resolved — Outcome recorded
+
+ONE RECORD, TWO DOORS
+
+Tickets and issue reports are the same records in the PULSE Issues list. A ticket raised in the
+standalone Tickets package is the one the full application shows, so the same problem must not
+be opened twice.
+
+                                            PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 05
+PULSE                                                                              PROCESS FLOWS
+
+
+05 / SITE RESOLUTION IN A WEB PART
+
+A focused tool in a SharePoint iframe cannot see the page context directly. It tries six sources
+in order, and local-only mode is the deliberate signal that none succeeded.
+
+FIGURE  Site resolution in a web part
+Source: getSiteUrl in the SharePoint adapter
+01  Own page context — Direct SharePoint page (next if not found)
+02  Configured site — manualSharePointSiteUrl (next if not set)
+03  Parent window — Normal web-part path (next if not found)
+04  Top window — Nested frame (next if not found)
+05  Cached address — From a previous boot (next if not cached)
+06  Local only — Not a system of record
+
+WHAT LOCAL-ONLY MEANS
+
+Reaching the last step is not a failure to handle — it is the deliberate signal that the tool
+was loaded outside a SharePoint page. Local state is a development interface mode and is never
+an authoritative record.
+
+MAINTENANCE RULE
+
+If a hosted tool shows local-only behaviour, open the full PULSE page once on the same site and
+reload the tool; that lets the cached-address step succeed. Persistent failure is a ticket with
+the page address attached.
+
+                                            PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 06

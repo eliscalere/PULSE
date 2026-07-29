@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 0 1068 160" width="1068" height="160" role="img" aria-label="Document review: Not Started, then In Review, then Review Complete, then Awaiting Final Pack, then Signed">
+<style>
+    .n rect { fill:#ffffff; stroke:#d5d7dc; stroke-width:1; }
+    .n.start rect { fill:#eaf0ff; stroke:#2f66ff; }
+    .n.done rect { fill:#e7f2ed; stroke:#2b7a5e; }
+    .n.exception rect { fill:#ecedef; stroke:#9aa0a8; stroke-dasharray:4 3; }
+    .lbl { fill:#070708; font:650 12.5px Inter,Arial,Helvetica,sans-serif; }
+    .note { fill:#51545a; font:10.5px Inter,Arial,Helvetica,sans-serif; }
+    .edge { fill:#51545a; font:10px Inter,Arial,Helvetica,sans-serif; }
+    .edge.muted { fill:#767b83; }
+    .idx { fill:#a4a8b0; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; }
+  </style>
+<defs>
+    <marker id="a-docreview" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#51545a"/></marker>
+    <marker id="am-docreview" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#9aa0a8"/></marker>
+  </defs>
+<line x1="176" y1="49" x2="219" y2="49" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-docreview)"/>
+<line x1="398" y1="49" x2="441" y2="49" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-docreview)"/>
+<line x1="620" y1="49" x2="663" y2="49" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-docreview)"/>
+<line x1="842" y1="49" x2="885" y2="49" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-docreview)"/>
+<g class="n start">
+      <rect x="0" y="12" width="176" height="74" rx="2"/>
+      <text class="lbl" x="14" y="54">Not Started</text>
+      
+    </g>
+<g class="n step">
+      <rect x="222" y="12" width="176" height="74" rx="2"/>
+      <text class="lbl" x="236" y="42">In Review</text>
+      <text class="note" x="236" y="63">Reviewers decide</text>
+    </g>
+<g class="n step">
+      <rect x="444" y="12" width="176" height="74" rx="2"/>
+      <text class="lbl" x="458" y="54">Review Complete</text>
+      
+    </g>
+<g class="n step">
+      <rect x="666" y="12" width="176" height="74" rx="2"/>
+      <text class="lbl" x="680" y="42">Awaiting Final Pack</text>
+      <text class="note" x="680" y="63">Then Signing in Progress</text>
+    </g>
+<g class="n done">
+      <rect x="888" y="12" width="176" height="74" rx="2"/>
+      <text class="lbl" x="902" y="42">Signed</text>
+      <text class="note" x="902" y="63">Then Archived</text>
+    </g>
+<path d="M 252 86 V 118 H 378 V 89" fill="none" stroke="#9aa0a8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#am-docreview)"/>
+<text class="edge muted" x="252" y="136">Changes Requested → new revision</text>
+</svg>

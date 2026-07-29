@@ -20,7 +20,7 @@
    section title, blank lines between blocks, three or more spaces between table
    columns, and bullet or numbered markers for lists. */
 
-import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -95,6 +95,15 @@ function textTable(rows) {
 
 function blockToText(block) {
   if (block.kind === "h4") return [block.text.toUpperCase()];
+  /* A figure cannot go into a text extraction, so it contributes its caption and
+     description instead — which is what makes it findable by search. */
+  if (block.kind === "figure") {
+    const lines = [`FIGURE  ${block.caption}`];
+    if (block.meta) lines.push(block.meta);
+    if (block.description) lines.push(...wrap(block.description, PAGE_WIDTH));
+    if (block.text) lines.push(...block.text.filter((line) => line.trim()));
+    return lines;
+  }
   if (block.kind === "p") return wrap(block.text, PAGE_WIDTH);
   if (block.kind === "callout") {
     return [block.label.toUpperCase(), "", ...wrap(block.text, PAGE_WIDTH)];
@@ -167,6 +176,16 @@ function buildText(doc) {
 
 function blockToHtml(block) {
   if (block.kind === "h4") return `<h4>${escapeHtml(block.text)}</h4>`;
+  if (block.kind === "figure") {
+    const file = path.join(ROOT, "public", block.file.replace(/^\//, ""));
+    if (!existsSync(file)) throw new Error(`Figure not found: ${block.file}`);
+    const mime = block.file.endsWith(".svg") ? "image/svg+xml" : block.file.endsWith(".webp") ? "image/webp" : "image/png";
+    const uri = `data:${mime};base64,${readFileSync(file).toString("base64")}`;
+    return `<figure class="fig${block.file.endsWith(".svg") ? " fig--diagram" : ""}">
+      <img src="${uri}" alt="${escapeHtml(block.caption)}" />
+      <figcaption>${block.hideCaption ? "" : `<b>${escapeHtml(block.caption)}</b>`}${block.meta ? `<code>${escapeHtml(block.meta)}</code>` : ""}${block.description ? `<span>${escapeHtml(block.description)}</span>` : ""}</figcaption>
+    </figure>`;
+  }
   if (block.kind === "p") return `<p>${escapeHtml(block.text)}</p>`;
   if (block.kind === "callout") {
     return `<aside class="callout"><strong>${escapeHtml(block.label)}</strong><p>${escapeHtml(block.text)}</p></aside>`;
@@ -240,6 +259,13 @@ function buildHtml(doc) {
   .callout { margin: 14px 0 15px; padding: 15px 17px; background: ${BRAND.mist}; border-left: 2px solid ${BRAND.blue}; }
   .callout strong { display: block; margin-bottom: 6px; font-size: 7.2pt; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: ${BRAND.blue}; }
   .callout p { margin: 0; font-size: 9.4pt; color: ${BRAND.ink}; }
+  .fig { margin: 16px 0 18px; page-break-inside: avoid; break-inside: avoid; }
+  .fig img { display: block; width: 100%; height: auto; border: 1px solid ${BRAND.line}; }
+  .fig--diagram img { border: 0; }
+  .fig figcaption { margin-top: 9px; display: grid; gap: 3px; }
+  .fig figcaption b { font-size: 8.4pt; }
+  .fig figcaption code { font: 7.6pt ui-monospace, Menlo, monospace; color: ${BRAND.graphite}; }
+  .fig figcaption span { font-size: 8.4pt; line-height: 1.5; color: ${BRAND.graphite}; }
   .cover { background: ${BRAND.ink}; color: ${BRAND.field}; }
   .cover .cover-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
   .cover h1 { color: ${BRAND.field}; max-width: 6.2in; }
@@ -315,6 +341,20 @@ async function main() {
   const pdfPath = path.join(PDF_OUT, `${doc.meta.slug}.pdf`);
   await page.pdf({ path: pdfPath, format: "Letter", landscape: doc.meta.orientation === "landscape", printBackground: true, preferCSSPageSize: true });
   await browser.close();
+
+  /* The web reader renders from the text extraction, which cannot carry an
+     image. Emit a manifest keyed by section so the reader can place the same
+     figures the PDF shows, in the same order, without a second source of truth. */
+  const figures = {};
+  doc.pages.forEach((page, index) => {
+    const pageFigures = page.blocks.filter((block) => block.kind === "figure");
+    if (pageFigures.length) {
+      figures[index + 2] = pageFigures.map(({ file, caption, meta, description, hideCaption }) => ({ file, caption, meta, description, hideCaption: Boolean(hideCaption) }));
+    }
+  });
+  const manifestPath = path.join(ROOT, "app", "generated", "figures", `${doc.meta.slug}.json`);
+  mkdirSync(path.dirname(manifestPath), { recursive: true });
+  writeFileSync(manifestPath, `${JSON.stringify(figures, null, 2)}\n`, "utf8");
 
   const pageCount = doc.pages.length + 1;
   console.log(`${doc.meta.slug}`);

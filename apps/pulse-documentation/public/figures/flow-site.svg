@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 346 578" width="342" height="578" role="img" aria-label="Site resolution in a web part: Own page context, then Configured site, then Parent window, then Top window, then Cached address, then Local only">
+<style>
+    .n rect { fill:#ffffff; stroke:#d5d7dc; stroke-width:1; }
+    .n.start rect { fill:#eaf0ff; stroke:#2f66ff; }
+    .n.done rect { fill:#e7f2ed; stroke:#2b7a5e; }
+    .n.exception rect { fill:#ecedef; stroke:#9aa0a8; stroke-dasharray:4 3; }
+    .lbl { fill:#070708; font:650 12.5px Inter,Arial,Helvetica,sans-serif; }
+    .note { fill:#51545a; font:10.5px Inter,Arial,Helvetica,sans-serif; }
+    .edge { fill:#51545a; font:10px Inter,Arial,Helvetica,sans-serif; }
+    .edge.muted { fill:#767b83; }
+    .idx { fill:#a4a8b0; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; }
+  </style>
+<defs>
+    <marker id="a-site" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#51545a"/></marker>
+    <marker id="am-site" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#9aa0a8"/></marker>
+  </defs>
+<line x1="34" y1="64" x2="34" y2="99" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-site)"/>
+<text class="edge" x="52" y="86">not found</text>
+<g class="n start">
+      <rect x="0" y="0" width="296" height="64" rx="2"/>
+      <text class="lbl" x="15" y="26">Own page context</text>
+      <text class="note" x="15" y="45">Direct SharePoint page</text>
+      <text class="idx" x="312" y="33">01</text>
+    </g>
+<line x1="34" y1="166" x2="34" y2="201" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-site)"/>
+<text class="edge" x="52" y="188">not set</text>
+<g class="n step">
+      <rect x="0" y="102" width="296" height="64" rx="2"/>
+      <text class="lbl" x="15" y="128">Configured site</text>
+      <text class="note" x="15" y="147">manualSharePointSiteUrl</text>
+      <text class="idx" x="312" y="135">02</text>
+    </g>
+<line x1="34" y1="268" x2="34" y2="303" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-site)"/>
+<text class="edge" x="52" y="290">not found</text>
+<g class="n step">
+      <rect x="0" y="204" width="296" height="64" rx="2"/>
+      <text class="lbl" x="15" y="230">Parent window</text>
+      <text class="note" x="15" y="249">Normal web-part path</text>
+      <text class="idx" x="312" y="237">03</text>
+    </g>
+<line x1="34" y1="370" x2="34" y2="405" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-site)"/>
+<text class="edge" x="52" y="392">not found</text>
+<g class="n step">
+      <rect x="0" y="306" width="296" height="64" rx="2"/>
+      <text class="lbl" x="15" y="332">Top window</text>
+      <text class="note" x="15" y="351">Nested frame</text>
+      <text class="idx" x="312" y="339">04</text>
+    </g>
+<line x1="34" y1="472" x2="34" y2="507" stroke="#51545a" stroke-width="1.5" marker-end="url(#a-site)"/>
+<text class="edge" x="52" y="494">not cached</text>
+<g class="n step">
+      <rect x="0" y="408" width="296" height="64" rx="2"/>
+      <text class="lbl" x="15" y="434">Cached address</text>
+      <text class="note" x="15" y="453">From a previous boot</text>
+      <text class="idx" x="312" y="441">05</text>
+    </g>
+<g class="n exception">
+      <rect x="0" y="510" width="296" height="64" rx="2"/>
+      <text class="lbl" x="15" y="536">Local only</text>
+      <text class="note" x="15" y="555">Not a system of record</text>
+      <text class="idx" x="312" y="543">06</text>
+    </g>
+</svg>

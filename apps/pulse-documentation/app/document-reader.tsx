@@ -5,7 +5,11 @@ type TextBlock =
   | { kind: "paragraph"; text: string }
   | { kind: "callout"; label: string; text: string }
   | { kind: "list"; ordered: boolean; items: string[] }
-  | { kind: "table"; rows: string[][]; header: boolean };
+  | { kind: "table"; rows: string[][]; header: boolean }
+  /* The extraction carries a figure's caption and description as text so search
+     can reach it. The reader replaces that text with the real figure, so the
+     parser emits a slot here and the caller fills it in order. */
+  | { kind: "figureSlot"; index: number };
 
 const spacedHeadingFixes: Array<[RegExp, string]> = [
   [/I N T E R N A L A S S U R A N C E PAC K AG E/gi, "INTERNAL ASSURANCE PACKAGE"],
@@ -219,9 +223,17 @@ export function parsePage(raw: string) {
   }
 
   const blocks: TextBlock[] = [];
+  let figureIndex = 0;
   groupedChunks.forEach((chunk, chunkIndex) => {
     const joined = tidy(chunk.join(" "));
     if (!joined) return;
+
+    /* Emitted by the document generator as one contiguous block. */
+    if (/^FIGURE\s/.test(chunk[0].trim())) {
+      blocks.push({ kind: "figureSlot", index: figureIndex });
+      figureIndex += 1;
+      return;
+    }
 
     const table = tableFrom(chunk);
     if (table) {
@@ -280,7 +292,8 @@ export function parsePage(raw: string) {
   };
 }
 
-function renderBlock(block: TextBlock, key: string): ReactNode {
+function renderBlock(block: TextBlock, key: string, figures?: ReactNode[]): ReactNode {
+  if (block.kind === "figureSlot") return figures?.[block.index] ?? null;
   if (block.kind === "heading") {
     if (block.level === 2) return <h2 key={key}>{block.text}</h2>;
     if (block.level === 3) return <h3 key={key}>{block.text}</h3>;
@@ -298,14 +311,17 @@ function renderBlock(block: TextBlock, key: string): ReactNode {
   return <div className="doc-table-wrap" key={key}><table>{block.header && <thead><tr>{block.rows[0].map((cell, index) => <th key={`${key}-h-${index}`}>{cell}</th>)}</tr></thead>}<tbody>{bodyRows.map((row, rowIndex) => <tr key={`${key}-r-${rowIndex}`}>{row.map((cell, cellIndex) => <td key={`${key}-${rowIndex}-${cellIndex}`}>{cell}</td>)}</tr>)}</tbody></table></div>;
 }
 
-export function DocumentPage({ raw, pageNumber, documentTitle }: { raw: string; pageNumber: number; documentTitle: string }) {
+export function DocumentPage({ raw, pageNumber, documentTitle, figures }: { raw: string; pageNumber: number; documentTitle: string; figures?: ReactNode }) {
   const parsed = parsePage(raw);
+  /* Figures arrive as a single node containing one child per figure, in document
+     order; split it so each slot receives its own. */
+  const figureNodes = Array.isArray(figures) ? figures : figures ? [figures] : [];
   return <article className="formatted-page" id={`page-${pageNumber}`}>
     <header className="formatted-page-header">
       <span>{documentTitle}</span>
       <b>Source page {String(pageNumber).padStart(2, "0")}</b>
     </header>
-    <div className="formatted-page-body">{parsed.blocks.map((block, index) => renderBlock(block, `${pageNumber}-${index}`))}</div>
+    <div className="formatted-page-body">{parsed.blocks.map((block, index) => renderBlock(block, `${pageNumber}-${index}`, figures))}</div>
     <footer>Source page {pageNumber}</footer>
   </article>;
 }

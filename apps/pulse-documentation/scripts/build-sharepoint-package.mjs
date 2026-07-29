@@ -106,6 +106,7 @@ function collectPublicAssets(manifestFiles) {
     ...(includePdfs ? publicFilesUnder("source-pdfs") : []),
     ...publicFilesUnder("source-text"),
     ...publicFilesUnder("screenshots"),
+    ...publicFilesUnder("figures"),
     path.join(PUBLIC_ROOT, "favicon.svg"),
   ].filter((filePath) => existsSync(filePath));
 
