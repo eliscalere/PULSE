@@ -40,13 +40,14 @@
 
 <link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
 <link rel="stylesheet" href="vendor/boxicons/css/boxicons.min.css">
+<link rel="stylesheet" href="vendor/fullcalendar/css/main.min.css">
+<link rel="stylesheet" href="vendor/flatpickr/flatpickr.min.css">
 <link rel="stylesheet" href="assets/css/style.css?v=20260727a">
 <link rel="stylesheet" href="assets/css/dropdowns.css">
 <link rel="stylesheet" href="assets/css/pulse-system.css?v=20260727d">
 </head>
 <body>
 
-<!-- Boot loader lives outside #aewttr-root so renderShell() can't wipe it -->
 <div id="pulse-boot-loader" role="status" aria-label="Loading PULSE Tickets">
   <div class="pulse-svgl-wrap">
     <svg class="pulse-svgl" viewBox="0 0 960 360" aria-hidden="true">
@@ -80,12 +81,21 @@
 
 <div id="aewttr-root"></div>
 
+<script src="vendor/fullcalendar/js/main.min.js"></script>
+<script src="vendor/flatpickr/flatpickr.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+
 <script src="assets/js/app-config.js"></script>
 <script src="assets/js/sharepoint-adapter.js?v=20260722b"></script>
 <script src="assets/js/sharepoint-schema.js?v=20260727a"></script>
 <script src="assets/js/sharepoint-repo.js?v=20260727a"></script>
 <script src="assets/js/data.js?v=20260727a"></script>
 <script src="assets/js/issue-reporting.js?v=20260724a"></script>
+<script src="assets/js/export.js?v=20260725b"></script>
+<script src="vendor/pptxgenjs/pptxgen.browser.js"></script>
+<script src="assets/js/office-desktop.js?v=20260726d"></script>
+<script src="assets/js/project-pptx-export.js?v=20260727a"></script>
 <script src="assets/js/app.js?v=20260727a"></script>
 <script src="assets/js/audit-log.js"></script>
 <script src="assets/js/notify.js"></script>
