@@ -21,9 +21,17 @@
 - [VERIFY] Site resolution for focused packages hosted as web parts depends on the host page exposing SharePoint context to the frame's parent window; this can only be confirmed on a real hosted page.
 - [VERIFY] PULSE CODE authentication, file read/write behavior, and AI features were not functionally exercised in this workspace; only its build was verified.
 
-## Known documentation gap
+## Documentation library composition
 
-The eight portfolio PDFs under `apps/pulse-documentation/public/source-pdfs/` are externally authored and have no generator in this repository. The `.txt` files the documentation site searches are text extractions of those PDFs. Both were therefore left unchanged in this pass, so the searchable library does not yet describe My Travel, Travel Calendar, PULSE CODE, or the focused package model — that coverage currently exists in these Markdown sources, the site's Interface reference view, and the SOP set. Closing the gap requires regenerating the PDFs and re-extracting the text so the two stay in agreement.
+Documents 01 through 08 under `apps/pulse-documentation/public/source-pdfs/` are externally authored portfolio documents with no generator in this repository; the matching `.txt` files are text extractions of them. They were checked for claims invalidated by current behaviour and none were found — they are incomplete with respect to the newer surfaces, not inaccurate. They are therefore unchanged, and their PDF-to-extraction agreement is preserved.
+
+Document 09, **Focused Tools & Package Delivery**, closes the coverage gap for My Travel, the travel calendar, Tickets and the PULSE Issues binding, PULSE CODE, site resolution in web parts, and publishing a focused tool page. It is generated from a single content source, so its PDF and its searchable extraction cannot drift:
+
+- Content source: `apps/pulse-documentation/documents/09-focused-tools.mjs`
+- Generator: `apps/pulse-documentation/scripts/build-source-document.mjs`
+- Command: `node apps/pulse-documentation/scripts/build-source-document.mjs 09`
+
+Any future document should be authored the same way rather than as a PDF with a separate extraction. Reissuing documents 01 through 08 on that basis remains an open ownership question.
 
 ## Deliberate exclusions
 

@@ -51,7 +51,7 @@ node apps/PULSE/scripts/build-travel-packages.js
 
 That script builds all eight packages — the full application, Travel Request Forms, My Travel, Travel Calendar, Tickets, PULSE Calendar, PULSE CODE, and PULSE Documentation — writing each to both `apps/PULSE/fs-packages/` and `releases/`. The five PULSE-native packages share the builder above and differ only by entry file; the other three delegate to their own build scripts. A failure in any package aborts the run with a non-zero exit code.
 
-The focused packages are ordinary PULSE entry files that set `window.PULSE_PORT_CONFIG` before the application loads, restricting navigation and the sidebar to one area. They carry the same script set as `index.html`; trimming scripts from a focused entry file has broken boot in the past and should be avoided.
+The focused packages are ordinary PULSE entry files that set `window.PULSE_PORT_CONFIG` before the application loads, restricting navigation and the sidebar to one area. They carry the same script set as `index.html`; trimming scripts from a focused entry file has broken boot in the past and should be avoided. Document 09 in the documentation library, *Focused Tools & Package Delivery*, covers the package set, each tool's purpose, and the publishing procedure in full.
 
 The documentation package is built from a Vite/RSC application, so its packager additionally rewrites the rendered payload: the route stylesheet is re-pointed at an inlined `data:` URI, the RSC preload hint is dropped, and the dynamic-import chunk table is emptied. Without those steps React suspends its first commit waiting on a stylesheet that does not exist beside a single-file package, which inside a SharePoint iframe leaves the page blank until the user clicks it.
 

@@ -49,5 +49,6 @@ PULSE preserves the relationship between a project, its people, work items, risk
 
 - [User Guide](PULSE-User-Guide.md) for navigation and role-aware operating instructions.
 - [Technical Reference](PULSE-Technical-Reference.md) for source, configuration, SharePoint integration, packaging, and maintenance.
-- [Standard Operating Procedures](PULSE-Standard-Operating-Procedures.md) for repeatable operating workflows and evidence.
+- [Standard Operating Procedures](PULSE-Standard-Operating-Procedures.md) for repeatable operating workflows and evidence, including SOP 9 for publishing and verifying a focused tool page.
+- Documentation library document 09, *Focused Tools & Package Delivery*, for the package set and each focused tool in detail.
 - [Source Audit](Source-Audit.md) for verified boundaries and items requiring live-site confirmation.
