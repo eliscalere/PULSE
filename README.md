@@ -65,15 +65,11 @@ AEWTTR PAS/
 │   │   │   ├── flatpickr/
 │   │   │   ├── fullcalendar/
 │   │   │   └── pptxgenjs/
+│   │   ├── fs-packages/                    Preferred SharePoint/Firepit upload packages
 │   │   └── scripts/
 │   │       ├── build-sharepoint-package.js → releases/PULSE-v1.0.0.html
+│   │       ├── build-travel-packages.js    → orchestrates all 8 packages below
 │   │       └── build-forge.js              → Forge web part bundle (see below)
-│   │
-│   ├── PULSE-TICKETS/
-│   │   ├── index.html
-│   │   ├── assets/js/tickets.js
-│   │   ├── assets/css/tickets.css
-│   │   └── scripts/build-sharepoint-package.js
 │   │
 │   ├── PULSE-TRAVEL-CALENDAR/
 │   │   ├── index.html
@@ -81,9 +77,17 @@ AEWTTR PAS/
 │   │   ├── assets/css/calendar.css
 │   │   └── scripts/build-sharepoint-package.js
 │   │
-│   └── PULSE-CODE/                         In-browser code editor
-│       ├── index.html                       Single self-contained file
-│       └── scripts/build-sharepoint-package.js
+│   ├── PULSE-CODE/                         In-browser code editor
+│   │   ├── index.html                       Single self-contained file
+│   │   └── scripts/build-sharepoint-package.js
+│   │
+│   ├── pulse-documentation/                 Next.js app — technical handoff, SOPs, user guide
+│   │   └── scripts/build-sharepoint-package.mjs
+│   │
+│   ├── spfx-pulse-workspace/                Typed SharePoint Framework reference (not active)
+│   │
+│   └── _archived/
+│       └── PULSE-TICKETS/                   Archived — superseded by PULSE/tickets.html
 │
 ├── artifacts/generated/                    SharePoint list schema CSVs + Excel template
 ├── assets/branding/                        Logos, seals (AEWTTR, NAVAIR, TTSD)
@@ -126,24 +130,28 @@ Each app has a `scripts/build-sharepoint-package.js` that inlines all local asse
 ```bash
 # Run from the repo root
 
-# PULSE (main dashboard)
+# Build everything at once (PULSE, Tickets, My Travel, Travel Calendar,
+# Travel Request Forms, PULSE Calendar, PULSE CODE, PULSE Documentation)
+node apps/PULSE/scripts/build-travel-packages.js
+# → apps/PULSE/fs-packages/*.html and releases/*.html
+
+# Or build a single package directly:
 node apps/PULSE/scripts/build-sharepoint-package.js
-# → releases/PULSE-v1.0.0.html
+# → releases/PULSE-v1.0.0.html  (main dashboard; also builds tickets.html,
+#   travel-calendar.html, travel-forms.html, my-travel.html the same way
+#   if you pass one of those as the entry — see build-travel-packages.js)
 
-# PULSE Tickets
-node apps/PULSE-TICKETS/scripts/build-sharepoint-package.js
-# → releases/PULSE-Tickets-v1.0.0.html
-
-# PULSE Travel Calendar
 node apps/PULSE-TRAVEL-CALENDAR/scripts/build-sharepoint-package.js
 # → releases/PULSE-Calendar-v1.0.0.html
 
-# PULSE CODE
 node apps/PULSE-CODE/scripts/build-sharepoint-package.js
 # → releases/PULSE-CODE-v1.0.0.html
+
+node apps/pulse-documentation/scripts/build-sharepoint-package.mjs
+# → releases/PULSE-Documentation-v1.0.0.html
 ```
 
-No `npm install` needed — PULSE, Tickets, and Calendar vendor all their dependencies locally. PULSE CODE loads Monaco Editor from the jsdelivr CDN at runtime.
+No `npm install` needed for the PULSE-native packages — PULSE, Tickets, Calendar, and Travel Forms vendor all their dependencies locally. PULSE CODE loads Monaco Editor from the jsdelivr CDN at runtime. `pulse-documentation` is a Next.js app and does need its own `npm install` before its build script can inline `dist/`.
 
 **What the build does:**
 1. Reads `index.html`

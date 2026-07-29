@@ -15,11 +15,10 @@ PULSE is a browser-based SharePoint/Firepit application. Start here when maintai
 ## Keep these boundaries
 
 - `assets/` and `vendor/` are runtime source dependencies; keep their relative paths intact.
-- `docs/` is the maintenance reference: begin with `docs/handoff/AI-HANDOFF.md` and `docs/02-TECHNICAL-REFERENCE.md`.
+- `docs/` is the maintenance reference: begin with `docs/current/README.md` (paired Markdown/Word documentation set — user guide, technical handoff, operations SOP).
 - `fs-packages/` contains the preferred SharePoint/Firepit upload packages.
 - `releases/` contains Forge builds and reference deployment packages, not editable application source.
 - `validation/` contains verification samples, not runtime code.
-- `tools/packaging/` contains handoff copies of both package builders and a local `Forge.html` reference/template. The canonical scripts remain in `scripts/`; keep the copies synchronized after changes.
 
 ## Shipping
 
@@ -34,5 +33,7 @@ Use semantic versioning (`MAJOR.MINOR.PATCH`) in release filenames. Increment MI
 The secondary Forge path, only when specifically required, is:
 
 ```sh
-node scripts/build-forge.js tools/packaging/Forge.html releases/forge-builds/Forge.html
+node scripts/build-forge.js <path-to-forge-template.html> releases/forge-builds/Forge.html
 ```
+
+The Forge template is a user-supplied file (e.g. exported from the Forge/Firepit platform), not something checked into this repo.

@@ -65,9 +65,9 @@ Tabs only appear if that data is present on the ticket.
 ## Building
 
 ```bash
-cd apps/PULSE-TICKETS
+cd apps/_archived/PULSE-TICKETS
 node scripts/build-sharepoint-package.js
-# → releases/PULSE-Tickets-v1.0.0.html
+# → releases/_legacy/PULSE-Tickets-STANDALONE-v1.0.0.html
 ```
 
 Upload `releases/PULSE-Tickets-v1.0.0.html` to a SharePoint Forge web part.
