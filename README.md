@@ -88,7 +88,6 @@ AEWTTR PAS/
 ├── artifacts/generated/                    SharePoint list schema CSVs + Excel template
 ├── assets/branding/                        Logos, seals (AEWTTR, NAVAIR, TTSD)
 ├── deliverables/                           Final AoA and presentation files
-├── docs/                                   Project-level documentation
 └── tools/sharepoint/                       SP list schema build scripts
 ```
 
