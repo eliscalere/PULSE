@@ -1489,7 +1489,7 @@ function drawReleases(body) {
       badgeClass: "kc-badge",
       icon: "bx-support",
       description: "Standalone issue tracking and user support ticket management web part.",
-      command: "node apps/PULSE-TICKETS/scripts/build-sharepoint-package.js"
+      command: "node apps/PULSE/scripts/build-travel-packages.js"
     },
     {
       id: "pulse-docs",

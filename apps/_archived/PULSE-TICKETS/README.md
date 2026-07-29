@@ -1,5 +1,11 @@
 # PULSE Tickets — Standalone Issue Tracker
 
+> **ARCHIVED.** Superseded by `apps/PULSE/tickets.html`, which ships as part of
+> the real build pipeline (`apps/PULSE/scripts/build-travel-packages.js`) and
+> reads from the same "PULSE Issues" list with the same UI. This standalone
+> copy is not referenced by any build script and is kept for reference only —
+> do not run its build script as part of a normal release.
+
 A standalone SharePoint-hosted tool for viewing and managing issues reported by PULSE users. Reads from the same **"PULSE Issues"** SharePoint list that the built-in PULSE tickets page writes to.
 
 ---

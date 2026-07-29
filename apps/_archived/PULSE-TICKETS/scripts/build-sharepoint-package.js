@@ -9,8 +9,12 @@ const root = path.resolve(__dirname, "..");
 const appsDir = path.resolve(root, "..");
 
 const VERSION = "1.0.0";
+// ARCHIVED app — one directory deeper than a live app/, and the output
+// filename is deliberately distinct from releases/PULSE-Tickets-v*.html
+// so this can never again silently overwrite the real Tickets package
+// (built from apps/PULSE/tickets.html via build-travel-packages.js).
 const output = process.argv[2]
-  || path.join(root, "..", "..", "releases", `PULSE-Tickets-v${VERSION}.html`);
+  || path.join(root, "..", "..", "..", "releases", "_legacy", `PULSE-Tickets-STANDALONE-v${VERSION}.html`);
 
 const index = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const manifest = [];

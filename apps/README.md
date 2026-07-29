@@ -3,9 +3,10 @@
 | Folder | App | Version | Description |
 |---|---|---|---|
 | `PULSE/` | PULSE IPT Dashboard | 1.0.0 | Primary app — projects, travel, meetings, document review |
-| `PULSE-TICKETS/` | PULSE Tickets | 1.0.0 | Standalone issue tracker |
 | `PULSE-TRAVEL-CALENDAR/` | PULSE Calendar | 1.0.0 | Standalone travel calendar |
+| `PULSE-CODE/` | PULSE CODE | 1.0.0 | In-browser code editor for SharePoint-hosted files |
 | `spfx-pulse-workspace/` | SPFx implementation | — | Typed SharePoint Framework reference (not active) |
+| `_archived/PULSE-TICKETS/` | PULSE Tickets (standalone) | 1.0.0 | Archived — superseded by `PULSE/tickets.html`, not part of the build pipeline |
 
 Build scripts in each app's `scripts/` folder. All release output goes to `../releases/`.
 
