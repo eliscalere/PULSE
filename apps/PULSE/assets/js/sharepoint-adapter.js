@@ -68,38 +68,73 @@ const sharePointAdapter = (function () {
      probe of /_api/web/currentuser against a handful of candidate site
      URLs, which is the real ground truth. */
 
+  // Extract a site URL string from a _spPageContextInfo object, preferring
+  // webAbsoluteUrl and falling back to origin + webServerRelativeUrl.
+  function siteUrlFromContext(ctx) {
+    if (!ctx) return "";
+    if (ctx.webAbsoluteUrl) return ctx.webAbsoluteUrl.replace(/\/$/, "");
+    if (ctx.webServerRelativeUrl) {
+      try { return (window.location.origin + ctx.webServerRelativeUrl).replace(/\/$/, ""); } catch (e) {}
+    }
+    return "";
+  }
+
   function getSiteUrl() {
     ensureDiagnosticsState();
-    if (window._spPageContextInfo && window._spPageContextInfo.webAbsoluteUrl) {
-      const siteUrl = window._spPageContextInfo.webAbsoluteUrl.replace(/\/$/, "");
+
+    // 1. Direct page context — normal SharePoint page (not inside an iframe).
+    const localCtx = window._spPageContextInfo;
+    if (localCtx && localCtx.webAbsoluteUrl) {
+      const siteUrl = localCtx.webAbsoluteUrl.replace(/\/$/, "");
       recordDiagnostics({ detectedSiteUrl: siteUrl, detectedSiteUrlMethod: "webAbsoluteUrl" });
       return siteUrl;
     }
-    // manualSharePointSiteUrl is checked BEFORE the webServerRelativeUrl guess
-    // below on purpose: that guess assumes window.location.origin IS the
-    // SharePoint site's own origin, which is only true if the page is loaded
-    // through SharePoint's normal page chrome. Firepit and similar embeds
-    // can inject a partial _spPageContextInfo (webServerRelativeUrl present,
-    // webAbsoluteUrl missing) while actually serving this page's HTML/JS
-    // from a completely different host — in that case the guess below
-    // silently builds a URL on the WRONG origin, and every REST call fails
-    // with an opaque network/CORS error that looks identical to "SharePoint
-    // is unreachable." An explicit manualSharePointSiteUrl is always correct
-    // by construction, so it should win over an origin-based guess.
+
+    // 2. Manual override — always beats origin-based guesses.
     if (APP_CONFIG.manualSharePointSiteUrl) {
       const siteUrl = APP_CONFIG.manualSharePointSiteUrl.replace(/\/$/, "");
       recordDiagnostics({ detectedSiteUrl: siteUrl, detectedSiteUrlMethod: "manualSharePointSiteUrl" });
       return siteUrl;
     }
-    if (window._spPageContextInfo && window._spPageContextInfo.webServerRelativeUrl) {
-      const siteUrl = (window.location.origin + window._spPageContextInfo.webServerRelativeUrl).replace(/\/$/, "");
-      pushDebugLog("info", "site-detection", `Falling back to origin + webServerRelativeUrl guess: ${siteUrl}. If REST calls fail with a network error, this guess is likely wrong for your embed — set APP_CONFIG.manualSharePointSiteUrl instead.`);
+
+    // 3. Parent window context — Firepit and other iframes where the host
+    //    SharePoint page injects _spPageContextInfo into the PARENT, not
+    //    into the sandboxed iframe. This is the normal case for standalone
+    //    tools deployed as Firepit web parts.
+    try {
+      const parentCtx = window.parent && window.parent !== window ? window.parent._spPageContextInfo : null;
+      if (parentCtx) {
+        const siteUrl = siteUrlFromContext(parentCtx);
+        if (siteUrl) {
+          recordDiagnostics({ detectedSiteUrl: siteUrl, detectedSiteUrlMethod: "parent._spPageContextInfo" });
+          return siteUrl;
+        }
+      }
+    } catch (e) { /* cross-origin iframe — blocked, move on */ }
+
+    // 4. Top window context — deeper nested iframes.
+    try {
+      const topCtx = window.top && window.top !== window ? window.top._spPageContextInfo : null;
+      if (topCtx) {
+        const siteUrl = siteUrlFromContext(topCtx);
+        if (siteUrl) {
+          recordDiagnostics({ detectedSiteUrl: siteUrl, detectedSiteUrlMethod: "top._spPageContextInfo" });
+          return siteUrl;
+        }
+      }
+    } catch (e) { /* cross-origin, skip */ }
+
+    // 5. Local webServerRelativeUrl guess (less reliable — see comment above).
+    if (localCtx && localCtx.webServerRelativeUrl) {
+      const siteUrl = (window.location.origin + localCtx.webServerRelativeUrl).replace(/\/$/, "");
+      pushDebugLog("info", "site-detection", `Falling back to origin + webServerRelativeUrl guess: ${siteUrl}. If REST calls fail, set APP_CONFIG.manualSharePointSiteUrl instead.`);
       recordDiagnostics({ detectedSiteUrl: siteUrl, detectedSiteUrlMethod: "origin+webServerRelativeUrl (unverified guess)" });
       return siteUrl;
     }
-    // Last resort: use the site URL saved by a previously successful PULSE boot on this
-    // browser. This lets standalone tools (Tickets, My Travel, etc.) share the same
-    // SharePoint connection as the main PULSE app without needing their own page context.
+
+    // 6. Shared localStorage key — written by the main PULSE app on every
+    //    successful boot so standalone tools can inherit the same site URL
+    //    even if all of the above fail.
     try {
       const saved = localStorage.getItem("pulse_sp_site_url");
       if (saved) {
@@ -107,6 +142,7 @@ const sharePointAdapter = (function () {
         return saved;
       }
     } catch (e) { /* sandboxed */ }
+
     recordDiagnostics({ detectedSiteUrl: "", detectedSiteUrlMethod: "none" });
     return "";
   }
