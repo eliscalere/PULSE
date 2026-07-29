@@ -104,6 +104,13 @@ export const pages = [
         label: "IMPORTANT",
         text: "Silent truncation is the most dangerous behaviour listed in this document. Past the guard, the application shows a complete-looking view of an incomplete dataset. A scale test must check record counts against the list, not just confirm the page renders.",
       },
+      {
+        kind: "figure",
+        file: "/screenshots/18-logs.webp",
+        caption: "Activity log",
+        meta: "#/logs",
+        description: "Sorted server-side on ActionTime and unbounded in growth — the first list expected to cross the view threshold.",
+      },
       { kind: "h4", text: "THE LIST VIEW THRESHOLD" },
       { kind: "p", text: "Three loads sort server-side on a date column: issues and tickets on their occurrence date, and the audit log on its action time. These are exactly the lists that grow without bound. Once a list passes SharePoint's 5,000-item view threshold, a sorted or filtered query against an unindexed column fails rather than degrading. Adding the right indexed columns is likely to be a prerequisite, not an optimisation." },
     ],
@@ -160,6 +167,13 @@ export const pages = [
     kicker: "STEP THREE",
     title: "06 / WHAT TO MEASURE AND PROVOKE",
     blocks: [
+      {
+        kind: "figure",
+        file: "/screenshots/05-project-tracker.webp",
+        caption: "Project tracker",
+        meta: "#/projects/<code>/tracker",
+        description: "The heaviest client-side render: every task, milestone, owner, and date for one project, re-rendered on each refresh.",
+      },
       { kind: "h4", text: "MEASURE" },
       {
         kind: "ul",

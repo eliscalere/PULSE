@@ -64,7 +64,10 @@ function isFooterOrRunningHeader(line: string) {
   if (!compact) return false;
   return (
     (/^\s{40,}\S/.test(line) && isUpperLabel(compact)) ||
-    /^PULSE\s{6,}\S/.test(line) ||
+    /* A table row whose first cell is "PULSE" also matches this shape, and was
+       being deleted as furniture. Running headers are uppercase; table cells are
+       not, so require the tail to be uppercase before treating it as a header. */
+    (/^PULSE\s{6,}\S/.test(line) && isUpperLabel(compact.replace(/^PULSE\s+/, ""))) ||
     /^PULSE BRAND IDENTITY\b.*\b\d{2}$/i.test(compact) ||
     /^PULSE PRODUCT BRIEF\b.*\b\d{2}$/i.test(compact) ||
     /^PULSE GENERAL OVERVIEW\b.*\b\d{2}$/i.test(compact) ||
@@ -160,8 +163,11 @@ function tableFrom(lines: string[]): TextBlock | null {
 
 function listFrom(lines: string[]): TextBlock | null {
   const marker = /^\s*(?:[•●▪✓□]\s*|\d{1,2}[.)]\s+|\d{1,2}\s*\/\s+)/;
+  const bullet = /^\s*[•●▪✓□]\s/;
   const markerCount = lines.filter((line) => marker.test(line)).length;
-  if (markerCount < 2) return null;
+  /* A single bulleted item is still a list. Requiring two sent one-line
+     commands to the heading branch, where they rendered at heading size. */
+  if (markerCount < 2 && !(markerCount === 1 && bullet.test(lines[0]))) return null;
   const ordered = lines.some((line) => /^\s*\d/.test(line));
   const items: string[] = [];
   for (const rawLine of lines) {

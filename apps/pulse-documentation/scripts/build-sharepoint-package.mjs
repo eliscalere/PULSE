@@ -101,8 +101,12 @@ function collectPublicAssets(manifestFiles) {
      the one you put on a page, and INCLUDE_PDFS=1 produces the archival package
      that carries them. The UI hides PDF affordances when they are absent. */
   const includePdfs = process.env.INCLUDE_PDFS === "1";
+  /* The brand ZIP is 346 KB of the package and duplicates assets that are
+     already inlined individually, so it is excluded from the delivered build.
+     The archival build carries it. */
+  const skipBundle = (filePath) => !includePdfs && /PULSE_Brand_Assets_v[\d.]+\.zip$/.test(filePath);
   const files = [
-    ...publicFilesUnder("brand-assets"),
+    ...publicFilesUnder("brand-assets").filter((filePath) => !skipBundle(filePath)),
     ...(includePdfs ? publicFilesUnder("source-pdfs") : []),
     ...publicFilesUnder("source-text"),
     ...publicFilesUnder("screenshots"),

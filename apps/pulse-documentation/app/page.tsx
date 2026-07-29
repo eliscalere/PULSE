@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DocumentPage, parsePage } from "./document-reader";
+import focusedFigures from "./generated/figures/09_PULSE_Focused_Tools_and_Package_Delivery.json";
+import devscaleFigures from "./generated/figures/10_PULSE_Development_Environment_and_Scale_Validation.json";
 import interfaceFigures from "./generated/figures/11_PULSE_Interface_Reference.json";
 import flowFigures from "./generated/figures/12_PULSE_Process_Flows.json";
 
@@ -11,6 +13,8 @@ import flowFigures from "./generated/figures/12_PULSE_Process_Flows.json";
    come from the document source, so neither can drift from the other. */
 type Figure = { file: string; caption: string; meta?: string; description?: string; hideCaption?: boolean };
 const figuresByDocument: Record<string, Record<string, Figure[]>> = {
+  focused: focusedFigures as Record<string, Figure[]>,
+  devscale: devscaleFigures as Record<string, Figure[]>,
   interface: interfaceFigures as Record<string, Figure[]>,
   flows: flowFigures as Record<string, Figure[]>,
 };
@@ -328,7 +332,7 @@ export default function Home() {
       <button className={view === "brand" ? "brand-button active" : "brand-button"} onClick={openBrand}><img suppressHydrationWarning src={getAssetUrl("/brand-assets/PULSE_Dot_Mark_White_Transparent.png")} alt="" /><span><b>Brand guidelines</b><small>Identity & assets</small></span><strong>→</strong></button>
     </aside>
     <section className="content" id="top">
-      <header className="topbar"><button className="menu" aria-label="Open documentation navigation" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><div className="crumb">PULSE / <span>{isSearching ? "Search" : view === "brand" ? "Brand guidelines" : `${selected.title}${currentSection ? ` / ${currentSection.title.replace(/^\d+(?:\.\d+)?\s*\/\s*/, "")}` : ""}`}</span></div>{view === "brand" ? <a suppressHydrationWarning className="source-link" href={getAssetUrl("/brand-assets/PULSE_Brand_Identity_Guide_v1.3.pdf")} download>Download guide PDF ↓</a> : pdfsBundled ? <a suppressHydrationWarning className="source-link" href={getAssetUrl(`/source-pdfs/${selected.pdfFile}`)} target="_blank" rel="noreferrer">Open source page ↗</a> : <span className="source-link source-link--static">{selected.pages} pages · full text below</span>}</header>
+      <header className="topbar"><button className="menu" aria-label="Open documentation navigation" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><div className="crumb">PULSE / <span>{isSearching ? "Search" : view === "brand" ? "Brand guidelines" : `${selected.title}${currentSection ? ` / ${currentSection.title.replace(/^\d+(?:\.\d+)?\s*\/\s*/, "")}` : ""}`}</span></div>{view === "brand" ? <a suppressHydrationWarning className="source-link" href={getAssetUrl("/brand-assets/PULSE_Brand_Identity_Guide_v1.3.pdf")} download>Download guide PDF ↓</a> : <button type="button" className="source-link source-link--action" onClick={() => window.print()}>Save as PDF ↓</button>}</header>
       <div className="hero"><div className="eyebrow">PULSE KNOWLEDGE BASE <i /></div><h1>Search PULSE documentation.</h1><p>Ask a plain-language question, find the relevant section, and verify it against the exact source page.</p>
         <label className="search"><span>⌕</span><input ref={searchInputRef} value={query} onChange={(event) => search(event.target.value)} placeholder="Ask anything: How do I submit travel? What lists does PULSE use?" aria-label="Search the PULSE documentation source library" />{query ? <button type="button" className="search-clear" onClick={() => search("")} aria-label="Clear search">✕</button> : <kbd>⌘ K</kbd>}</label>
         <div className="quick">Try: <button onClick={() => search("document review")}>document review</button><button onClick={() => search("project tracker")}>project tracker</button><button onClick={() => search("Firepit package")}>Firepit package</button></div>
@@ -342,11 +346,14 @@ export default function Home() {
               <div className="result-head"><span className="result-section">Section {String(result.page).padStart(2, "0")}</span><b>{result.sectionTitle}</b><span className="result-hits">{result.hits} {result.hits === 1 ? "match" : "matches"}</span></div>
               <p>{highlight(result.excerpt, searchTerms).map((part, partIndex) => searchTerms.some((term) => part.toLowerCase() === term.toLowerCase()) ? <mark key={partIndex}>{part}</mark> : <span key={partIndex}>{part}</span>)}</p>
             </button>
-            {pdfsBundled && <a suppressHydrationWarning className="result-source" href={getAssetUrl(`/source-pdfs/${result.doc.pdfFile}`)} target="_blank" rel="noreferrer">Open controlled source ↗</a>}
+            
           </article>)}
         </div>)}</div>
       </section> : view === "brand" ? <BrandPage /> : <>
-        <section className="document-header"><div><div className="section-kicker">DOCUMENT {selected.number} · {selected.type}</div><h2>{selected.title}</h2><p>{selected.description}</p><div className="meta"><span>{selected.pages} pages</span><span>{selected.audience}</span></div></div>{pdfsBundled && <a suppressHydrationWarning className="pdf-card" href={getAssetUrl(`/source-pdfs/${selected.pdfFile}`)} target="_blank" rel="noreferrer"><span>PDF</span><b>View controlled source</b><small>Original portfolio document ↗</small></a>}</section>
+        <section className="document-header"><div><div className="section-kicker">DOCUMENT {selected.number} · {selected.type}</div><h2>{selected.title}</h2><p>{selected.description}</p><div className="meta"><span>{selected.pages} pages</span><span>{selected.audience}</span></div></div><div className="doc-actions">
+            <button type="button" className="doc-action doc-action--primary" onClick={() => window.print()}><span>PDF</span><b>Save this document</b><small>Prints the full document, figures included</small></button>
+            {pdfsBundled && <a suppressHydrationWarning className="doc-action" href={getAssetUrl(`/source-pdfs/${selected.pdfFile}`)} target="_blank" rel="noreferrer"><span>SRC</span><b>Controlled source</b><small>Original portfolio PDF ↗</small></a>}
+          </div></section>
         <section className="reader" id="reader-top">
           <div className="reader-heading"><div><span className="reading-position">{selectedPages.length || selected.pages} sections · continuous</span><h3>Read straight through, or jump from the sidebar</h3></div><div className="topics">{selected.topics.map((topic) => <span key={topic}>{topic}</span>)}</div></div>
           {!selectedPages.length

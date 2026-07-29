@@ -1,0 +1,18 @@
+{
+  "6": [
+    {
+      "file": "/figures/flow-ticket.svg",
+      "caption": "Support ticket states",
+      "meta": "Source: ticket status values and the repository mapping",
+      "hideCaption": true
+    }
+  ],
+  "8": [
+    {
+      "file": "/figures/flow-site.svg",
+      "caption": "Site resolution order",
+      "meta": "Source: getSiteUrl in the SharePoint adapter",
+      "hideCaption": true
+    }
+  ]
+}

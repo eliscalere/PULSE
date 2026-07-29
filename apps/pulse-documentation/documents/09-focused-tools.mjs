@@ -137,6 +137,13 @@ export const pages = [
         label: "IMPORTANT",
         text: "A ticket opened in the standalone Tickets package is the same record the full application shows. Do not open a second ticket for the same problem in the other surface.",
       },
+      {
+        kind: "figure",
+        file: "/figures/flow-ticket.svg",
+        caption: "Support ticket states",
+        hideCaption: true,
+        meta: "Source: ticket status values and the repository mapping",
+      },
       { kind: "h4", text: "STATUS VALUES AS DISPLAYED" },
       {
         kind: "table",
@@ -189,6 +196,13 @@ export const pages = [
           "A server-relative web path combined with the current origin.",
           "A site address cached by the full application on a previous successful boot.",
         ],
+      },
+      {
+        kind: "figure",
+        file: "/figures/flow-site.svg",
+        caption: "Site resolution order",
+        hideCaption: true,
+        meta: "Source: getSiteUrl in the SharePoint adapter",
       },
       {
         kind: "callout",

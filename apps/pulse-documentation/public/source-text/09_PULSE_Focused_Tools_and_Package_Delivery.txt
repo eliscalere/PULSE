@@ -143,6 +143,9 @@ IMPORTANT
 A ticket opened in the standalone Tickets package is the same record the full application shows.
 Do not open a second ticket for the same problem in the other surface.
 
+FIGURE  Support ticket states
+Source: ticket status values and the repository mapping
+
 STATUS VALUES AS DISPLAYED
 
 TICKET VALUE   MEANING
@@ -201,6 +204,9 @@ RESOLUTION ORDER
 4. The top window's page context, for a nested frame.
 5. A server-relative web path combined with the current origin.
 6. A site address cached by the full application on a previous successful boot.
+
+FIGURE  Site resolution order
+Source: getSiteUrl in the SharePoint adapter
 
 NOTE
 

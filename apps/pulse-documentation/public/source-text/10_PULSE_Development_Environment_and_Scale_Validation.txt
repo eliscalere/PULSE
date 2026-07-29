@@ -107,6 +107,11 @@ Silent truncation is the most dangerous behaviour listed in this document. Past 
 application shows a complete-looking view of an incomplete dataset. A scale test must check
 record counts against the list, not just confirm the page renders.
 
+FIGURE  Activity log
+#/logs
+Sorted server-side on ActionTime and unbounded in growth — the first list expected to cross the
+view threshold.
+
 THE LIST VIEW THRESHOLD
 
 Three loads sort server-side on a date column: issues and tickets on their occurrence date, and
@@ -182,6 +187,11 @@ explicitly rather than defaulted.
 
 
 06 / WHAT TO MEASURE AND PROVOKE
+
+FIGURE  Project tracker
+#/projects/<code>/tracker
+The heaviest client-side render: every task, milestone, owner, and date for one project,
+re-rendered on each refresh.
 
 MEASURE
 

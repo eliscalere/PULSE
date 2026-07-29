@@ -1,0 +1,20 @@
+{
+  "4": [
+    {
+      "file": "/screenshots/18-logs.webp",
+      "caption": "Activity log",
+      "meta": "#/logs",
+      "description": "Sorted server-side on ActionTime and unbounded in growth — the first list expected to cross the view threshold.",
+      "hideCaption": false
+    }
+  ],
+  "7": [
+    {
+      "file": "/screenshots/05-project-tracker.webp",
+      "caption": "Project tracker",
+      "meta": "#/projects/<code>/tracker",
+      "description": "The heaviest client-side render: every task, milestone, owner, and date for one project, re-rendered on each refresh.",
+      "hideCaption": false
+    }
+  ]
+}
