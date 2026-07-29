@@ -22,7 +22,7 @@ const SP_LISTS = {
   docReviewerGroup: "PULSE Doc Reviewer Groups",
   auditLog: "PULSE Audit Log",
   issue: "PULSE Issues",
-  ticket: "PULSE Tickets",
+  ticket: "PULSE Issues",
   notification: "PULSE Notifications",
   notificationConfig: "PULSE Notification Config",
   appSettings: "PULSE App Settings",
@@ -1214,43 +1214,72 @@ function spItemToIssue(item) {
   };
 }
 
-/* ---------- mappers: tickets ---------- */
+/* ---------- mappers: tickets (backed by PULSE Issues list) ---------- */
+
+function _issueTypeToTicketType(t) {
+  if (!t) return "Question";
+  if (t === "Bug / error" || t === "Data / saving") return "Bug";
+  if (t === "Access / permissions") return "Access";
+  if (t === "Display / usability") return "Platform";
+  if (t === "Feature Request") return "Feature Request";
+  if (t === "Blocker") return "Blocker";
+  return "Question";
+}
+function _ticketTypeToIssueType(t) {
+  if (!t) return "Other";
+  if (t === "Bug") return "Bug / error";
+  if (t === "Blocker") return "Bug / error";
+  if (t === "Access") return "Access / permissions";
+  if (t === "Platform") return "Display / usability";
+  if (t === "Feature Request") return "Feature Request";
+  return "Other";
+}
+function _issueStatusToTicketStatus(s) {
+  if (!s) return "Open";
+  if (s === "In Progress") return "In Progress";
+  if (s === "Resolved" || s === "Closed") return "Resolved";
+  return "Open";
+}
+function _ticketStatusToIssueStatus(s) {
+  if (!s) return "New";
+  if (s === "In Progress") return "In Progress";
+  if (s === "Resolved") return "Resolved";
+  return "New";
+}
 
 function ticketToSpItem(t) {
   return {
     Title: String(t.title || "Support ticket").slice(0, 255),
-    TicketCode: String(t.id || "").slice(0, 120),
-    TicketType: t.type || "Question",
-    TicketStatus: t.status || "Open",
-    Priority: String(t.priority || "").slice(0, 255),
-    Reporter: String(t.reporter || "").slice(0, 255),
+    IssueCode: String(t.id || "").slice(0, 120),
+    IssueType: _ticketTypeToIssueType(t.type),
+    IssueStatus: _ticketStatusToIssueStatus(t.status),
+    ReportedByName: String(t.reporter || "").slice(0, 255),
     ReporterEmail: String(t.reporterEmail || "").slice(0, 255),
-    OpenedAt: t.opened || new Date().toISOString(),
-    ProjectRef: String(t.project || "").slice(0, 255),
-    Detail: String(t.detail || "").slice(0, 18000),
-    Workaround: String(t.workaround || "").slice(0, 12000),
-    ESDP: String(t.esdp || "").slice(0, 12000),
-    UpdatesJson: JSON.stringify(t.updates || []).slice(0, 30000)
+    OccurredAt: t.opened || new Date().toISOString(),
+    Route: String(t.project || "").slice(0, 255),
+    Description: String(t.detail || "").slice(0, 18000),
+    ExpectedBehavior: String(t.workaround || "").slice(0, 12000),
+    AdditionalContext: String(t.esdp || "").slice(0, 12000),
+    LogsJson: JSON.stringify(t.updates || []).slice(0, 26000)
   };
 }
 
 function spItemToTicket(item) {
   return {
     _spId: item.Id,
-    id: item.TicketCode || `TKT-${String(item.Id).padStart(4, "0")}`,
+    id: item.IssueCode || `ISS-${String(item.Id).padStart(4, "0")}`,
     title: item.Title || "Support ticket",
-    type: item.TicketType || "Question",
-    status: item.TicketStatus || "Open",
-    priority: item.Priority || "",
-    reporter: item.Reporter || "",
+    type: _issueTypeToTicketType(item.IssueType),
+    status: _issueStatusToTicketStatus(item.IssueStatus),
+    reporter: item.ReportedByName || "",
     reporterEmail: item.ReporterEmail || "",
-    opened: item.OpenedAt || item.Created || "",
-    project: item.ProjectRef || "",
-    detail: item.Detail || "",
-    workaround: item.Workaround || "",
-    esdp: item.ESDP || "",
-    updates: safeJsonParse(item.UpdatesJson, []),
-    affected: [item.ProjectRef || ""].filter(Boolean)
+    opened: item.OccurredAt || item.Created || "",
+    project: item.Route || "",
+    detail: item.Description || "",
+    workaround: item.ExpectedBehavior || "",
+    esdp: item.AdditionalContext || "",
+    updates: safeJsonParse(item.LogsJson, []),
+    affected: item.Route ? [item.Route] : []
   };
 }
 
@@ -1928,22 +1957,8 @@ async function ensureIssueFields(siteUrl) {
   _issueFieldsReady = true;
 }
 
-let _ticketFieldsReady = false;
 async function ensureTicketFields(siteUrl) {
-  if (_ticketFieldsReady || !siteUrl || typeof sharePointAdapter === "undefined" || !sharePointAdapter.ensureField) return;
-  const schema = typeof SHAREPOINT_SCHEMA !== "undefined" && SHAREPOINT_SCHEMA[SP_LISTS.ticket];
-  if (schema && typeof sharePointAdapter.ensureListSchema === "function") {
-    const results = await sharePointAdapter.ensureListSchema(siteUrl, { [SP_LISTS.ticket]: schema });
-    const result = results && results[0];
-    const failed = result && (result.errors || []).find((entry) => entry && entry.error);
-    if (failed) throw failed.error;
-    _ticketFieldsReady = true;
-    return;
-  }
-  for (const field of (schema && schema.fields) || []) {
-    await sharePointAdapter.ensureField(siteUrl, SP_LISTS.ticket, field);
-  }
-  _ticketFieldsReady = true;
+  return ensureIssueFields(siteUrl);
 }
 
 let _appSettingsFieldsReady = false;

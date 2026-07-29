@@ -5,7 +5,7 @@ PAGE_RENDERERS.tickets = function (parts) {
   const db = window.AEWTTR.db;
 
   // If a ticket ID is in the route path, render the full-page detail
-  const routeId = parts && parts[0] && /^TKT-\d+$/i.test(parts[0]) ? parts[0].toUpperCase() : null;
+  const routeId = parts && parts[0] && /^(?:TKT|ISS)-\d+$/i.test(parts[0]) ? parts[0].toUpperCase() : null;
   if (routeId) {
     const t = db.tickets.find(x => x.id === routeId);
     if (t) { drawTicketDetail(t); return; }
@@ -364,7 +364,7 @@ function openNewTicketModalWithOptions(opts, onDone) {
     if (!title) { toast("Title is required", "error"); return; }
     const projectId = ($("#nt-project-hidden", modal) ? $("#nt-project-hidden", modal).value : $("#nt-project", modal).value) || "";
     const max = db.tickets.reduce((m, t) => Math.max(m, parseInt(t.id.split("-")[1], 10) || 0), 0);
-    const id = "TKT-" + String(max + 1).padStart(4, "0");
+    const id = "ISS-" + String(max + 1).padStart(4, "0");
     const ticket = {
       id, title, project: projectId, type: $("#nt-type", modal).value,
       status: "Open", opened: new Date().toISOString().slice(0, 10), reporter: db.user.name,
