@@ -42,48 +42,48 @@ const screenGroups: ScreenGroup[] = [
     group: "Situational awareness",
     blurb: "Where a session starts: personal work, then the portfolio-wide picture.",
     screens: [
-      { file: "01-dashboard.png", title: "Dashboard", route: "#/dashboard", note: "Counts, quick access into each area, and assigned work across projects." },
-      { file: "02-overview-portfolio.png", title: "Overview — portfolio", route: "#/overview", note: "Team and portfolio roll-up for status, workload, and approvals." },
+      { file: "01-dashboard.webp", title: "Dashboard", route: "#/dashboard", note: "Counts, quick access into each area, and assigned work across projects." },
+      { file: "02-overview-portfolio.webp", title: "Overview — portfolio", route: "#/overview", note: "Team and portfolio roll-up for status, workload, and approvals." },
     ],
   },
   {
     group: "Project workspaces",
     blurb: "The project is the front door: people, files, work items, and reporting all sit in project context.",
     screens: [
-      { file: "03-projects-workspaces.png", title: "All workspaces", route: "#/projects", note: "Project list with health and entry points into each workspace." },
-      { file: "04-project-workspace.png", title: "Workspace home", route: "#/projects/<code>", note: "Project landing view with the workspace section rail." },
-      { file: "05-project-tracker.png", title: "Tracker", route: "#/projects/<code>/tracker", note: "Tasks and milestones with owner, dates, health, and timeline and risk tabs." },
-      { file: "06-project-checklist.png", title: "Checklist", route: "#/projects/<code>/checklist", note: "Column-based checklist for repeatable delivery steps." },
-      { file: "07-project-documents.png", title: "Documents", route: "#/projects/<code>/documents", note: "Project document surface backed by the SharePoint library." },
-      { file: "08-project-people.png", title: "People", route: "#/projects/<code>/people", note: "Assigned members and roles for the workspace." },
+      { file: "03-projects-workspaces.webp", title: "All workspaces", route: "#/projects", note: "Project list with health and entry points into each workspace." },
+      { file: "04-project-workspace.webp", title: "Workspace home", route: "#/projects/<code>", note: "Project landing view with the workspace section rail." },
+      { file: "05-project-tracker.webp", title: "Tracker", route: "#/projects/<code>/tracker", note: "Tasks and milestones with owner, dates, health, and timeline and risk tabs." },
+      { file: "06-project-checklist.webp", title: "Checklist", route: "#/projects/<code>/checklist", note: "Column-based checklist for repeatable delivery steps." },
+      { file: "07-project-documents.webp", title: "Documents", route: "#/projects/<code>/documents", note: "Project document surface backed by the SharePoint library." },
+      { file: "08-project-people.webp", title: "People", route: "#/projects/<code>/people", note: "Assigned members and roles for the workspace." },
     ],
   },
   {
     group: "Recurring operations",
     blurb: "The weekly rhythm and the formal review path.",
     screens: [
-      { file: "09-weekly-meeting.png", title: "Weekly meeting", route: "#/weekly", note: "Live session with attendance, minutes, project updates, and around-the-room." },
-      { file: "14-document-review.png", title: "Document review", route: "#/docreview", note: "Review packages moving through concurrence and signature." },
+      { file: "09-weekly-meeting.webp", title: "Weekly meeting", route: "#/weekly", note: "Live session with attendance, minutes, project updates, and around-the-room." },
+      { file: "14-document-review.webp", title: "Document review", route: "#/docreview", note: "Review packages moving through concurrence and signature." },
     ],
   },
   {
     group: "Travel",
     blurb: "Request, track, and close out travel, including the standalone Firepit tools.",
     screens: [
-      { file: "10-travel-request-form.png", title: "Travel request form", route: "#/travel/submit", note: "Guided TDY, conference, training, and leave request intake." },
-      { file: "11-travel-my-travel.png", title: "My travel", route: "#/travel/mytravel", note: "A traveler's own requests by state, with concurrence and charge-object status." },
-      { file: "12-travel-calendar.png", title: "Travel calendar", route: "#/travel/calendar", note: "Team travel and events on a shared calendar." },
-      { file: "13-travel-debrief.png", title: "Travel debrief", route: "#/travel/debrief", note: "Post-trip debrief capture against an approved request." },
+      { file: "10-travel-request-form.webp", title: "Travel request form", route: "#/travel/submit", note: "Guided TDY, conference, training, and leave request intake." },
+      { file: "11-travel-my-travel.webp", title: "My travel", route: "#/travel/mytravel", note: "A traveler's own requests by state, with concurrence and charge-object status." },
+      { file: "12-travel-calendar.webp", title: "Travel calendar", route: "#/travel/calendar", note: "Team travel and events on a shared calendar." },
+      { file: "13-travel-debrief.webp", title: "Travel debrief", route: "#/travel/debrief", note: "Post-trip debrief capture against an approved request." },
     ],
   },
   {
     group: "Support and administration",
     blurb: "Intake, preferences, configuration, and the activity record.",
     screens: [
-      { file: "15-tickets.png", title: "Tickets", route: "#/tickets", note: "Blockers, bugs, access needs, and questions tracked to resolution." },
-      { file: "16-admin.png", title: "Admin", route: "#/admin", note: "SharePoint setup, users and roles, configuration, and diagnostics." },
-      { file: "17-notification-settings.png", title: "Notification settings", route: "#/notification-settings", note: "Per-user areas, tone, and channel preferences." },
-      { file: "18-logs.png", title: "Activity log", route: "#/logs", note: "Audit record of actions by actor, area, and time." },
+      { file: "15-tickets.webp", title: "Tickets", route: "#/tickets", note: "Blockers, bugs, access needs, and questions tracked to resolution." },
+      { file: "16-admin.webp", title: "Admin", route: "#/admin", note: "SharePoint setup, users and roles, configuration, and diagnostics." },
+      { file: "17-notification-settings.webp", title: "Notification settings", route: "#/notification-settings", note: "Per-user areas, tone, and channel preferences." },
+      { file: "18-logs.webp", title: "Activity log", route: "#/logs", note: "Audit record of actions by actor, area, and time." },
     ],
   },
 ];
@@ -119,6 +119,17 @@ function getAssetUrl(url: string): string {
   return url;
 }
 
+/* The default package omits the controlled PDFs to stay fast (see the packager).
+   Anything that links to one has to check first, or it renders a dead link that
+   resolves against the SharePoint page and returns the site's own HTML. On the
+   dev server, where assets are served normally, they are always available. */
+function hasAsset(url: string): boolean {
+  if (typeof window === "undefined") return false;
+  const assets = (window as unknown as { __PULSE_ASSETS__?: Record<string, string> }).__PULSE_ASSETS__;
+  if (!assets) return true; // dev server: real files behind real paths
+  return typeof assets[url] === "string";
+}
+
 export default function Home() {
   const [active, setActive] = useState("overview");
   const [view, setView] = useState<"docs" | "brand" | "screens" | "flows">("docs");
@@ -133,6 +144,14 @@ export default function Home() {
   const [activeSection, setActiveSection] = useState(1);
   const [pendingSection, setPendingSection] = useState<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  /* Starts true so the first client render matches the server markup, then the
+     boot effect corrects it. Rendering it straight from hasAsset() would be a
+     hydration mismatch, since the server cannot see the asset map. */
+  const [pdfsBundled, setPdfsBundled] = useState(true);
+
+  useEffect(() => {
+    setPdfsBundled(hasAsset(`/source-pdfs/${documents[1].pdfFile}`));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -342,7 +361,7 @@ export default function Home() {
       <button className={view === "brand" ? "brand-button active" : "brand-button"} onClick={openBrand}><img suppressHydrationWarning src={getAssetUrl("/brand-assets/PULSE_Dot_Mark_White_Transparent.png")} alt="" /><span><b>Brand guidelines</b><small>Identity & assets</small></span><strong>→</strong></button>
     </aside>
     <section className="content" id="top">
-      <header className="topbar"><button className="menu" aria-label="Open documentation navigation" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><div className="crumb">PULSE / <span>{isSearching ? "Search" : view === "brand" ? "Brand guidelines" : view === "screens" ? "Interface reference" : view === "flows" ? "Process flows" : `${selected.title}${currentSection ? ` / ${currentSection.title.replace(/^\d+(?:\.\d+)?\s*\/\s*/, "")}` : ""}`}</span></div>{view === "brand" ? <a suppressHydrationWarning className="source-link" href={getAssetUrl("/brand-assets/PULSE_Brand_Identity_Guide_v1.3.pdf")} download>Download guide PDF ↓</a> : view === "screens" ? <span className="source-link source-link--static">Captured {SCREEN_CAPTURE_DATE}</span> : view === "flows" ? <span className="source-link source-link--static">Derived from current source</span> : <a suppressHydrationWarning className="source-link" href={getAssetUrl(`/source-pdfs/${selected.pdfFile}`)} target="_blank" rel="noreferrer">Open source page ↗</a>}</header>
+      <header className="topbar"><button className="menu" aria-label="Open documentation navigation" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><div className="crumb">PULSE / <span>{isSearching ? "Search" : view === "brand" ? "Brand guidelines" : view === "screens" ? "Interface reference" : view === "flows" ? "Process flows" : `${selected.title}${currentSection ? ` / ${currentSection.title.replace(/^\d+(?:\.\d+)?\s*\/\s*/, "")}` : ""}`}</span></div>{view === "brand" ? <a suppressHydrationWarning className="source-link" href={getAssetUrl("/brand-assets/PULSE_Brand_Identity_Guide_v1.3.pdf")} download>Download guide PDF ↓</a> : view === "screens" ? <span className="source-link source-link--static">Captured {SCREEN_CAPTURE_DATE}</span> : view === "flows" ? <span className="source-link source-link--static">Derived from current source</span> : pdfsBundled ? <a suppressHydrationWarning className="source-link" href={getAssetUrl(`/source-pdfs/${selected.pdfFile}`)} target="_blank" rel="noreferrer">Open source page ↗</a> : <span className="source-link source-link--static">{selected.pages} pages · full text below</span>}</header>
       <div className="hero"><div className="eyebrow">PULSE KNOWLEDGE BASE <i /></div><h1>Search PULSE documentation.</h1><p>Ask a plain-language question, find the relevant section, and verify it against the exact source page.</p>
         <label className="search"><span>⌕</span><input ref={searchInputRef} value={query} onChange={(event) => search(event.target.value)} placeholder="Ask anything: How do I submit travel? What lists does PULSE use?" aria-label="Search the PULSE documentation source library" />{query ? <button type="button" className="search-clear" onClick={() => search("")} aria-label="Clear search">✕</button> : <kbd>⌘ K</kbd>}</label>
         <div className="quick">Try: <button onClick={() => search("document review")}>document review</button><button onClick={() => search("project tracker")}>project tracker</button><button onClick={() => search("Firepit package")}>Firepit package</button></div>
@@ -356,11 +375,11 @@ export default function Home() {
               <div className="result-head"><span className="result-section">Section {String(result.page).padStart(2, "0")}</span><b>{result.sectionTitle}</b><span className="result-hits">{result.hits} {result.hits === 1 ? "match" : "matches"}</span></div>
               <p>{highlight(result.excerpt, searchTerms).map((part, partIndex) => searchTerms.some((term) => part.toLowerCase() === term.toLowerCase()) ? <mark key={partIndex}>{part}</mark> : <span key={partIndex}>{part}</span>)}</p>
             </button>
-            <a suppressHydrationWarning className="result-source" href={getAssetUrl(`/source-pdfs/${result.doc.pdfFile}`)} target="_blank" rel="noreferrer">Open controlled source ↗</a>
+            {pdfsBundled && <a suppressHydrationWarning className="result-source" href={getAssetUrl(`/source-pdfs/${result.doc.pdfFile}`)} target="_blank" rel="noreferrer">Open controlled source ↗</a>}
           </article>)}
         </div>)}</div>
       </section> : view === "brand" ? <BrandPage /> : view === "screens" ? <ScreensPage /> : view === "flows" ? <FlowsPage /> : <>
-        <section className="document-header"><div><div className="section-kicker">DOCUMENT {selected.number} · {selected.type}</div><h2>{selected.title}</h2><p>{selected.description}</p><div className="meta"><span>{selected.pages} pages</span><span>{selected.audience}</span></div></div><a suppressHydrationWarning className="pdf-card" href={getAssetUrl(`/source-pdfs/${selected.pdfFile}`)} target="_blank" rel="noreferrer"><span>PDF</span><b>View controlled source</b><small>Original portfolio document ↗</small></a></section>
+        <section className="document-header"><div><div className="section-kicker">DOCUMENT {selected.number} · {selected.type}</div><h2>{selected.title}</h2><p>{selected.description}</p><div className="meta"><span>{selected.pages} pages</span><span>{selected.audience}</span></div></div>{pdfsBundled && <a suppressHydrationWarning className="pdf-card" href={getAssetUrl(`/source-pdfs/${selected.pdfFile}`)} target="_blank" rel="noreferrer"><span>PDF</span><b>View controlled source</b><small>Original portfolio document ↗</small></a>}</section>
         <section className="reader" id="reader-top">
           <div className="reader-heading"><div><span className="reading-position">{selectedPages.length || selected.pages} sections · continuous</span><h3>Read straight through, or jump from the sidebar</h3></div><div className="topics">{selected.topics.map((topic) => <span key={topic}>{topic}</span>)}</div></div>
           {!selectedPages.length

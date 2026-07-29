@@ -33,6 +33,7 @@ const MIME_TYPES = {
   ".png": "image/png",
   ".svg": "image/svg+xml",
   ".txt": "text/plain",
+  ".webp": "image/webp",
   ".woff": "font/woff",
   ".woff2": "font/woff2",
   ".zip": "application/zip",
@@ -93,9 +94,16 @@ function inlineCssUrls(cssText, cssPath, manifestFiles) {
 function collectPublicAssets(manifestFiles) {
   const sourceText = {};
   const assetUrls = {};
+  /* The controlled PDFs are ~64% of the payload and only matter when a reader
+     clicks through to verify a passage, but a single-file package cannot fetch
+     them on demand — inlining them costs every reader seconds of download and
+     JS parse before the shell appears. So they are opt-in: the default build is
+     the one you put on a page, and INCLUDE_PDFS=1 produces the archival package
+     that carries them. The UI hides PDF affordances when they are absent. */
+  const includePdfs = process.env.INCLUDE_PDFS === "1";
   const files = [
     ...publicFilesUnder("brand-assets"),
-    ...publicFilesUnder("source-pdfs"),
+    ...(includePdfs ? publicFilesUnder("source-pdfs") : []),
     ...publicFilesUnder("source-text"),
     ...publicFilesUnder("screenshots"),
     path.join(PUBLIC_ROOT, "favicon.svg"),
