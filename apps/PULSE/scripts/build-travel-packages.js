@@ -2,56 +2,99 @@ const { execSync } = require("child_process");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
+const APPS = path.resolve(ROOT, "..");
+const RELEASES = path.resolve(ROOT, "..", "..", "releases");
+const FS_PACKAGES = path.join(ROOT, "FS packages");
 const buildScript = path.join(ROOT, "scripts", "build-sharepoint-package.js");
 
-const packages = [
+// PULSE-native packages: built with the PULSE SharePoint package builder
+const pulsePackages = [
   {
     name: "Travel Request Forms",
     entry: "travel-forms.html",
-    output: "FS packages/Travel-Request-Forms-v1.0.0.html",
-    releaseOutput: "../../releases/PULSE-Travel-Request-Forms-v1.0.0.html"
+    fsOutput: "Travel-Request-Forms-v1.0.0.html",
+    releaseOutput: "PULSE-Travel-Request-Forms-v1.0.0.html"
   },
   {
     name: "My Travel",
     entry: "my-travel.html",
-    output: "FS packages/Travel-MyTravel-v1.0.0.html",
-    releaseOutput: "../../releases/PULSE-Travel-MyTravel-v1.0.0.html"
+    fsOutput: "Travel-MyTravel-v1.0.0.html",
+    releaseOutput: "PULSE-Travel-MyTravel-v1.0.0.html"
   },
   {
     name: "Travel Calendar",
     entry: "travel-calendar.html",
-    output: "FS packages/Travel-Calendar-v1.0.0.html",
-    releaseOutput: "../../releases/PULSE-Travel-Calendar-v1.0.0.html"
+    fsOutput: "Travel-Calendar-v1.0.0.html",
+    releaseOutput: "PULSE-Travel-Calendar-v1.0.0.html"
   },
   {
     name: "Tickets",
     entry: "tickets.html",
-    output: "FS packages/Tickets-v1.0.0.html",
-    releaseOutput: "../../releases/PULSE-Tickets-v1.0.0.html"
+    fsOutput: "Tickets-v1.0.0.html",
+    releaseOutput: "PULSE-Tickets-v1.0.0.html"
   },
   {
     name: "Main PULSE Application",
     entry: "index.html",
-    output: "FS packages/AEWTTR-PULSE_v.20260728.html",
-    releaseOutput: "../../releases/PULSE-v1.0.0.html"
+    fsOutput: "AEWTTR-PULSE_v.20260728.html",
+    releaseOutput: "PULSE-v1.0.0.html"
+  }
+];
+
+// External app packages: each has its own build script, accepts output path as argv[2]
+const externalPackages = [
+  {
+    name: "PULSE Calendar",
+    script: path.join(APPS, "PULSE-TRAVEL-CALENDAR", "scripts", "build-sharepoint-package.js"),
+    fsOutput: "PULSE-Calendar-v1.0.0.html",
+    releaseOutput: "PULSE-Calendar-v1.0.0.html",
+    useNode: "node"
+  },
+  {
+    name: "PULSE CODE",
+    script: path.join(APPS, "PULSE-CODE", "scripts", "build-sharepoint-package.js"),
+    fsOutput: "PULSE-CODE-v1.0.0.html",
+    releaseOutput: "PULSE-CODE-v1.0.0.html",
+    useNode: "node"
+  },
+  {
+    name: "PULSE Documentation",
+    script: path.join(ROOT, "..", "..", "output", "pulse-documentation", "scripts", "build-sharepoint-package.mjs"),
+    fsOutput: "PULSE-Documentation-v1.0.0.html",
+    releaseOutput: "PULSE-Documentation-v1.0.0.html",
+    useNode: "node"
   }
 ];
 
 console.log("Building PULSE FS & Release Packages...\n");
 
-for (const pkg of packages) {
-  const outPath = path.join(ROOT, pkg.output);
+for (const pkg of pulsePackages) {
+  const fsPath = path.join(FS_PACKAGES, pkg.fsOutput);
+  const relPath = path.join(RELEASES, pkg.releaseOutput);
   const entryPath = path.join(ROOT, pkg.entry);
   console.log(`Building [${pkg.name}]...`);
   console.log(`  Source: ${pkg.entry}`);
-  console.log(`  FS Output: ${pkg.output}`);
   try {
-    execSync(`node "${buildScript}" "${outPath}" "${entryPath}"`, { stdio: "inherit" });
-    if (pkg.releaseOutput) {
-      const relPath = path.join(ROOT, pkg.releaseOutput);
-      console.log(`  Release Output: ${pkg.releaseOutput}`);
-      execSync(`node "${buildScript}" "${relPath}" "${entryPath}"`, { stdio: "inherit" });
-    }
+    execSync(`node "${buildScript}" "${fsPath}" "${entryPath}"`, { stdio: "inherit" });
+    console.log(`  FS Output: FS packages/${pkg.fsOutput}`);
+    execSync(`node "${buildScript}" "${relPath}" "${entryPath}"`, { stdio: "inherit" });
+    console.log(`  Release Output: releases/${pkg.releaseOutput}`);
+    console.log(`  ✓ Success\n`);
+  } catch (err) {
+    console.error(`  ✗ Build failed for ${pkg.name}:`, err.message);
+    process.exit(1);
+  }
+}
+
+for (const pkg of externalPackages) {
+  const fsPath = path.join(FS_PACKAGES, pkg.fsOutput);
+  const relPath = path.join(RELEASES, pkg.releaseOutput);
+  console.log(`Building [${pkg.name}]...`);
+  try {
+    execSync(`${pkg.useNode} "${pkg.script}" "${fsPath}"`, { stdio: "inherit" });
+    console.log(`  FS Output: FS packages/${pkg.fsOutput}`);
+    execSync(`${pkg.useNode} "${pkg.script}" "${relPath}"`, { stdio: "inherit" });
+    console.log(`  Release Output: releases/${pkg.releaseOutput}`);
     console.log(`  ✓ Success\n`);
   } catch (err) {
     console.error(`  ✗ Build failed for ${pkg.name}:`, err.message);
