@@ -13,7 +13,9 @@ PAGE_RENDERERS.tickets = function (parts) {
   }
 
   const routeIntent = typeof consumeRouteIntent === "function" ? consumeRouteIntent("tickets") : null;
-  setTopbar("Support Tickets", "Log blockers, bugs, access requests, and questions.", "");
+  setTopbar("Support Tickets", "Log blockers, bugs, access requests, and questions.", `
+    <button class="btn-aewttr" id="btn-new-ticket"${tip("Create a new support ticket")}><i class="bx bx-plus"></i> New Ticket</button>
+  `);
 
   const STATUS_TABS = ["All", "Open", "In Progress", "Resolved"];
   const TYPES = ["All", "Blocker", "Bug", "Access", "Platform", "Question", "Feature Request"];
@@ -33,15 +35,6 @@ PAGE_RENDERERS.tickets = function (parts) {
     const page = $("#page-content");
     page.innerHTML = `
       <div class="tickets-page">
-        <header class="tickets-page-head">
-          <div class="tickets-page-copy">
-            <div class="tickets-page-label">Support workspace</div>
-            <h2>Keep work moving</h2>
-            <p>Track blockers, bugs, access needs, platform issues, and questions from intake through resolution.</p>
-          </div>
-          <button class="btn-aewttr" id="btn-new-ticket"${tip("Create a new support ticket")}><i class="bx bx-plus"></i> New Ticket</button>
-        </header>
-
         <section class="tickets-controls" aria-label="Ticket filters">
           <div class="search-box tickets-search"><i class="bx bx-search"></i><input id="tkt-search" placeholder="Search by ID or title" value="${escapeHtml(st.ticketSearch)}"></div>
           <div class="filter-pills tickets-status-filters" id="tkt-status-pills">
@@ -78,9 +71,9 @@ PAGE_RENDERERS.tickets = function (parts) {
     $all("[data-f]", $("#tkt-status-pills")).forEach(b => b.addEventListener("click", () => { window.AEWTTR.state.ticketFilter = b.dataset.f; draw(); }));
     $("#tkt-type-filter").addEventListener("change", (e) => { window.AEWTTR.state.ticketType = e.target.value; draw(); });
     $("#tkt-search").addEventListener("input", (e) => { window.AEWTTR.state.ticketSearch = e.target.value; draw(); });
-    $("#btn-new-ticket").addEventListener("click", () => openNewTicketModal(draw));
   }
   draw();
+  $("#btn-new-ticket").addEventListener("click", () => openNewTicketModal(draw));
   if (routeIntent && routeIntent.ticket) {
     const ticket = db.tickets.find((item) => item.id === routeIntent.ticket);
     if (ticket) navigate("tickets/" + ticket.id);

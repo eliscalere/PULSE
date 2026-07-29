@@ -191,14 +191,6 @@
     const view = $("#tkt-view");
     view.innerHTML = `
       <div class="tkt-list-page">
-        <header class="tkt-list-head">
-          <div class="tkt-list-copy">
-            <div class="tkt-workspace-label">Support workspace</div>
-            <h2>Keep work moving</h2>
-            <p>Track blockers, bugs, access needs, platform issues, and questions from intake through resolution.</p>
-          </div>
-        </header>
-
         <section class="tkt-controls">
           <div class="tkt-search-wrap">
             <svg class="tkt-search-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.75" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>

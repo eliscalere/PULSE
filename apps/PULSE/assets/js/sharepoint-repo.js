@@ -1545,7 +1545,7 @@ async function loadAllFromSharePoint(siteUrl, options) {
     loadListWithFallback(SP_LISTS.auditLog, () => sharePointAdapter.getItems(siteUrl, SP_LISTS.auditLog, { top: 500, orderby: "ActionTime desc" }), []),
     loadListWithFallback(SP_LISTS.notificationConfig, () => listOrEmpty(siteUrl, SP_LISTS.notificationConfig), []),
     loadListWithFallback(SP_LISTS.locationConfig, () => listOrEmpty(siteUrl, SP_LISTS.locationConfig), []),
-    loadListWithFallback(SP_LISTS.ticket, () => sharePointAdapter.getItems(siteUrl, SP_LISTS.ticket, { top: 500, orderby: "OpenedAt desc" }), []),
+    loadListWithFallback(SP_LISTS.ticket, () => sharePointAdapter.getItems(siteUrl, SP_LISTS.ticket, { top: 500, orderby: "OccurredAt desc" }), []),
     fieldProbe("PULSE Projects fields", SP_LISTS.project),
     fieldProbe("PULSE Risks fields", SP_LISTS.risk),
     fieldProbe("PULSE Action Items fields", SP_LISTS.actionItem),
