@@ -45,14 +45,16 @@
 
 **Purpose:** manage travel and leave records through their applicable workflow. **Applies to:** requesters, approvers, finance users, and travelers. **Prerequisites:** approved business need and required trip information.
 
-1. Open **Travel** and select **New Request**.
+1. Open **Travel** and select **New Request**. Leave requests are filed from the same form; there is no separate leave route.
 2. Enter required request, traveler, destination, dates, purpose, project, estimate, and supporting information.
-3. Submit and monitor the request in the applicable travel view.
-4. Approvers use the role-restricted decision actions and provide required denial or approval information.
-5. Finance users record required finance information where enabled.
-6. After travel, each traveler creates the required debrief with systems or subjects, classification, summary, and follow-up.
+3. Submit, then monitor the request under **Travel → Travel → My Travel**, using the state tabs (**Upcoming**, **Submitted**, **Withdrawn**, **Cancelled**, **Completed**) to confirm where it stands. The row reports request status, concurrence state, charge-object state, and any outstanding debrief.
+4. Approvers use the role-restricted decision actions and provide required denial or approval information. Before approving, check **Travel → Calendar** for overlapping trips and team events that would leave a coverage gap.
+5. Finance users record required finance information where enabled, including charge-object assignment.
+6. After travel, each traveler creates the required debrief from **Travel → Debrief** with systems or subjects, classification, summary, and follow-up. File one debrief per traveler; a trip with an outstanding debrief stays flagged in **My Travel**.
 
-**Verification:** request and debrief records show their current values after refresh. **Exceptions:** correct incomplete information before approval; escalate role or persistence faults. **Records:** travel request, approval history, debrief, notification, and activity record.
+**Verification:** request and debrief records show their current values after refresh, and the trip appears on the travel calendar for the approved dates. **Exceptions:** correct incomplete information before approval; escalate role or persistence faults. **Records:** travel request, approval history, charge-object assignment, concurrence, debrief, notification, and activity record.
+
+This procedure is identical when performed from the standalone **Travel Request Forms**, **My Travel**, or **Travel Calendar** packages; those tools write the same records. See SOP 9.
 
 ## SOP 5: Conduct formal Document Review
 
@@ -71,13 +73,13 @@
 
 **Purpose:** create actionable support records and maintain notification preferences. **Applies to:** all users for their own tickets and preferences; administrators for platform configuration.
 
-1. Use **Report issue** or **Tickets** to open a ticket.
+1. Use **Report issue**, project **Tickets**, or the standalone Tickets package to open a ticket.
 2. State the issue, affected route, project or record identifier, expected result, actual result, priority, and approved screenshot.
-3. Monitor the ticket workflow and add factual updates.
+3. Monitor the ticket workflow and add factual updates on the ticket record itself, not by email, so the history stays complete. Ticket values are **Open**, **In Progress**, and **Resolved**.
 4. Use **Notification Settings** to manage your own enabled areas and channels.
 5. Administrators review notification configuration only through authorized Admin tools.
 
-**Verification:** ticket updates and preferences persist after refresh in SharePoint mode. **Records:** issue, notification, and audit record.
+**Verification:** ticket updates and preferences persist after refresh in SharePoint mode. **Note:** tickets and issue reports share the **PULSE Issues** list, so a ticket opened in the standalone Tickets package is the same record the full application shows; do not open a second ticket for the same problem in the other surface. **Records:** issue, notification, and audit record.
 
 ## SOP 7: Administer users, roles, configuration, logs, and setup
 
@@ -104,3 +106,18 @@
 6. For a deployment regression, restore the prior known-good package, preserve evidence, and isolate the source change.
 
 **Records:** issue report, diagnostics, log evidence, validation evidence, and rollback artifact. **Related procedures:** every SOP above.
+
+## SOP 9: Publish and validate a focused tool page
+
+**Purpose:** place a single-area PULSE package on a SharePoint page and confirm it is operating against the site rather than local browser state. **Applies to:** site owners and release owners. **Prerequisites:** the provisioned PULSE schema on the target site and the approved package artifact.
+
+Available packages are **PULSE** (full application), **Travel Request Forms**, **My Travel**, **Travel Calendar**, **Tickets**, **PULSE Calendar**, **PULSE CODE**, and **PULSE Documentation**.
+
+1. Build the artifacts with `node apps/PULSE/scripts/build-travel-packages.js`, which writes every package to `apps/PULSE/fs-packages/` and `releases/`. Retain the prior known-good artifact before replacing anything.
+2. Upload the package for the intended area and add it to the SharePoint page through the organization's current hosted-page process.
+3. Open the page and confirm the tool resolved the site: a record created in the tool must appear in the full PULSE application on the same site after refresh. A tool that shows only local behavior did not resolve the site and is not a system of record.
+4. If site resolution fails, open the full PULSE page once on the same site, then reload the tool; the full application caches the resolved site address for the focused packages. Persistent failure is a ticket with the page address attached.
+5. Confirm navigation is limited to the intended area and that no unintended area is reachable from the page.
+6. Record which package version is published on which page, so a later regression can be traced to an artifact.
+
+**Verification:** a controlled read and write for the tool's record type is visible in the full application, and the Activity Log shows the action under the expected actor. **Cautions:** a focused package carries the full script set and is configured only by `PULSE_PORT_CONFIG`; do not hand-trim scripts from a package to make it smaller, which has previously broken boot. **Records:** published artifact, page address, validation evidence, and activity record.
