@@ -97,6 +97,7 @@ function collectPublicAssets(manifestFiles) {
     ...publicFilesUnder("brand-assets"),
     ...publicFilesUnder("source-pdfs"),
     ...publicFilesUnder("source-text"),
+    ...publicFilesUnder("screenshots"),
     path.join(PUBLIC_ROOT, "favicon.svg"),
   ].filter((filePath) => existsSync(filePath));
 
@@ -123,6 +124,10 @@ function createAssetRuntime(sourceText, assetUrls) {
   var sourceText = ${sourceJson};
   var assetUrls = ${assetJson};
   window.__PULSE_ASSETS__ = assetUrls;
+  /* Exposed so the reader can populate itself synchronously instead of waiting
+     on fetch() — the text is already in the document, so there is nothing to
+     wait for and the boot overlay can clear on the first commit. */
+  window.__PULSE_SOURCE_TEXT__ = sourceText;
   window.getAssetUrl = function (path) {
     return assetUrls[path] || path;
   };
@@ -251,12 +256,16 @@ function bundleClient(html, manifestFiles) {
 }
 
 function inlineStyles(html, manifestFiles) {
+  /* Records every stylesheet we fold into the document so the RSC payload can
+     be re-pointed at a self-contained copy (see neutralizeExternalAssetRefs). */
+  const cssDataUris = {};
   let result = html.replace(
     /<link\s+rel=["']stylesheet["']\s+href=["']([^"']+)["'][^>]*>/gi,
     (tag, href) => {
       const cssPath = path.join(CLIENT_ROOT, href.replace(/^\//, ""));
       const css = inlineCssUrls(readFileSync(cssPath, "utf8"), cssPath, manifestFiles);
       manifestFiles.push({ kind: "css", path: href.replace(/^\//, ""), external: false, hash: hash(css) });
+      cssDataUris[href] = `data:text/css;base64,${Buffer.from(css, "utf8").toString("base64")}`;
       return `<style data-firepit-bundle>\n${css}\n</style>`;
     },
   );
@@ -265,7 +274,54 @@ function inlineStyles(html, manifestFiles) {
     const syntheticPath = path.join(CLIENT_ROOT, "inline.css");
     return `<style${attributes}>${inlineCssUrls(css, syntheticPath, manifestFiles)}</style>`;
   });
-  return result;
+  return { html: result, cssDataUris };
+}
+
+/* The rendered RSC payload still names the on-disk build chunks: a
+   `precedence`-managed <link rel="stylesheet"> for the route CSS, a :HL preload
+   hint for the same file, and the dynamic-import chunk table. None of those
+   paths exist inside a single-file package.
+
+   The stylesheet is the damaging one. React suspends the commit until a
+   precedence-managed stylesheet resolves, so it will not reveal the app until
+   that request settles. Served over plain HTTP the missing file 404s quickly
+   and React continues, which is why the package looks fine locally. Inside a
+   SharePoint/Firepit iframe the same path resolves against the host site and
+   comes back as a slow auth/HTML response instead of a fast error, so React
+   stays suspended and nothing paints until a user interaction forces a commit
+   — the "I have to click the page before it opens" symptom.
+
+   Re-point the stylesheet at an inlined data: URI (loads instantly, keeps
+   React's resource bookkeeping intact) and make the JS chunk names inert. */
+function neutralizeExternalAssetRefs(html, cssDataUris) {
+  let result = html.replace(/:HL\[\\"\/assets\/[A-Za-z0-9_.\/-]+\.css\\",\\"style\\"\]\\n/g, "");
+
+  const byBasename = {};
+  for (const [href, dataUri] of Object.entries(cssDataUris)) {
+    byBasename[path.posix.basename(href)] = dataUri;
+  }
+  return result.replace(
+    /\/assets\/([A-Za-z0-9_.-]+\.css)/g,
+    (match, basename) => byBasename[basename] ?? match,
+  );
+}
+
+/* The bundled client keeps a chunk-filename table, consumed only to build
+   preload hints — the modules themselves resolve inline through
+   `Promise.resolve().then(...)` once esbuild has folded them in. Those names no
+   longer exist next to the package, so every hint is a wasted request (a 404
+   locally, a slow host-site response inside SharePoint). Collapse the lookup to
+   an empty list so nothing is preloaded; module resolution is untouched.
+
+   Runs after bundling, since that is when the table enters the document. */
+function neutralizeChunkTable(html) {
+  const chunkTable = /(\w+)=\((\w+),(\w+)=\1,(\w+)=\3\.f\|\|\(\3\.f=\[[^\]]*\]\)\)=>\2\.map\(\w+=>\4\[\w+\]\)/g;
+  if (!chunkTable.test(html)) {
+    console.warn("Warning: chunk preload table not found — packaged build may request missing chunks.");
+    return html;
+  }
+  chunkTable.lastIndex = 0;
+  return html.replace(chunkTable, (match, fn, arg, self, table) => `${fn}=(${arg},${self}=${fn},${table}=${self}.f||(${self}.f=[]))=>[]`);
 }
 
 async function buildPackage() {
@@ -275,7 +331,9 @@ async function buildPackage() {
 
   const manifestFiles = [];
   let html = await renderHtml();
-  html = inlineStyles(html, manifestFiles);
+  const styled = inlineStyles(html, manifestFiles);
+  html = styled.html;
+  html = neutralizeExternalAssetRefs(html, styled.cssDataUris);
   html = html
     .replace(/<link\b(?=[^>]*\brel=["'](?:modulepreload|preload)["'])[^>]*>/gi, "")
     .replace(/<meta\b(?=[^>]*\b(?:property|name)=["'](?:og:image|twitter:image)["'])[^>]*>/gi, "");
@@ -290,6 +348,7 @@ async function buildPackage() {
   const bundled = bundleClient(html, manifestFiles);
   const runtimeBlock = `<script>\n${escapeScript(createAssetRuntime(sourceText, assetUrls))}\n</script>\n<script id="_R_"`;
   html = bundled.html.replace(/<script\s+id=["']_R_["']/i, () => runtimeBlock);
+  html = neutralizeChunkTable(html);
 
   const manifest = {
     version: 1,

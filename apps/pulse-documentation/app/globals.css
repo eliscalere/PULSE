@@ -126,6 +126,24 @@ main { display:flex; min-height:100vh; }.sidebar { position:fixed; z-index:10; i
   .asset-grid { grid-template-columns:1fr; }
 }
 
+/* Interface reference: captures of the current build, reusing the brand-page
+   rhythm so the gallery reads as part of the same system. */
+.screens-page { padding:58px 9.5% 100px; background:var(--field); }
+.screens-page .brand-intro { border-bottom:1px solid var(--line); }
+.screen-group { margin-top:12px; }
+.screen-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
+.screen-card { margin:0; border:1px solid var(--line); background:var(--field); display:flex; flex-direction:column; }
+.screen-card a { display:block; background:var(--mist); border-bottom:1px solid var(--line); line-height:0; }
+.screen-card img { width:100%; height:auto; display:block; }
+.screen-card a:hover { outline:1px solid var(--blue); outline-offset:-1px; }
+.screen-card figcaption { padding:16px 18px 18px; display:grid; gap:7px; }
+.screen-card b { font-size:13px; letter-spacing:-.2px; }
+.screen-card code { color:var(--graphite); font:10px monospace; letter-spacing:.2px; }
+.screen-card p { margin:0; color:var(--graphite); font-size:12px; line-height:1.6; }
+.source-link--static { color:var(--graphite); }
+@media (max-width:1180px) { .screen-grid { grid-template-columns:1fr; } }
+@media (max-width:860px) { .screens-page { padding-left:22px; padding-right:22px; } }
+
 /* Focused documentation navigation */
 .sidebar { padding:30px 18px 20px; }
 .brand { width:max-content; min-height:48px; align-items:center; }

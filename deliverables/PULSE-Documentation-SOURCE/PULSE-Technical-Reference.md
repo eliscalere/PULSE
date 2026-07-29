@@ -43,6 +43,18 @@ node scripts/build-sharepoint-package.js "releases/PULSE-v1.0.0.html"
 
 The preferred builder reads `index.html`, inlines local styles and scripts, rewrites local CSS asset URLs, embeds selected images, protects browser-global library registration, removes local cache query strings, and writes a provenance manifest comment. It rejects external runtime style and script dependencies.
 
+To build every delivered package in one pass:
+
+```bash
+node apps/PULSE/scripts/build-travel-packages.js
+```
+
+That script builds all eight packages — the full application, Travel Request Forms, My Travel, Travel Calendar, Tickets, PULSE Calendar, PULSE CODE, and PULSE Documentation — writing each to both `apps/PULSE/fs-packages/` and `releases/`. The five PULSE-native packages share the builder above and differ only by entry file; the other three delegate to their own build scripts. A failure in any package aborts the run with a non-zero exit code.
+
+The focused packages are ordinary PULSE entry files that set `window.PULSE_PORT_CONFIG` before the application loads, restricting navigation and the sidebar to one area. They carry the same script set as `index.html`; trimming scripts from a focused entry file has broken boot in the past and should be avoided.
+
+The documentation package is built from a Vite/RSC application, so its packager additionally rewrites the rendered payload: the route stylesheet is re-pointed at an inlined `data:` URI, the RSC preload hint is dropped, and the dynamic-import chunk table is emptied. Without those steps React suspends its first commit waiting on a stylesheet that does not exist beside a single-file package, which inside a SharePoint iframe leaves the page blank until the user clicks it.
+
 For the SPFx host solution, verified package scripts are:
 
 ```bash
@@ -63,6 +75,12 @@ The browser entry point loads vendor scripts, configuration, SharePoint integrat
 ## SharePoint integration and data model
 
 Current schema list titles include **PULSE App Roles**, **PULSE Projects**, **PULSE Risks**, **PULSE Action Items**, **PULSE Meetings**, **PULSE Travel Requests**, **PULSE Travel Debriefs**, **PULSE Team Events**, **PULSE Document Review**, **PULSE Doc Reviewer Groups**, **PULSE Audit Log**, **PULSE Issues**, **PULSE Notifications**, **PULSE Notification Config**, **PULSE App Settings**, and **PULSE Location Config**.
+
+Support tickets are stored in **PULSE Issues** rather than a separate ticket list. The repository maps the `ticket` record kind onto that list and translates the type and status vocabularies in both directions, so a ticket raised in the Tickets package and an issue report raised from the full application land in the same list and are visible to both.
+
+### Site detection inside web-part iframes
+
+A focused package hosted as a SharePoint web part runs in a sandboxed iframe that does not receive `_spPageContextInfo`; only the host page has it. Site detection therefore resolves in order from the frame's own context, explicit configuration, the parent window, the top window, a server-relative path combined with the current origin, and finally a site URL cached by the full application on a previous successful boot. If every step fails the package runs in local-only mode, which is the intended signal that it was loaded outside a SharePoint page and is not a system of record.
 
 Repository mappers serialize browser objects to list fields and hydrate list items back into normalized store records. Several composite record areas use JSON fields, including project people, boards, risks, reporting configuration, notes, and other nested values. A field change must be implemented coherently across schema, mapper write path, mapper read path, normalization, UI validation, and live SharePoint read/write verification.
 

@@ -1,10 +1,17 @@
+import { existsSync, readFileSync } from "node:fs";
 import vinext from "vinext";
 import { defineConfig } from "vite";
-import hostingConfig from "./.openai/hosting.json";
 import { sites } from "./build/sites-vite-plugin";
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
+
+// `.openai/hosting.json` is gitignored, so it is absent in a fresh checkout.
+// Treat it as optional: without it there are simply no D1/R2 bindings to wire up.
+const hostingConfigPath = new URL("./.openai/hosting.json", import.meta.url);
+const hostingConfig: { d1?: string | null; r2?: string | null } = existsSync(hostingConfigPath)
+  ? JSON.parse(readFileSync(hostingConfigPath, "utf8"))
+  : {};
 
 const { d1, r2 } = hostingConfig;
 

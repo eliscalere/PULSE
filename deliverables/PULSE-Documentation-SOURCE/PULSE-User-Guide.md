@@ -18,7 +18,7 @@ Use a quick-access card or its secondary action to reach the corresponding modul
 
 Role restrictions apply to team-wide administration and to data outside the user's project access. Overview is a decision surface; edit the underlying project, tracker, review, travel, or meeting record rather than treating an overview card as the authoritative record.
 
-![Overview](screenshots/02-overview.png)
+![Overview](screenshots/02-overview-portfolio.png)
 
 ## Projects, Portfolios, Programs, and End Item Configurations
 
@@ -26,7 +26,7 @@ Role restrictions apply to team-wide administration and to data outside the user
 
 Project lifecycle values shown in the current project settings are **Planned**, **Awaiting Funding**, **Active**, **Paused**, and **Complete**. Technical health is separately recorded as **On Track**, **At Risk**, or **Off Track**. Keep lifecycle, technical health, owners, dates, and recovery context current.
 
-![Projects](screenshots/03-projects.png)
+![Projects](screenshots/03-projects-workspaces.png)
 
 ## Project workspace
 
@@ -70,7 +70,7 @@ Use project **Tickets** to create or review project-linked support items. Use **
 
 **Reach it:** **Weekly Meeting**. **Purpose:** run the shared or project meeting cadence. Use the meeting views to maintain roster, agenda, rocks, attendance, notes, decisions, project updates, action items, carry-forward work, and history. Start or join the appropriate session, capture decisions as they occur, and convert each actionable follow-up into a named tracker item before the session ends.
 
-![Weekly Meeting](screenshots/04-weekly-meeting.png)
+![Weekly Meeting](screenshots/09-weekly-meeting.png)
 
 ## Travel and debriefs
 
@@ -78,7 +78,25 @@ Use project **Tickets** to create or review project-linked support items. Use **
 
 Request filtering includes **Pending**, **Pending Finance**, **Approved**, **Denied**, **Revoked**, and **Cancelled**. Requesters can monitor their own records. Approvers and finance users must use the applicable role-restricted actions and record required rationale or funding information. Each traveler records a separate debrief after travel.
 
-![Travel](screenshots/05-travel.png)
+![Travel](screenshots/10-travel-request-form.png)
+
+### My Travel
+
+**Reach it:** **Travel → Travel**, then **My Travel**. **Purpose:** track only your own requests. Tabs narrow the list to **All**, **Upcoming**, **Submitted**, **Withdrawn**, **Cancelled**, and **Completed**. Each row shows your role on the trip, destination, dates, request status, concurrence and charge-object state, and whether a debrief is outstanding. Row actions cover viewing, editing, withdrawing, and adding the trip to a calendar. Switch to **All Travel** to see the team's trips where your role permits it.
+
+![My Travel](screenshots/11-travel-my-travel.png)
+
+### Travel Calendar
+
+**Reach it:** **Travel → Calendar**. **Purpose:** see team travel and team events together on one calendar to spot overlaps and coverage gaps before approving a request. **Events** manages the non-travel entries that appear alongside trips.
+
+![Travel Calendar](screenshots/12-travel-calendar.png)
+
+### Debrief
+
+**Reach it:** **Travel → Debrief**. **Purpose:** record the post-trip debrief against an approved request. File one debrief per traveler; a trip with an outstanding debrief stays flagged in **My Travel**.
+
+![Travel Debrief](screenshots/13-travel-debrief.png)
 
 ## Document Review
 
@@ -86,17 +104,21 @@ Request filtering includes **Pending**, **Pending Finance**, **Approved**, **Den
 
 Current review values are **Not Started**, **In Review**, **Changes Requested**, **Review Complete**, **Awaiting Final Pack**, **Signing in Progress**, **Signed**, and **Archived**. If changes are requested, upload a new revision and repeat review; do not overwrite the reviewed revision. A project document is not formally reviewed merely because it is stored in a project library.
 
-![Document Review](screenshots/06-document-review.png)
+![Document Review](screenshots/14-document-review.png)
 
 ## Support Tickets
 
 **Reach it:** **Report issue**, project **Tickets**, or the ticket route. **Purpose:** record support needs with a clear title, description, affected project where applicable, priority, reporter, and status. Ticket values are **Open**, **In Progress**, and **Resolved**. Include the route, record identifier, expected result, actual result, and an approved screenshot when reporting an issue.
 
+Filter the list by status or type, or search by ticket identifier or title. Opening a ticket shows the description, any documented workaround and escalation path, and the update history; post updates there rather than by email so the record stays complete. Tickets and issue reports share one SharePoint list, so a ticket raised from the standalone Tickets tool is the same record the full application shows.
+
+![Tickets](screenshots/15-tickets.png)
+
 ## Notifications
 
 Use the bell to review notification items. **Notification Settings** controls subscribed areas, delivery channels, and message tone where enabled. Adjust preferences for your own account only; administrators maintain platform configuration. Notification visibility is not a substitute for checking the record itself.
 
-![Notification Settings](screenshots/07-notification-settings.png)
+![Notification Settings](screenshots/17-notification-settings.png)
 
 ## Admin tools, users, roles, and activity
 
@@ -104,7 +126,17 @@ Use the bell to review notification items. **Notification Settings** controls su
 
 Use **SharePoint Setup** to validate or provision the defined schema; do not create ad hoc lists or columns. In **Users**, associate approved people with PULSE, assign the least-privileged appropriate role, and deactivate records rather than removing audit context. Use the Activity Log to inspect recorded actions and support investigations.
 
-![Admin](screenshots/08-admin.png)
+![Admin](screenshots/16-admin.png)
+
+The Activity Log lists recorded actions with the actor, area, summary, route, and time.
+
+![Activity Log](screenshots/18-logs.png)
+
+## Focused tools on their own pages
+
+Besides the full application, a site owner can place a single-area PULSE tool on a SharePoint page: **Travel Request Forms**, **My Travel**, **Travel Calendar**, **Tickets**, **PULSE Calendar**, and this **Documentation** library. Each is the same application restricted to one area, reading and writing the same records, so work done in a focused tool appears in the full application and vice versa. Navigation is limited to that area by design — to reach anything else, open the full PULSE page.
+
+If a focused tool shows local-only behavior and your records are missing, it could not resolve the SharePoint site. Open the full PULSE page once on the same site and reload the tool; if it still cannot connect, raise a ticket with the page address.
 
 ## Glossary
 
