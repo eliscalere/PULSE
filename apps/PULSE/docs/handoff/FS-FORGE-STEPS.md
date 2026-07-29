@@ -174,11 +174,11 @@ Command:
 
 ```bash
 node "/Users/eliscalere/Downloads/AEWTTR PAS/apps/PULSE/scripts/build-sharepoint-package.js" \
-  "/Users/eliscalere/Downloads/AEWTTR PAS/apps/PULSE/FS packages/PULSE-v1.0.0.html"
+  "/Users/eliscalere/Downloads/AEWTTR PAS/apps/PULSE/fs-packages/PULSE-v1.0.0.html"
 ```
 
 Output:
-- `/Users/eliscalere/Downloads/AEWTTR PAS/apps/PULSE/FS packages/PULSE-v1.0.0.html`
+- `/Users/eliscalere/Downloads/AEWTTR PAS/apps/PULSE/fs-packages/PULSE-v1.0.0.html`
 
 ### B. Forge wrapper builder
 
@@ -236,7 +236,7 @@ If you just want the Firepit-ready app:
 
 ```bash
 node "/Users/eliscalere/Downloads/AEWTTR PAS/apps/PULSE/scripts/build-sharepoint-package.js" \
-  "/Users/eliscalere/Downloads/AEWTTR PAS/apps/PULSE/FS packages/PULSE-v1.0.0.html"
+  "/Users/eliscalere/Downloads/AEWTTR PAS/apps/PULSE/fs-packages/PULSE-v1.0.0.html"
 ```
 
 3. Upload the output HTML into SharePoint/Firepit

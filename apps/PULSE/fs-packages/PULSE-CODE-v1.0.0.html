@@ -1,0 +1,1672 @@
+<!--WFC-MANIFEST:eyJ2ZXJzaW9uIjoxLCJwcm9qZWN0IjoiUFVMU0UtQ09ERSIsImdlbmVyYXRlZCI6IjIwMjYtMDctMjlUMTU6NDU6NTcuMTQ3WiIsImluZGV4IjoiaW5kZXguaHRtbCIsImZpbGVzIjpbeyJraW5kIjoianMiLCJwYXRoIjoiaW5kZXguaHRtbCNpbmxpbmUiLCJleHRlcm5hbCI6ZmFsc2UsImhhc2giOiJlNTU4NTM4MyJ9LHsia2luZCI6ImNzcyIsInBhdGgiOiJpbmRleC5odG1sI3N0eWxlIiwiZXh0ZXJuYWwiOmZhbHNlLCJoYXNoIjoiOWEwNzBhYmUifSx7ImtpbmQiOiJqcy1jZG4iLCJwYXRoIjoiaHR0cHM6Ly9jZG4uanNkZWxpdnIubmV0L25wbS9tb25hY28tZWRpdG9yQDAuNDcuMC9taW4vdnMvbG9hZGVyLmpzIiwiZXh0ZXJuYWwiOnRydWUsImhhc2giOiJtb25hY28tMC40Ny4wIn1dfQ==-->
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PULSE CODE</title>
+<style>
+:root {
+  --ink:#070708; --field:#fff; --graphite:#51545a; --mist:#ecedef;
+  --line:#d5d7dc; --blue:#2f66ff; --blue-hi:#8aaeff; --blue-lo:#1a3899;
+  --green:#2b7a5e; --amber:#c77800; --red:#b42318;
+  --bg-0:#0a0a0c; --bg-1:#0f0f12; --bg-2:#111114; --bg-3:#16161a;
+  --bg-4:#1b1b20; --bg-5:#21212a;
+  --b0:#18181c; --b1:#222227; --b2:#2e2e35;
+  --t-hi:#e8e9ec; --t-md:#9a9da6; --t-lo:#52555e; --t-xlo:#32343a;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg-0);color:var(--t-hi);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
+input,textarea,select{font:inherit;color:inherit;background:none;border:none;outline:none}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ── App shell ── */
+#app{display:grid;grid-template-rows:42px 1fr 26px;height:100vh;overflow:hidden}
+
+/* ── Titlebar ── */
+#titlebar{background:var(--bg-0);border-bottom:1px solid var(--b0);display:flex;align-items:stretch;overflow:hidden;user-select:none}
+.tb-brand{display:flex;align-items:center;gap:10px;padding:0 18px;background:var(--ink);border-right:1px solid var(--b0);flex-shrink:0}
+.dot-mark{position:relative;width:18px;height:22px;flex-shrink:0}
+.dot-mark i{position:absolute;display:block;width:7px;height:7px;border-radius:50%;background:#fff}
+.dot-mark i:first-child{top:2px;left:1px}
+.dot-mark i:last-child{right:1px;bottom:2px}
+.tb-wordmark{color:#fff;font-size:12px;font-weight:800;letter-spacing:5px}
+.tb-sub{color:#3e4148;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-left:2px}
+#tb-tabs{display:flex;align-items:flex-end;flex:1;padding:0 6px;gap:2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;min-width:0}
+#tb-tabs::-webkit-scrollbar{display:none}
+.tb-tab{display:flex;align-items:center;gap:7px;height:36px;padding:0 12px 0 10px;background:var(--bg-1);border:1px solid var(--b0);border-bottom:none;color:var(--t-lo);font-size:12px;flex-shrink:0;white-space:nowrap;position:relative;top:1px;cursor:pointer;transition:color .1s,background .1s}
+.tb-tab.active{background:var(--bg-3);color:var(--t-hi);border-color:var(--b1);border-bottom-color:var(--bg-3)}
+.tb-tab.active::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--blue)}
+.tb-tab:hover:not(.active){background:var(--bg-4);color:var(--t-md)}
+.tab-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.tab-name{max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.tab-dirty{color:var(--amber);margin-left:-2px}
+.tab-close{width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:11px;color:var(--t-lo);margin-left:3px;transition:background .1s}
+.tb-tab:hover .tab-close,.tb-tab.active .tab-close{color:var(--t-md)}
+.tab-close:hover{background:rgba(255,255,255,.12);color:var(--t-hi)!important}
+
+/* Build toolbar */
+#build-bar{display:flex;align-items:center;gap:3px;padding:0 10px;border-left:1px solid var(--b0);flex-shrink:0}
+.build-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--b1);border-radius:4px;color:var(--t-md);font:600 11px Inter,sans-serif;white-space:nowrap;transition:all .1s}
+.build-btn:hover{background:var(--bg-4);color:var(--t-hi);border-color:var(--b2)}
+.build-btn.publish{border-color:#2f66ff44;color:var(--blue)}
+.build-btn.publish:hover{background:var(--blue-lo);color:#fff;border-color:var(--blue)}
+.build-btn.busy{color:var(--amber);animation:bb .9s ease infinite}
+.build-btn.ok{color:var(--green)}
+.build-btn.err{color:var(--red)}
+@keyframes bb{0%,100%{opacity:.6}50%{opacity:1}}
+.tb-actions{display:flex;align-items:center;padding:0 8px;gap:2px;flex-shrink:0;border-left:1px solid var(--b0)}
+.tb-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--t-lo);border-radius:4px;font-size:15px;transition:background .1s,color .1s}
+.tb-btn:hover{background:var(--bg-4);color:var(--t-hi)}
+.tb-btn.on{color:var(--blue)}
+
+/* ── Workbench ── */
+#workbench{display:flex;overflow:hidden}
+
+/* ── Sidebar ── */
+#sidebar{width:260px;flex-shrink:0;background:var(--bg-2);border-right:1px solid var(--b0);display:flex;flex-direction:column;overflow:hidden;transition:width .18s cubic-bezier(.4,0,.2,1)}
+#sidebar.closed{width:0}
+
+/* User panel */
+#user-panel{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--b0);flex-shrink:0}
+.user-avatar{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font:700 12px Inter,sans-serif;color:#fff;flex-shrink:0;background:var(--blue)}
+.user-info{min-width:0;flex:1}
+.user-name{font-size:12px;font-weight:600;color:var(--t-hi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-email{font:10px var(--mono);color:var(--t-lo);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+
+/* Sidebar tabs */
+#sidebar-tabs{display:flex;border-bottom:1px solid var(--b0);flex-shrink:0}
+.sb-tab{flex:1;padding:8px;font:600 10px var(--mono);letter-spacing:.8px;text-transform:uppercase;color:var(--t-lo);border-bottom:2px solid transparent;transition:color .1s}
+.sb-tab:hover{color:var(--t-md)}
+.sb-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+/* Chat list */
+#chat-view{flex:1;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
+#chat-view.hidden{display:none}
+.new-chat-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--blue);font:600 12px Inter,sans-serif;border-bottom:1px solid var(--b0);flex-shrink:0;transition:background .1s}
+.new-chat-btn:hover{background:var(--bg-4)}
+.chat-group-label{padding:14px 14px 5px;font:700 9px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--t-xlo)}
+.chat-item{display:flex;align-items:center;gap:7px;padding:7px 14px;cursor:pointer;border-left:2px solid transparent;transition:background .08s}
+.chat-item:hover{background:var(--bg-4)}
+.chat-item.active{background:var(--bg-5);border-left-color:var(--blue)}
+.chat-item-dot{width:6px;height:6px;border-radius:50%;background:var(--t-xlo);flex-shrink:0}
+.chat-item.active .chat-item-dot{background:var(--blue)}
+.chat-item-title{flex:1;font-size:12px;color:var(--t-md);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-item.active .chat-item-title{color:var(--t-hi)}
+.chat-item-del{opacity:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:11px;color:var(--t-lo);flex-shrink:0}
+.chat-item:hover .chat-item-del{opacity:1}
+.chat-item-del:hover{background:rgba(180,35,24,.2);color:var(--red)!important}
+
+/* File view */
+#file-view{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#file-view.hidden{display:none}
+.sidebar-head{padding:10px 14px;border-bottom:1px solid var(--b0);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sidebar-label{font:700 10px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--t-lo)}
+.sb-actions{display:flex;gap:1px}
+.icon-btn{width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--t-lo);border-radius:3px;font-size:13px;transition:background .1s,color .1s}
+.icon-btn:hover{background:var(--bg-4);color:var(--t-hi)}
+#file-tree{flex:1;overflow-y:auto;padding:5px 0;scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
+.tree-empty{padding:16px 14px;color:var(--t-lo);font-size:11px;line-height:1.7}
+.tree-empty button{color:var(--blue);font-size:11px}
+.tree-row{display:flex;align-items:center;gap:5px;padding:4px 8px 4px 14px;cursor:pointer;color:var(--t-md);font-size:12px;white-space:nowrap;border-left:2px solid transparent;transition:background .08s}
+.tree-row:hover{background:var(--bg-4);color:var(--t-hi)}
+.tree-row.active{background:var(--bg-5);color:var(--t-hi);border-left-color:var(--blue)}
+.tree-row.folder>.tree-caret{color:var(--t-lo);font-size:9px;transition:transform .12s}
+.tree-row.folder.open>.tree-caret{transform:rotate(90deg)}
+.tree-row .lang-pip{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.tree-name{overflow:hidden;text-overflow:ellipsis;flex:1}
+.tree-row[data-depth="1"]{padding-left:26px}
+.tree-row[data-depth="2"]{padding-left:38px}
+.tree-row[data-depth="3"]{padding-left:50px}
+.sidebar-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;color:var(--t-lo);font-size:11px}
+.sidebar-loading.hidden{display:none}
+
+/* Changes section */
+#changes-section{border-top:1px solid var(--b0);flex-shrink:0;padding:8px 0 4px}
+#changes-section.hidden{display:none}
+.changes-head{display:flex;align-items:center;justify-content:space-between;padding:0 14px 6px}
+.changes-label{font:700 9px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--t-lo)}
+.changes-save-all{font:600 10px Inter,sans-serif;color:var(--blue);padding:2px 6px;border-radius:3px;transition:background .1s}
+.changes-save-all:hover{background:rgba(47,102,255,.12)}
+.change-item{display:flex;align-items:center;gap:6px;padding:4px 14px;font-size:11px;color:var(--amber)}
+.change-item .lang-pip{width:6px;height:6px;border-radius:2px;flex-shrink:0}
+
+/* ── Editor area ── */
+#editor-area{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg-3)}
+.breadcrumb-bar{height:27px;padding:0 14px;border-bottom:1px solid var(--b0);display:flex;align-items:center;gap:4px;font:11px var(--mono);color:var(--t-lo);flex-shrink:0;overflow:hidden;white-space:nowrap}
+.bc-seg{color:var(--t-md)}
+.bc-file{color:var(--t-hi)}
+.bc-sep{color:var(--t-xlo);margin:0 2px}
+#editor-wrap{flex:1;position:relative;overflow:hidden}
+#monaco{position:absolute;inset:0}
+#editor-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none}
+.empty-logo{font:700 52px/1 Inter,sans-serif;letter-spacing:14px;color:var(--b2)}
+.empty-hint{font:11px var(--mono);color:var(--t-xlo);text-align:center;line-height:2}
+.empty-hint kbd{display:inline-block;padding:1px 6px;border:1px solid var(--b2);border-radius:3px;font:10px var(--mono);color:var(--t-lo)}
+
+/* ── AI panel ── */
+#ai-panel{width:360px;flex-shrink:0;background:var(--bg-1);border-left:1px solid var(--b0);display:flex;flex-direction:column;overflow:hidden;transition:width .18s cubic-bezier(.4,0,.2,1)}
+#ai-panel.closed{width:0}
+.ai-head{padding:11px 14px;border-bottom:1px solid var(--b0);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ai-brand{display:flex;align-items:center;gap:9px}
+.ai-icon{width:26px;height:26px;border-radius:5px;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0}
+.ai-title{font-size:12px;font-weight:600;color:var(--t-hi)}
+.ai-model-badge{font:10px var(--mono);color:var(--t-lo);margin-top:1px}
+.ai-head-actions{display:flex;gap:1px}
+
+/* Quick actions */
+#quick-actions{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--b0);flex-shrink:0;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap}
+#quick-actions::-webkit-scrollbar{display:none}
+.qa-btn{padding:4px 9px;background:var(--bg-3);border:1px solid var(--b1);border-radius:3px;font:500 10px Inter,sans-serif;color:var(--t-md);white-space:nowrap;transition:all .1s;flex-shrink:0}
+.qa-btn:hover{background:var(--bg-4);color:var(--t-hi);border-color:var(--b2)}
+
+/* Messages */
+#ai-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:16px;scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
+.ai-msg{display:flex;flex-direction:column;gap:5px}
+.ai-msg-role{font:700 9px var(--mono);letter-spacing:1px;text-transform:uppercase}
+.ai-msg.user .ai-msg-role{color:var(--blue)}
+.ai-msg.ai .ai-msg-role{color:var(--t-xlo)}
+.ai-msg .ai-msg-body{font-size:12px;line-height:1.72;color:var(--t-md);word-break:break-word}
+.ai-msg.ai .ai-msg-body{color:var(--t-hi)}
+
+/* Code blocks with Apply */
+.ai-code-wrap{border:1px solid var(--b1);border-radius:4px;overflow:hidden;margin:6px 0}
+.ai-code-head{display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:var(--bg-0);border-bottom:1px solid var(--b1)}
+.ai-code-lang{font:700 10px var(--mono);color:var(--t-lo);letter-spacing:.5px}
+.ai-code-actions{display:flex;gap:4px}
+.code-btn{padding:3px 8px;border:1px solid var(--b2);border-radius:3px;font:600 10px Inter,sans-serif;color:var(--t-lo);transition:all .1s}
+.code-btn:hover{background:var(--bg-4);color:var(--t-hi)}
+.code-btn.apply{color:var(--blue);border-color:#2f66ff44}
+.code-btn.apply:hover{background:var(--blue-lo);color:#fff;border-color:var(--blue)}
+.ai-code-block{padding:10px 12px;font:11px/1.6 var(--mono);color:#c0c2ca;overflow-x:auto;white-space:pre;background:var(--bg-3)}
+.ai-inline-code{font:10.5px var(--mono);color:var(--blue-hi);background:var(--bg-3);padding:1px 5px;border-radius:3px}
+
+/* AI footer */
+.ai-footer{padding:10px 12px 12px;border-top:1px solid var(--b0);flex-shrink:0}
+.ai-ctx-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;min-height:20px}
+.ctx-chip{display:flex;align-items:center;gap:5px;padding:3px 8px;background:var(--bg-4);border:1px solid var(--b1);border-radius:10px;font-size:10px;color:var(--t-md)}
+.ai-input-wrap{display:flex;align-items:flex-end;gap:7px;background:var(--bg-3);border:1px solid var(--b1);border-radius:6px;padding:7px 10px}
+.ai-input-wrap:focus-within{border-color:#2f66ff55}
+#ai-input{flex:1;resize:none;min-height:18px;max-height:110px;font-size:12px;line-height:1.5;color:var(--t-hi);overflow-y:auto;scrollbar-width:thin}
+#ai-input::placeholder{color:var(--t-lo)}
+.ai-send{width:26px;height:26px;flex-shrink:0;background:var(--blue);border-radius:4px;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;transition:opacity .12s}
+.ai-send:hover{opacity:.84}
+.ai-send:disabled{opacity:.3;cursor:default}
+.ai-thinking::after{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--t-lo);animation:blink 1s step-end infinite;margin-left:4px;vertical-align:middle}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── Status bar ── */
+#statusbar{background:var(--blue);color:rgba(255,255,255,.9);display:flex;align-items:center;padding:0 12px;font:11px var(--mono);user-select:none}
+.sb-item{display:flex;align-items:center;gap:5px;padding:0 7px;height:100%;cursor:default;transition:background .1s}
+.sb-item button{font:11px var(--mono);color:inherit}
+.sb-item:hover{background:rgba(0,0,0,.15)}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3)}
+.sb-dot.ok{background:#6ee7b7}
+.sb-dot.warn{background:#fcd34d}
+.sb-dot.err{background:#fca5a5}
+.sb-divider{width:1px;height:12px;background:rgba(255,255,255,.2);flex-shrink:0}
+.sb-right{margin-left:auto;display:flex;align-items:center;height:100%}
+.sb-right .sb-item{cursor:pointer}
+
+/* ── Diff modal ── */
+#diff-veil{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;background:rgba(0,0,0,.7);backdrop-filter:blur(4px)}
+#diff-veil.hidden{display:none}
+#diff-shell{display:flex;flex-direction:column;height:100%;width:100%;padding:24px}
+.diff-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0}
+.diff-title{font-size:15px;font-weight:700;color:var(--t-hi);letter-spacing:-.02em}
+.diff-sub{font:11px var(--mono);color:var(--t-lo);margin-top:2px}
+.diff-actions{display:flex;gap:8px}
+#diff-editor-mount{flex:1;border:1px solid var(--b1);border-radius:4px;overflow:hidden;min-height:0}
+
+/* ── Deploy result card ── */
+#deploy-toast{position:fixed;bottom:48px;right:20px;z-index:400;background:var(--bg-2);border:1px solid var(--b2);border-left:3px solid var(--green);border-radius:6px;padding:14px 18px;width:320px;box-shadow:0 12px 40px rgba(0,0,0,.7);display:none}
+#deploy-toast.show{display:block;animation:toastIn .2s ease}
+.dt-title{font-size:12px;font-weight:700;color:var(--t-hi);margin-bottom:6px}
+.dt-url{font:10px var(--mono);color:var(--blue);word-break:break-all;margin-bottom:10px}
+.dt-actions{display:flex;gap:8px}
+
+/* ── Settings / Generic modal ── */
+.modal-veil{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(3px)}
+.modal-veil.hidden{display:none}
+.modal{width:min(760px,94vw);max-height:90vh;background:var(--bg-2);border:1px solid var(--b1);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 32px 96px rgba(0,0,0,.85)}
+.modal-hd{padding:20px 24px 16px;border-bottom:1px solid var(--b0);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-hd h2{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.modal-body{padding:22px 24px;overflow-y:auto;flex:1}
+.modal-ft{padding:14px 24px;border-top:1px solid var(--b0);display:flex;justify-content:flex-end;gap:9px;flex-shrink:0}
+
+/* Settings tabs */
+.cfg-tabs{display:flex;gap:0;border-bottom:1px solid var(--b0);margin-bottom:20px}
+.cfg-tab{padding:8px 14px;font:600 11px Inter,sans-serif;color:var(--t-lo);border-bottom:2px solid transparent;transition:color .1s}
+.cfg-tab:hover{color:var(--t-md)}
+.cfg-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.cfg-panel{display:none}
+.cfg-panel.active{display:block}
+
+.form-sec{margin-bottom:24px}
+.form-sec-title{font:700 10px var(--mono);letter-spacing:1.1px;text-transform:uppercase;color:var(--t-lo);padding-bottom:9px;margin-bottom:14px;border-bottom:1px solid var(--b0)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{margin-bottom:14px}
+.form-group:last-child{margin-bottom:0}
+.form-group label{display:block;font-size:11px;font-weight:600;color:var(--t-md);margin-bottom:5px}
+.form-input{display:block;width:100%;padding:8px 11px;background:var(--bg-3);border:1px solid var(--b1);border-radius:4px;font:12px var(--mono);color:var(--t-hi);transition:border-color .12s}
+.form-input:focus{border-color:#2f66ff66}
+.form-input::placeholder{color:var(--t-xlo)}
+.form-input option{background:var(--bg-3)}
+.form-hint{margin-top:5px;font-size:10px;color:var(--t-lo);line-height:1.55}
+.form-hint a{color:var(--blue)}
+.callout{padding:11px 14px;background:rgba(47,102,255,.08);border:1px solid rgba(47,102,255,.2);border-radius:5px;margin-bottom:20px}
+.callout-title{font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.4px;margin-bottom:5px}
+.callout p{font-size:11px;color:#7a98d8;line-height:1.6}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:4px;font:600 12px inherit;cursor:pointer;border:none;transition:opacity .12s,background .12s}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-ghost{background:transparent;color:var(--t-md);border:1px solid var(--b2)}
+.btn-ghost:hover{background:var(--bg-4);color:var(--t-hi)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{opacity:.85}
+.btn-sm{padding:6px 12px;font-size:11px}
+
+/* ── Command palette ── */
+#cmd-palette{position:fixed;inset:0;z-index:300;display:flex;align-items:flex-start;justify-content:center;padding-top:110px}
+#cmd-palette.hidden{display:none}
+.cmd-veil{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.cmd-box{position:relative;width:min(580px,92vw);background:var(--bg-2);border:1px solid var(--b2);border-radius:7px;box-shadow:0 24px 64px rgba(0,0,0,.8);overflow:hidden}
+.cmd-input-row{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--b0)}
+.cmd-prompt{font:14px var(--mono);color:var(--t-lo)}
+#cmd-input{flex:1;font:14px inherit;color:var(--t-hi)}
+.cmd-results{max-height:320px;overflow-y:auto}
+.cmd-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;font-size:12px;color:var(--t-md);transition:background .07s}
+.cmd-item:hover,.cmd-item.sel{background:var(--bg-4);color:var(--t-hi)}
+.cmd-icon{width:16px;text-align:center;font-size:13px;color:var(--t-lo);flex-shrink:0}
+.cmd-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmd-path{font:10px var(--mono);color:var(--t-lo);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmd-kbd{font:9px var(--mono);color:var(--t-lo);white-space:nowrap}
+.cmd-footer{padding:7px 16px;border-top:1px solid var(--b0);display:flex;gap:12px;font:10px var(--mono);color:var(--t-xlo)}
+.cmd-footer kbd{padding:1px 5px;border:1px solid var(--b1);border-radius:3px}
+
+/* ── Project bar ── */
+#project-bar{border-bottom:1px solid var(--b0);flex-shrink:0}
+.proj-bar-head{display:flex;align-items:center;gap:7px;padding:8px 14px;cursor:pointer;transition:background .1s;user-select:none}
+.proj-bar-head:hover{background:var(--bg-4)}
+.proj-icon{font-size:11px;color:var(--t-lo);flex-shrink:0}
+.proj-name{flex:1;font:600 11px Inter,sans-serif;color:var(--t-hi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj-chevron{font-size:9px;color:var(--t-lo);transition:transform .15s;flex-shrink:0}
+.proj-bar-head.open .proj-chevron{transform:rotate(180deg)}
+#project-dropdown{display:none;border-bottom:1px solid var(--b0);max-height:220px;overflow-y:auto}
+#project-dropdown.open{display:block}
+.proj-item{display:flex;align-items:center;gap:7px;padding:7px 14px;cursor:pointer;font-size:12px;color:var(--t-md);transition:background .08s}
+.proj-item:hover{background:var(--bg-4);color:var(--t-hi)}
+.proj-item.active{color:var(--blue)}
+.proj-item-dot{width:6px;height:6px;border-radius:50%;background:var(--t-xlo);flex-shrink:0}
+.proj-item.active .proj-item-dot{background:var(--blue)}
+.proj-item-del{opacity:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:10px;color:var(--t-lo)}
+.proj-item:hover .proj-item-del{opacity:.7}
+.proj-item-del:hover{background:rgba(180,35,24,.2);color:var(--red)!important;opacity:1!important}
+.proj-new-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;cursor:pointer;font:600 11px Inter,sans-serif;color:var(--blue);border-top:1px solid var(--b0);transition:background .1s}
+.proj-new-btn:hover{background:var(--bg-4)}
+
+/* Spinner / toast */
+.spin{width:16px;height:16px;border:2px solid var(--b2);border-top-color:var(--blue);border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+#toasts{position:fixed;bottom:36px;right:16px;z-index:999;display:flex;flex-direction:column;gap:7px;pointer-events:none}
+.toast{padding:9px 15px;background:#1e1e25;border:1px solid var(--b2);border-left:3px solid var(--blue);border-radius:5px;font-size:12px;color:var(--t-hi);box-shadow:0 8px 24px rgba(0,0,0,.6);animation:toastIn .18s ease;max-width:340px}
+.toast.ok{border-left-color:var(--green)}
+.toast.err{border-left-color:var(--red)}
+.toast.warn{border-left-color:var(--amber)}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}}
+@media(prefers-reduced-motion:reduce){.spin{animation:none;border-top-color:var(--blue)}.toast{animation:none}}
+</style>
+</head><body>
+<div id="app">
+
+<!-- TITLEBAR -->
+<div id="titlebar">
+  <div class="tb-brand">
+    <div class="dot-mark"><i></i><i></i></div>
+    <span class="tb-wordmark">PULSE</span>
+    <span class="tb-sub">Code</span>
+  </div>
+  <div id="tb-tabs" role="tablist"></div>
+  <div id="build-bar">
+    <button class="build-btn" id="bb-pkg"  onclick="packageApp()"  title="Package — bundle open files into a release artifact">⊞ Package</button>
+    <button class="build-btn" id="bb-test" onclick="deployTest()"  title="Deploy to test environment in SharePoint">⬡ Test</button>
+    <button class="build-btn publish" id="bb-live" onclick="deployLive()" title="Publish — replace the live app in SharePoint">▲ Publish</button>
+  </div>
+  <div class="tb-actions">
+    <button class="tb-btn on" id="btn-ai" title="Toggle AI (Ctrl+Shift+A)" onclick="toggleAI()">✦</button>
+    <button class="tb-btn on" id="btn-sb" title="Toggle sidebar (Ctrl+B)"  onclick="toggleSidebar()">⊟</button>
+    <button class="tb-btn"   title="Command palette (Ctrl+P)"              onclick="openCmd()">⌘</button>
+    <button class="tb-btn"   title="Settings (Ctrl+,)"                     onclick="openSettings()">⚙</button>
+    <button class="tb-btn"   id="btn-spo" title="Connect SharePoint (Ctrl+Shift+C)" onclick="connectSPO()" style="color:var(--amber)">⚡</button>
+  </div>
+</div>
+
+<!-- WORKBENCH -->
+<div id="workbench">
+
+  <!-- LEFT SIDEBAR -->
+  <div id="sidebar">
+    <!-- User -->
+    <div id="user-panel">
+      <div class="user-avatar" id="u-avatar">?</div>
+      <div class="user-info">
+        <div class="user-name"  id="u-name">Not signed in</div>
+        <div class="user-email" id="u-email">Connect SharePoint to identify</div>
+      </div>
+    </div>
+    <!-- Project switcher -->
+    <div id="project-bar">
+      <div class="proj-bar-head" id="proj-bar-head" onclick="toggleProjectDropdown()">
+        <span class="proj-icon">◈</span>
+        <span class="proj-name" id="proj-name-display">No project</span>
+        <span class="proj-chevron" id="proj-chevron">▾</span>
+      </div>
+      <div id="project-dropdown">
+        <div id="project-list"></div>
+        <div class="proj-new-btn" onclick="openNewProject()">＋ New project</div>
+      </div>
+    </div>
+    <!-- Sidebar tabs -->
+    <div id="sidebar-tabs">
+      <button class="sb-tab active" id="sbt-chats" onclick="switchSidebarTab('chats')">Chats</button>
+      <button class="sb-tab"        id="sbt-files" onclick="switchSidebarTab('files')">Files</button>
+    </div>
+
+    <!-- Chat list view -->
+    <div id="chat-view">
+      <button class="new-chat-btn" onclick="newChat()">＋ New conversation</button>
+      <div id="chat-list"></div>
+    </div>
+
+    <!-- File explorer view -->
+    <div id="file-view" class="hidden">
+      <div class="sidebar-head">
+        <span class="sidebar-label" id="sb-title">Explorer</span>
+        <div class="sb-actions">
+          <button class="icon-btn" title="New File"   onclick="newFile()">+</button>
+          <button class="icon-btn" title="Open local" onclick="openLocal()">↑</button>
+          <button class="icon-btn" title="Refresh"    onclick="refreshTree()">↻</button>
+        </div>
+      </div>
+      <div id="tree-loading" class="sidebar-loading hidden">
+        <div class="spin"></div>
+        <span style="font:10px var(--mono);color:var(--t-lo)">Loading…</span>
+      </div>
+      <div id="file-tree">
+        <div class="tree-empty" id="tree-empty">
+          <p>No folder connected.</p>
+          <p style="margin-top:6px"><button onclick="openSettings()">Configure SharePoint ↗</button> then click ⚡.</p>
+          <p style="margin-top:4px">Or <button onclick="openLocal()">open a local file</button>.</p>
+        </div>
+      </div>
+      <!-- Changed files -->
+      <div id="changes-section" class="hidden">
+        <div class="changes-head">
+          <span class="changes-label">Changes</span>
+          <button class="changes-save-all" onclick="saveAll()">Save All</button>
+        </div>
+        <div id="changes-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITOR -->
+  <div id="editor-area">
+    <div class="breadcrumb-bar" id="bc-bar">
+      <span style="color:var(--t-xlo);font:10px var(--mono)">no file open</span>
+    </div>
+    <div id="editor-wrap">
+      <div id="monaco"></div>
+      <div id="editor-empty" aria-hidden="true">
+        <div class="empty-logo">CODE</div>
+        <div class="empty-hint">
+          Open a file from the explorer<br>
+          or press <kbd>Ctrl+P</kbd> to search<br>
+          <kbd>Ctrl+Shift+A</kbd> to toggle AI
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI PANEL -->
+  <div id="ai-panel">
+    <div class="ai-head">
+      <div class="ai-brand">
+        <div class="ai-icon">✦</div>
+        <div>
+          <div class="ai-title">PULSE AI</div>
+          <div class="ai-model-badge" id="ai-badge">Capra GPT — not configured</div>
+        </div>
+      </div>
+      <div class="ai-head-actions">
+        <button class="icon-btn" title="New chat"   onclick="newChat()">＋</button>
+        <button class="icon-btn" title="Clear chat" onclick="clearChat()">⊗</button>
+        <button class="icon-btn" title="Close"      onclick="toggleAI()">✕</button>
+      </div>
+    </div>
+    <div id="quick-actions">
+      <button class="qa-btn" onclick="qa('explain')">Explain</button>
+      <button class="qa-btn" onclick="qa('fix')">Fix bugs</button>
+      <button class="qa-btn" onclick="qa('refactor')">Refactor</button>
+      <button class="qa-btn" onclick="qa('tests')">Add tests</button>
+      <button class="qa-btn" onclick="qa('docs')">Document</button>
+      <button class="qa-btn" onclick="qa('review')">Review</button>
+    </div>
+    <div id="ai-msgs">
+      <div class="ai-msg ai">
+        <span class="ai-msg-role">PULSE AI</span>
+        <div class="ai-msg-body">Hello — I'm your Capra GPT assistant. Open a file, select some code, then ask me anything. I can also apply code changes directly to your editor.
+
+Use the quick actions above, or type a question below.</div>
+      </div>
+    </div>
+    <div class="ai-footer">
+      <div class="ai-ctx-row" id="ai-ctx-row"></div>
+      <div class="ai-input-wrap">
+        <textarea id="ai-input" rows="1"
+          placeholder="Ask about your code… (Enter to send)"
+          onkeydown="aiKey(event)" oninput="aiResize(this)"></textarea>
+        <button class="ai-send" id="ai-send-btn" onclick="sendAI()" title="Send">↑</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- workbench -->
+
+<!-- STATUS BAR -->
+<div id="statusbar">
+  <div class="sb-item" onclick="connectSPO()" title="SharePoint connection">
+    <span class="sb-dot" id="spo-dot"></span>
+    <span id="spo-label">Not connected</span>
+  </div>
+  <div class="sb-divider"></div>
+  <div class="sb-item">
+    <span class="sb-dot" id="ai-dot"></span>
+    <span id="ai-label">AI: not configured</span>
+  </div>
+  <div class="sb-right">
+    <div class="sb-item" id="file-info" style="display:none">
+      <span id="sb-lang">—</span>
+      <span class="sb-divider"></span>
+      <span id="sb-cursor">Ln 1, Col 1</span>
+    </div>
+    <div class="sb-item" onclick="openSettings()"><button>⚙ Settings</button></div>
+  </div>
+</div>
+
+</div><!-- app -->
+
+<!-- DIFF MODAL -->
+<div id="diff-veil" class="hidden">
+  <div id="diff-shell">
+    <div class="diff-hd">
+      <div>
+        <div class="diff-title">Review AI Changes</div>
+        <div class="diff-sub">Original ← · → Proposed &nbsp;|&nbsp; Edit the right side before accepting</div>
+      </div>
+      <div class="diff-actions">
+        <button class="btn btn-ghost btn-sm" onclick="closeDiff()">Discard</button>
+        <button class="btn btn-primary btn-sm" onclick="acceptDiff()">⤴ Accept Changes</button>
+      </div>
+    </div>
+    <div id="diff-editor-mount"></div>
+  </div>
+</div>
+
+<!-- DEPLOY RESULT TOAST -->
+<div id="deploy-toast">
+  <div class="dt-title" id="dt-title">Deployed</div>
+  <div class="dt-url" id="dt-url"></div>
+  <div class="dt-actions">
+    <a class="btn btn-primary btn-sm" id="dt-open" href="#" target="_blank" rel="noopener">Open ↗</a>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dt-url-txt').select();document.execCommand('copy');toast('URL copied','ok')" id="dt-copy">Copy URL</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('deploy-toast').classList.remove('show')">✕</button>
+  </div>
+</div>
+
+<!-- NEW PROJECT MODAL -->
+<div class="modal-veil hidden" id="newproj-veil" onclick="veilClick(event,'newproj-veil')">
+<div class="modal" onclick="event.stopPropagation()" style="max-width:480px">
+  <div class="modal-hd">
+    <h2>New Project</h2>
+    <button class="icon-btn" style="font-size:16px" onclick="closeNewProject()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="callout">
+      <div class="callout-title">Connect a SharePoint Folder</div>
+      <p>Paste the URL of a SharePoint folder from your browser's address bar. PULSE CODE will use it as the project root. Each project can point to a different folder.</p>
+    </div>
+    <div class="form-group">
+      <label>SharePoint Folder URL</label>
+      <input class="form-input" type="url" id="np-url" placeholder="https://yourorg.sharepoint.com/sites/YourSite/Shared%20Documents/MyProject">
+      <div class="form-hint">Copy the URL directly from your browser while viewing the folder in SharePoint.</div>
+    </div>
+    <div class="form-group">
+      <label>Project Name <span style="font-weight:400;color:var(--t-lo)">(optional)</span></label>
+      <input class="form-input" type="text" id="np-name" placeholder="Auto-detected from folder name">
+    </div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeNewProject()">Cancel</button>
+    <button class="btn btn-primary" onclick="confirmNewProject()">Create &amp; Connect</button>
+  </div>
+</div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-veil hidden" id="settings-veil" onclick="veilClick(event,'settings-veil')">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="modal-hd">
+    <h2>Settings</h2>
+    <button class="icon-btn" style="font-size:16px" onclick="closeSettings()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="cfg-tabs">
+      <button class="cfg-tab active" onclick="cfgTab(0,this)">SharePoint</button>
+      <button class="cfg-tab"        onclick="cfgTab(1,this)">Ask Sage AI</button>
+      <button class="cfg-tab"        onclick="cfgTab(2,this)">Build &amp; Deploy</button>
+      <button class="cfg-tab"        onclick="cfgTab(3,this)">Editor</button>
+    </div>
+
+    <!-- SharePoint -->
+    <div class="cfg-panel active" id="cp-0">
+      <div class="callout">
+        <div class="callout-title">SharePoint Connection</div>
+        <p>PULSE CODE connects to SharePoint using your existing browser session — no Azure AD registration or API keys needed. Upload <code style="font:10px var(--mono);color:var(--blue-hi)">PULSE-CODE.html</code> to your SharePoint site's <em>SiteAssets</em> library and open it there. Add projects from the sidebar using any SharePoint folder URL.</p>
+      </div>
+      <div class="callout" style="border-color:var(--amber)44;background:var(--amber)11">
+        <div class="callout-title" style="color:var(--amber)">Running locally?</div>
+        <p>Same-origin session auth only works when the page is hosted on SharePoint. Opening this file locally will show a connection error — that is expected.</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="testSPO()">⚡ Test Connection</button>
+    </div>
+
+    <!-- Ask Sage AI -->
+    <div class="cfg-panel" id="cp-1">
+      <div class="callout">
+        <div class="callout-title">Ask Sage AI</div>
+        <p>Enter your Ask Sage API key. Uses the OpenAI-compatible endpoint — just the key, no email needed. When connected to SharePoint, the key is stored in <code style="font:10px var(--mono);color:var(--blue-hi)">SiteAssets/pulse-code-config.json</code> so it roams to all users automatically.</p>
+      </div>
+      <div class="form-group">
+        <label>API Key</label>
+        <input class="form-input" type="password" id="f-ai-key" placeholder="Your Ask Sage API key">
+        <div class="form-hint">Found in your Ask Sage account settings. Saved to SharePoint (shared) + localStorage (local backup).</div>
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <input class="form-input" type="text" id="f-ai-model" value="gpt-4.1-mini" placeholder="gpt-4.1-mini">
+        <div class="form-hint">Ask Sage model name. Default: <code style="font:10px var(--mono);color:var(--blue-hi)">gpt-4.1-mini</code></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="testAI()">⚡ Test Connection</button>
+    </div>
+
+    <!-- Build & Deploy -->
+    <div class="cfg-panel" id="cp-2">
+      <div class="callout">
+        <div class="callout-title">Deploy pipeline</div>
+        <p>Package bundles the current file to an SPO releases folder. Test pushes it to a staging URL. Publish replaces the live app — same SharePoint lists, different file path.</p>
+      </div>
+      <div class="form-group">
+        <label>Test deploy path (SPO relative)</label>
+        <input class="form-input" type="text" id="f-test-path" placeholder="SiteAssets/pulse-test.html">
+        <div class="form-hint">Path within the document library root. This is the "staging" version users won't find by default.</div>
+      </div>
+      <div class="form-group">
+        <label>Live deploy path (SPO relative)</label>
+        <input class="form-input" type="text" id="f-live-path" placeholder="SiteAssets/pulse.html">
+        <div class="form-hint">Overwriting this replaces the live app immediately. Confirm dialog required.</div>
+      </div>
+      <div class="form-group">
+        <label>Releases archive path (SPO relative)</label>
+        <input class="form-input" type="text" id="f-releases-path" placeholder="Shared Documents/PULSE-Releases">
+        <div class="form-hint">Timestamped copies saved here by Package. Acts as your version history.</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Release prefix</label>
+          <input class="form-input" type="text" id="f-release-prefix" value="PULSE" placeholder="PULSE">
+        </div>
+        <div class="form-group">
+          <label>Live app display URL (optional)</label>
+          <input class="form-input" type="url" id="f-live-url" placeholder="https://yourorg.sharepoint.com/…">
+          <div class="form-hint">Shown in the "Open" link after publishing.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor -->
+    <div class="cfg-panel" id="cp-3">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Font Size</label>
+          <input class="form-input" type="number" id="f-fontsize" value="14" min="10" max="24">
+        </div>
+        <div class="form-group">
+          <label>Tab Size</label>
+          <input class="form-input" type="number" id="f-tabsize" value="2" min="1" max="8">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Word Wrap</label>
+        <select class="form-input" id="f-wordwrap">
+          <option value="off">Off</option>
+          <option value="on" selected>On</option>
+          <option value="wordWrapColumn">At column</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Minimap</label>
+        <select class="form-input" id="f-minimap">
+          <option value="true" selected>Enabled</option>
+          <option value="false">Disabled</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeSettings()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+  </div>
+</div>
+</div>
+
+<!-- COMMAND PALETTE -->
+<div id="cmd-palette" class="hidden">
+  <div class="cmd-veil" onclick="closeCmd()"></div>
+  <div class="cmd-box">
+    <div class="cmd-input-row">
+      <span class="cmd-prompt">›</span>
+      <input id="cmd-input" autocomplete="off" placeholder="Search files, commands…"
+        oninput="filterCmd()" onkeydown="cmdKey(event)">
+    </div>
+    <div class="cmd-results" id="cmd-results"></div>
+    <div class="cmd-footer">
+      <span><kbd>↑↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span><kbd>Esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<!-- SCRIPTS -->
+<script>
+/* ═══════════════════════════════════════════════════
+   PULSE CODE v2 — Personalized AI IDE
+═══════════════════════════════════════════════════ */
+
+// ── Config & persistence ──────────────────────────
+const CFG_KEY  = 'pulse-code-v2';
+const PROJ_KEY = 'pulse-projects';
+const SPO_CFG_PATH = 'SiteAssets/pulse-code-config.json';
+
+let cfg = {
+  spo:    {},
+  ai:     { key:'', model:'gpt-4.1-mini' },
+  build:  { testPath:'SiteAssets/pulse-test.html', livePath:'SiteAssets/pulse.html', releasesPath:'Shared Documents/PULSE-Releases', prefix:'PULSE', liveUrl:'' },
+  editor: { fontSize:14, tabSize:2, wordWrap:'on', minimap:true }
+};
+function loadCfg() { try { const s=localStorage.getItem(CFG_KEY); if(s) cfg=deepMerge(cfg,JSON.parse(s)); } catch(e){} }
+function saveCfg() { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
+function deepMerge(t,s) { for(const k in s) t[k]=(s[k]&&typeof s[k]==='object'&&!Array.isArray(s[k]))?deepMerge({...t[k]||{}},s[k]):s[k]; return t; }
+loadCfg();
+
+// ── SPO URL parser ────────────────────────────────
+function parseSPOUrl(rawUrl) {
+  if (!rawUrl) return null;
+  try {
+    const url = new URL(rawUrl.trim());
+    // Case 1: ?id= or ?RootFolder= query param (address-bar URL from SPO library view)
+    const idParam = url.searchParams.get('id') || url.searchParams.get('RootFolder');
+    if (idParam) {
+      const decoded = decodeURIComponent(idParam);
+      const m = decoded.match(/^(\/sites\/[^\/]+|\/personal\/[^\/]+)/i);
+      if (m) {
+        const siteUrl = `${url.protocol}//${url.host}${m[1]}`;
+        const folder  = decoded.slice(m[1].length).replace(/^\//, '');
+        return { siteUrl, folder };
+      }
+    }
+    // Case 2: Direct folder path
+    const pathname = decodeURIComponent(url.pathname)
+      .replace(/\/[^\/]+\.aspx$/, '')
+      .replace(/\/Forms$/, '');
+    const m2 = pathname.match(/^(\/sites\/[^\/]+|\/personal\/[^\/]+)(\/.*)?$/i);
+    if (m2) {
+      return {
+        siteUrl: `${url.protocol}//${url.host}${m2[1]}`,
+        folder:  (m2[2] || '').replace(/^\//, '')
+      };
+    }
+    return { siteUrl: `${url.protocol}//${url.host}`, folder: pathname.replace(/^\//, '') };
+  } catch(e) { return null; }
+}
+
+// ── Projects ──────────────────────────────────────
+function loadProjects(){
+  try { A.projects=JSON.parse(localStorage.getItem(PROJ_KEY)||'[]'); } catch(e){ A.projects=[]; }
+  if(A.projects.length && !A.activeProjectId) A.activeProjectId=A.projects[0].id;
+  renderProjectBar();
+}
+function saveProjects(){ localStorage.setItem(PROJ_KEY,JSON.stringify(A.projects)); }
+function activeProject(){ return A.projects.find(p=>p.id===A.activeProjectId)||null; }
+
+function toggleProjectDropdown(){
+  const dd=document.getElementById('project-dropdown');
+  const head=document.getElementById('proj-bar-head');
+  const open=dd.classList.toggle('open');
+  head.classList.toggle('open',open);
+  if(open) renderProjectList();
+}
+function renderProjectBar(){
+  const proj=activeProject();
+  document.getElementById('proj-name-display').textContent=proj?proj.name:'No project — click to add';
+}
+function renderProjectList(){
+  const el=document.getElementById('project-list');
+  if(!A.projects.length){ el.innerHTML='<div style="padding:10px 14px;font-size:11px;color:var(--t-lo)">No projects yet.</div>'; return; }
+  el.innerHTML=A.projects.map(p=>`
+    <div class="proj-item${p.id===A.activeProjectId?' active':''}" onclick="switchProject('${p.id}')">
+      <span class="proj-item-dot"></span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span>
+      <button class="proj-item-del" onclick="deleteProject('${p.id}',event)" title="Remove project">✕</button>
+    </div>`).join('');
+}
+
+function openNewProject(){
+  document.getElementById('project-dropdown').classList.remove('open');
+  document.getElementById('proj-bar-head').classList.remove('open');
+  document.getElementById('np-url').value='';
+  document.getElementById('np-name').value='';
+  document.getElementById('newproj-veil').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('np-url').focus(),60);
+}
+function closeNewProject(){ document.getElementById('newproj-veil').classList.add('hidden'); }
+
+function confirmNewProject(){
+  const rawUrl=document.getElementById('np-url').value.trim();
+  if(!rawUrl){ toast('Paste a SharePoint folder URL first','err'); return; }
+  const parsed=parseSPOUrl(rawUrl);
+  if(!parsed){ toast('Could not parse that URL — copy it directly from the SharePoint address bar','err'); return; }
+  const autoName=decodeURIComponent(rawUrl.split('?')[0].split('/').filter(Boolean).pop()||'Project');
+  const name=document.getElementById('np-name').value.trim()||autoName;
+  const proj={ id:genId(), name, folderUrl:rawUrl, createdAt:Date.now() };
+  A.projects.unshift(proj);
+  A.activeProjectId=proj.id;
+  saveProjects();
+  renderProjectBar();
+  closeNewProject();
+  toast(`Project "${name}" created — connecting…`,'ok');
+  connectSPO();
+}
+
+function switchProject(id){
+  if(A.activeProjectId===id){ toggleProjectDropdown(); return; }
+  A.activeProjectId=id;
+  document.getElementById('project-dropdown').classList.remove('open');
+  document.getElementById('proj-bar-head').classList.remove('open');
+  A.spo={ ok:false, siteUrl:null, folder:'', digest:null, digestExpiry:0 };
+  renderProjectBar();
+  refreshSPOStatus();
+  document.getElementById('file-tree').innerHTML='<div class="tree-empty"><p>Switching project…</p></div>';
+  connectSPO();
+}
+
+function deleteProject(id,e){
+  e.stopPropagation();
+  if(!confirm('Remove this project from PULSE CODE?\n(Files on SharePoint are not deleted.)')) return;
+  A.projects=A.projects.filter(p=>p.id!==id);
+  if(A.activeProjectId===id){
+    A.activeProjectId=A.projects[0]?.id||null;
+    A.spo={ ok:false, siteUrl:null, folder:'', digest:null, digestExpiry:0 };
+    refreshSPOStatus();
+    document.getElementById('file-tree').innerHTML='<div class="tree-empty"><p>No folder connected.</p><p style="margin-top:6px"><button onclick="openNewProject()">Add a project ↗</button></p></div>';
+    document.getElementById('tree-empty').style.display='none';
+  }
+  saveProjects(); renderProjectList(); renderProjectBar();
+}
+
+// ── SPO config file (shared settings) ────────────
+async function loadSPOConfig(){
+  if(!A.spo.ok||!A.spo.siteUrl) return;
+  try {
+    const sitePath=new URL(A.spo.siteUrl).pathname;
+    const cfgPath=`${sitePath}/${SPO_CFG_PATH}`.replace(/\/\//g,'/');
+    const enc=encodeURIComponent(cfgPath);
+    const r=await fetch(`${A.spo.siteUrl}/_api/web/GetFileByServerRelativePath(decodedurl='${enc}')/$value`,{credentials:'include'});
+    if(!r.ok) return;
+    const remote=await r.json();
+    if(remote.ai)     cfg.ai    ={ ...cfg.ai,    ...remote.ai    };
+    if(remote.build)  cfg.build ={ ...cfg.build, ...remote.build };
+    if(remote.editor) cfg.editor={ ...cfg.editor,...remote.editor };
+    saveCfg(); refreshAIStatus(); refreshSPOStatus();
+    toast('Settings synced from SharePoint','ok');
+  } catch(_){ /* file not yet created — ok */ }
+}
+
+async function saveSPOConfig(){
+  if(!A.spo.ok||!A.spo.siteUrl) return;
+  try {
+    const sitePath=new URL(A.spo.siteUrl).pathname;
+    const cfgPath=`${sitePath}/${SPO_CFG_PATH}`.replace(/\/\//g,'/');
+    await spoUpload(cfgPath,JSON.stringify({ai:cfg.ai,build:cfg.build,editor:cfg.editor},null,2));
+    toast('Settings saved to SharePoint','ok');
+  } catch(e){ toast('SPO config save: '+e.message,'warn'); }
+}
+
+// ── App state ─────────────────────────────────────
+const A = {
+  user:            null,    // { id, name, email, initials, color }
+  chats:           [],
+  activeChatId:    null,
+  aiHistory:       [],
+  tabs:            [],
+  activeTab:       null,
+  editor:          null,
+  diffEditor:      null,
+  spo:             { ok:false, siteUrl:null, folder:'', digest:null, digestExpiry:0 },
+  sidebarTab:      'chats',
+  cmdItems:        [],
+  pendingDiff:     null,
+  projects:        [],      // [{ id, name, folderUrl, createdAt }]
+  activeProjectId: null,
+};
+
+// ── Language helpers ──────────────────────────────
+const LANG_MAP={js:'javascript',jsx:'javascript',mjs:'javascript',ts:'typescript',tsx:'typescript',py:'python',rb:'ruby',go:'go',rs:'rust',java:'java',cs:'csharp',cpp:'cpp',cc:'cpp',c:'c',h:'c',html:'html',htm:'html',css:'css',scss:'scss',json:'json',jsonc:'json',yaml:'yaml',yml:'yaml',md:'markdown',mdx:'markdown',sh:'shell',bash:'shell',ps1:'powershell',sql:'sql',graphql:'graphql',gql:'graphql',tf:'hcl',hcl:'hcl',xml:'xml',svg:'xml',php:'php',swift:'swift',kt:'kotlin',dart:'dart',dockerfile:'dockerfile',txt:'plaintext',log:'plaintext',env:'plaintext'};
+const LANG_COLOR={javascript:'#f0db4f',typescript:'#3178c6',python:'#3572a5',go:'#00add8',rust:'#dea584',java:'#b07219',csharp:'#178600',cpp:'#f34b7d',c:'#555',html:'#e34c26',css:'#563d7c',scss:'#c6538c',json:'#8bc34a',markdown:'#083fa1',shell:'#89e051',sql:'#e38c00',graphql:'#e535ab',hcl:'#844fba',xml:'#0060ac',php:'#4f5d95',kotlin:'#a97bff',swift:'#f05138',default:'#555'};
+function getLang(name){ return LANG_MAP[(name||'').split('.').pop()?.toLowerCase()]||'plaintext'; }
+function lc(lang){ return LANG_COLOR[lang]||LANG_COLOR.default; }
+
+// ── User profile ──────────────────────────────────
+const AV_COLORS=['#2563EB','#7C3AED','#059669','#DC2626','#D97706','#0891B2','#DB2777'];
+function avatarColor(name){ let h=0; for(const c of(name||'')) h=((h<<5)-h)+c.charCodeAt(0); return AV_COLORS[Math.abs(h)%AV_COLORS.length]; }
+function initials(name){ return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+function setUserProfile(account) {
+  if(!account) return;
+  A.user = {
+    id:       account.localAccountId || account.username,
+    name:     account.name || account.username.split('@')[0],
+    email:    account.username,
+    initials: initials(account.name || account.username),
+    color:    avatarColor(account.name || account.username)
+  };
+  const av = document.getElementById('u-avatar');
+  av.textContent = A.user.initials;
+  av.style.background = A.user.color;
+  document.getElementById('u-name').textContent = A.user.name;
+  document.getElementById('u-email').textContent = A.user.email;
+  // Load this user's chats
+  loadChats();
+}
+
+// ── Chat management ───────────────────────────────
+function chatKey(){ return A.user ? `pulse-chats-${A.user.id}` : 'pulse-chats-anon'; }
+
+function loadChats(){
+  try { A.chats = JSON.parse(localStorage.getItem(chatKey())||'[]'); } catch(e){ A.chats=[]; }
+  renderChatList();
+}
+function saveChats(){ localStorage.setItem(chatKey(), JSON.stringify(A.chats)); }
+
+function newChat(){
+  const id = genId();
+  const chat = { id, title:'New conversation', createdAt:Date.now(), updatedAt:Date.now(), messages:[], fileCtx:null };
+  A.chats.unshift(chat);
+  A.activeChatId = id;
+  A.aiHistory = [];
+  saveChats();
+  renderChatList();
+  clearAIMsgs();
+}
+
+function selectChat(id){
+  const chat = A.chats.find(c=>c.id===id);
+  if(!chat) return;
+  A.activeChatId = id;
+  A.aiHistory = chat.messages.map(m=>({ role:m.role, content:m.content }));
+  renderChatList();
+  // Render messages
+  const container = document.getElementById('ai-msgs');
+  container.innerHTML = '';
+  chat.messages.forEach(m => appendMsgEl(m.role, m.content));
+  container.scrollTop = container.scrollHeight;
+}
+
+function deleteChat(id, e){
+  e.stopPropagation();
+  A.chats = A.chats.filter(c=>c.id!==id);
+  if(A.activeChatId===id){
+    A.activeChatId=null; A.aiHistory=[];
+    clearAIMsgs();
+  }
+  saveChats(); renderChatList();
+}
+
+function saveMsgToChat(role, content){
+  if(!A.activeChatId){ newChat(); }
+  const chat = A.chats.find(c=>c.id===A.activeChatId);
+  if(!chat) return;
+  chat.messages.push({ role, content, ts:Date.now() });
+  chat.updatedAt = Date.now();
+  if(role==='user' && chat.messages.filter(m=>m.role==='user').length===1){
+    chat.title = content.replace(/\n/g,' ').slice(0,50) || 'Conversation';
+  }
+  saveChats(); renderChatList();
+}
+
+function renderChatList(){
+  const el = document.getElementById('chat-list');
+  if(!A.chats.length){ el.innerHTML='<div style="padding:16px 14px;font-size:11px;color:var(--t-lo)">No conversations yet.<br>Start one below ↓</div>'; return; }
+  const now = Date.now(), day=86400000;
+  const groups=[{label:'Today',items:[]},{label:'Yesterday',items:[]},{label:'Last 7 days',items:[]},{label:'Older',items:[]}];
+  A.chats.forEach(c=>{
+    const age=now-c.updatedAt;
+    if(age<day) groups[0].items.push(c);
+    else if(age<2*day) groups[1].items.push(c);
+    else if(age<7*day) groups[2].items.push(c);
+    else groups[3].items.push(c);
+  });
+  el.innerHTML = groups.filter(g=>g.items.length).map(g=>`
+    <div class="chat-group-label">${g.label}</div>
+    ${g.items.map(c=>`
+      <div class="chat-item${c.id===A.activeChatId?' active':''}" onclick="selectChat('${c.id}')">
+        <span class="chat-item-dot"></span>
+        <span class="chat-item-title" title="${esc(c.title)}">${esc(c.title)}</span>
+        <button class="chat-item-del" onclick="deleteChat('${c.id}',event)" title="Delete">✕</button>
+      </div>`).join('')}
+  `).join('');
+}
+
+// ── Monaco init ───────────────────────────────────
+require.config({ paths:{ 'vs':'https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs' }});
+require(['vs/editor/editor.main'], ()=>{
+  monaco.editor.defineTheme('pulse',{
+    base:'vs-dark', inherit:true,
+    rules:[
+      {token:'comment',foreground:'52566a',fontStyle:'italic'},
+      {token:'keyword',foreground:'7aadff'},
+      {token:'keyword.control',foreground:'c792ea'},
+      {token:'string',foreground:'92d192'},
+      {token:'number',foreground:'f0a868'},
+      {token:'type',foreground:'9fb8ff'},
+      {token:'function',foreground:'d4cb98'},
+      {token:'variable',foreground:'c9cad0'},
+      {token:'attribute.name',foreground:'7aadff'},
+      {token:'attribute.value',foreground:'92d192'},
+      {token:'tag',foreground:'f07070'},
+      {token:'delimiter',foreground:'48484f'},
+      {token:'operator',foreground:'7a8292'},
+    ],
+    colors:{
+      'editor.background':'#16161a','editor.foreground':'#c9cad0',
+      'editor.lineHighlightBackground':'#1c1c22',
+      'editor.selectionBackground':'#2f66ff28',
+      'editorCursor.foreground':'#2f66ff',
+      'editorLineNumber.foreground':'#2e2f37',
+      'editorLineNumber.activeForeground':'#5c5f6a',
+      'editorWidget.background':'#111114','editorWidget.border':'#242428',
+      'editorSuggestWidget.background':'#111114','editorSuggestWidget.border':'#242428',
+      'editorSuggestWidget.selectedBackground':'#1e1e26',
+      'editorSuggestWidget.highlightForeground':'#2f66ff',
+      'editorHoverWidget.background':'#111114','editorHoverWidget.border':'#242428',
+      'editorGutter.background':'#16161a',
+      'editorError.foreground':'#b42318','editorWarning.foreground':'#c77800',
+      'scrollbarSlider.background':'#2a2a32','scrollbarSlider.hoverBackground':'#363640',
+      'scrollbarSlider.activeBackground':'#2f66ff44',
+      'minimap.background':'#13131a',
+      'input.background':'#18181c','input.border':'#242428',
+      'dropdown.background':'#111114','dropdown.border':'#242428',
+      'list.hoverBackground':'#1d1d24','list.activeSelectionBackground':'#1d2035',
+      'editorGroupHeader.tabsBackground':'#0f0f12',
+    }
+  });
+
+  A.editor = monaco.editor.create(document.getElementById('monaco'),{
+    theme:'pulse', fontSize:cfg.editor.fontSize,
+    fontFamily:'"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace',
+    fontLigatures:true, lineHeight:1.7, tabSize:cfg.editor.tabSize,
+    insertSpaces:true, wordWrap:cfg.editor.wordWrap,
+    minimap:{ enabled:cfg.editor.minimap },
+    scrollBeyondLastLine:false, smoothScrolling:true,
+    cursorBlinking:'smooth', cursorSmoothCaretAnimation:'on',
+    bracketPairColorization:{ enabled:true },
+    guides:{ bracketPairs:true, indentation:true },
+    renderWhitespace:'selection', formatOnType:true, formatOnPaste:true,
+    autoClosingBrackets:'always', autoClosingQuotes:'always',
+    folding:true, showFoldingControls:'mouseover',
+    padding:{ top:18, bottom:18 }, contextmenu:true,
+    colorDecorators:true, occurrencesHighlight:'singleFile',
+  });
+
+  A.editor.onDidChangeCursorPosition(e=>{
+    document.getElementById('sb-cursor').textContent=`Ln ${e.position.lineNumber}, Col ${e.position.column}`;
+  });
+  A.editor.onDidChangeModelContent(()=>{
+    const tab=A.tabs.find(t=>t.id===A.activeTab);
+    if(tab&&!tab.dirty){ tab.dirty=true; renderTabs(); renderChanges(); }
+  });
+
+  // Shortcuts via Monaco
+  A.editor.addCommand(monaco.KeyMod.CtrlCmd|monaco.KeyCode.KeyS, saveFile);
+  A.editor.addCommand(monaco.KeyMod.CtrlCmd|monaco.KeyCode.KeyP, openCmd);
+  A.editor.addCommand(monaco.KeyMod.CtrlCmd|monaco.KeyCode.Comma, openSettings);
+  A.editor.addCommand(monaco.KeyMod.CtrlCmd|monaco.KeyMod.Shift|monaco.KeyCode.KeyA, toggleAI);
+  A.editor.addCommand(monaco.KeyMod.CtrlCmd|monaco.KeyMod.Shift|monaco.KeyCode.KeyC, connectSPO);
+
+  new ResizeObserver(()=>A.editor.layout()).observe(document.getElementById('editor-wrap'));
+
+  loadProjects(); refreshAIStatus(); refreshSPOStatus();
+});
+
+// ── Tab management ────────────────────────────────
+function openFile(file){
+  const ex = A.tabs.find(t=>t.path===file.path);
+  if(ex){ activateTab(ex.id); return; }
+  const tab={ id:genId(), name:file.name, path:file.path, lang:getLang(file.name), content:file.content||'', dirty:false, serverRelUrl:file.serverRelUrl||null, viewState:null };
+  A.tabs.push(tab);
+  activateTab(tab.id);
+}
+
+function activateTab(id){
+  const old=A.tabs.find(t=>t.id===A.activeTab);
+  if(old&&A.editor) old.viewState=A.editor.saveViewState();
+  A.activeTab=id;
+  const tab=A.tabs.find(t=>t.id===id);
+  if(!tab||!A.editor){ renderTabs(); return; }
+  document.getElementById('editor-empty').style.display='none';
+  document.getElementById('file-info').style.display='flex';
+  const oldM=A.editor.getModel();
+  A.editor.setModel(monaco.editor.createModel(tab.content, tab.lang));
+  oldM?.dispose();
+  if(tab.viewState) A.editor.restoreViewState(tab.viewState);
+  A.editor.focus();
+  renderBreadcrumb(tab);
+  document.getElementById('sb-lang').textContent=tab.lang;
+  updateAICtx(tab);
+  renderTabs();
+  document.querySelectorAll('.tree-row').forEach(el=>el.classList.toggle('active', el.dataset.path===tab.path));
+}
+
+function closeTab(id, e){
+  e?.stopPropagation();
+  const idx=A.tabs.findIndex(t=>t.id===id);
+  if(idx===-1) return;
+  const tab=A.tabs[idx];
+  if(tab.dirty&&!confirm(`Close "${tab.name}" with unsaved changes?`)) return;
+  if(A.activeTab===id&&A.editor){ const m=A.editor.getModel(); A.editor.setModel(null); m?.dispose(); }
+  A.tabs.splice(idx,1);
+  if(A.activeTab===id){
+    const next=A.tabs[Math.min(idx,A.tabs.length-1)];
+    if(next){ activateTab(next.id); return; }
+    A.activeTab=null;
+    document.getElementById('editor-empty').style.display='flex';
+    document.getElementById('file-info').style.display='none';
+    renderBreadcrumb(null); updateAICtx(null);
+  }
+  renderTabs(); renderChanges();
+}
+
+function renderTabs(){
+  document.getElementById('tb-tabs').innerHTML=A.tabs.map(t=>`
+    <div class="tb-tab${t.id===A.activeTab?' active':''}" role="tab" onclick="activateTab('${t.id}')">
+      <span class="tab-dot" style="background:${lc(t.lang)}"></span>
+      <span class="tab-name">${esc(t.name)}</span>
+      ${t.dirty?'<span class="tab-dirty">●</span>':''}
+      <span class="tab-close" onclick="closeTab('${t.id}',event)">✕</span>
+    </div>`).join('');
+}
+
+function renderBreadcrumb(tab){
+  const bar=document.getElementById('bc-bar');
+  if(!tab){ bar.innerHTML='<span style="color:var(--t-xlo);font:10px var(--mono)">no file open</span>'; return; }
+  const parts=tab.path.split('/');
+  bar.innerHTML=parts.map((p,i)=>i===parts.length-1?`<span class="bc-file">${esc(p)}</span>`:`<span class="bc-seg">${esc(p)}</span><span class="bc-sep">/</span>`).join('');
+}
+
+function renderChanges(){
+  const dirty=A.tabs.filter(t=>t.dirty);
+  const sec=document.getElementById('changes-section');
+  sec.classList.toggle('hidden',!dirty.length);
+  document.getElementById('changes-list').innerHTML=dirty.map(t=>`
+    <div class="change-item">
+      <span class="lang-pip" style="background:${lc(t.lang)}"></span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.name)}</span>
+    </div>`).join('');
+}
+
+async function saveAll(){ for(const t of A.tabs.filter(t=>t.dirty)){ const cur=A.activeTab; activateTab(t.id); await saveFile(); activateTab(cur); } }
+
+// ── File tree ─────────────────────────────────────
+function renderTree(files, container, depth){
+  depth=depth||0;
+  if(!container){ container=document.getElementById('file-tree'); container.innerHTML=''; document.getElementById('tree-empty').style.display='none'; A.cmdItems=[]; }
+  if(!files?.length){ if(!depth) container.innerHTML='<div class="tree-empty"><p>Folder is empty.</p></div>'; return; }
+  [...files].sort((a,b)=>(a.folder&&!b.folder)?-1:(!a.folder&&b.folder)?1:a.name.localeCompare(b.name)).forEach(item=>{
+    const el=document.createElement('div');
+    el.className='tree-row'+(item.folder?' folder':'');
+    el.dataset.path=item.path; el.dataset.depth=String(depth);
+    if(item.folder){
+      el.innerHTML=`<span class="tree-caret">▶</span><span class="tree-name">${esc(item.name)}</span>`;
+      el.onclick=()=>toggleFolder(el,item,depth);
+    } else {
+      const lang=getLang(item.name);
+      el.innerHTML=`<span class="lang-pip" style="background:${lc(lang)}"></span><span class="tree-name">${esc(item.name)}</span>`;
+      el.onclick=()=>loadSPOFile(item);
+      A.cmdItems.push(item);
+    }
+    container.appendChild(el);
+  });
+}
+
+async function toggleFolder(el,item,depth){
+  if(el.classList.contains('open')){ el.classList.remove('open'); let n=el.nextElementSibling; while(n&&n.dataset.depth>depth){ const tmp=n.nextElementSibling; n.remove(); n=tmp; } return; }
+  el.classList.add('open');
+  showTreeLoad(true);
+  try { const children=await fetchFolder(item.path); const tmp=document.createElement('div'); renderTree(children,tmp,depth+1); let ref=el; [...tmp.children].forEach(c=>{ ref.insertAdjacentElement('afterend',c); ref=c; }); } catch(e){ toast('Folder error: '+e.message,'err'); }
+  showTreeLoad(false);
+}
+function showTreeLoad(v){ document.getElementById('tree-loading').classList.toggle('hidden',!v); }
+
+// ── SharePoint REST (same-origin session — no Azure AD registration needed) ──
+async function spoFetch(apiPath,method,body,extraHeaders){
+  if(!A.spo.siteUrl) throw new Error('Not connected to SharePoint');
+  const url=`${A.spo.siteUrl}/_api${apiPath}`;
+  const headers={ 'Accept':'application/json;odata=nometadata', ...extraHeaders };
+  let b;
+  if(body!==undefined){
+    if(typeof body==='string'){ headers['Content-Type']=headers['Content-Type']||'application/json;odata=nometadata'; b=body; }
+    else { headers['Content-Type']='application/octet-stream'; b=body; }
+  }
+  const r=await fetch(url,{ method:method||'GET', headers, body:b, credentials:'include' });
+  if(!r.ok){
+    let msg=`HTTP ${r.status}`;
+    try{ const j=await r.json(); msg=j.error?.message?.value||j['odata.error']?.message?.value||j.error?.message||msg; }catch{}
+    throw new Error(msg);
+  }
+  if(method==='POST'||method==='PUT'||r.status===204) return r.json().catch(()=>({}));
+  return r.json();
+}
+
+async function getDigest(){
+  const now=Date.now();
+  if(A.spo.digest&&now<A.spo.digestExpiry) return A.spo.digest;
+  const r=await fetch(`${A.spo.siteUrl}/_api/contextinfo`,{
+    method:'POST',headers:{'Accept':'application/json;odata=nometadata','Content-Length':'0'},credentials:'include'
+  });
+  if(!r.ok) throw new Error(`Could not get request digest: HTTP ${r.status}`);
+  const j=await r.json();
+  A.spo.digest=j.FormDigestValue;
+  A.spo.digestExpiry=now+25*60*1000;
+  return A.spo.digest;
+}
+
+async function connectSPO(){
+  const proj=activeProject();
+  if(!proj){ openNewProject(); toast('Create a project first','info'); return; }
+  const parsed=parseSPOUrl(proj.folderUrl);
+  if(!parsed){ toast('Could not parse project URL — remove and re-add the project','err'); return; }
+  // Store site URL and build full server-relative folder path
+  A.spo.siteUrl=parsed.siteUrl;
+  const sitePath=new URL(parsed.siteUrl).pathname;
+  A.spo.folder=parsed.folder
+    ?`${sitePath}/${parsed.folder}`.replace(/\/\//g,'/')
+    :sitePath;
+  A.spo.digest=null; A.spo.digestExpiry=0;
+  showTreeLoad(true);
+  try {
+    const user=await spoFetch('/web/currentuser');
+    const name=user.Title||'';
+    const email=user.Email||user.LoginName?.split('|').pop()||'';
+    setUserProfile({ name, username:email, localAccountId:String(user.Id||'') });
+    const files=await fetchFolder(A.spo.folder);
+    A.spo.ok=true; refreshSPOStatus();
+    renderTree(files);
+    document.getElementById('sb-title').textContent=proj.name;
+    document.getElementById('btn-spo').style.color='var(--green)';
+    toast(`Connected — ${new URL(parsed.siteUrl).hostname}`,'ok');
+    loadSPOConfig();
+  } catch(e){ console.error(e); A.spo.ok=false; refreshSPOStatus(); toast('SPO error: '+e.message,'err'); }
+  showTreeLoad(false);
+}
+
+async function fetchFolder(serverRelPath){
+  if(!A.spo.siteUrl) throw new Error('Not connected');
+  const target=serverRelPath||A.spo.folder;
+  const enc=encodeURIComponent(target);
+  const [filesR,foldersR]=await Promise.all([
+    spoFetch(`/web/GetFolderByServerRelativeUrl('${enc}')/Files?$select=Name,UniqueId,ServerRelativeUrl,Length,TimeLastModified`),
+    spoFetch(`/web/GetFolderByServerRelativeUrl('${enc}')/Folders?$select=Name,ServerRelativeUrl`)
+  ]);
+  const files=(filesR?.value||[]).map(f=>({
+    id:f.UniqueId, name:f.Name, path:f.ServerRelativeUrl,
+    serverRelUrl:f.ServerRelativeUrl, folder:false, size:f.Length
+  }));
+  const folders=(foldersR?.value||[])
+    .filter(f=>f.Name!=='Forms')
+    .map(f=>({
+      id:f.ServerRelativeUrl, name:f.Name, path:f.ServerRelativeUrl,
+      serverRelUrl:f.ServerRelativeUrl, folder:true
+    }));
+  return [...folders,...files];
+}
+
+async function loadSPOFile(item){
+  showTreeLoad(true);
+  try {
+    const enc=encodeURIComponent(item.serverRelUrl);
+    const r=await fetch(`${A.spo.siteUrl}/_api/web/GetFileByServerRelativePath(decodedurl='${enc}')/$value`,{credentials:'include'});
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    openFile({...item, content:await r.text()});
+  } catch(e){ toast(`Open failed: ${e.message}`,'err'); }
+  showTreeLoad(false);
+}
+
+async function saveFile(){
+  if(!A.activeTab) return;
+  const tab=A.tabs.find(t=>t.id===A.activeTab); if(!tab) return;
+  const content=A.editor.getValue();
+  if(A.spo.ok&&tab.serverRelUrl){
+    try { await spoUpload(tab.serverRelUrl,content); tab.content=content; tab.dirty=false; renderTabs(); renderChanges(); toast(`Saved ${tab.name} → SPO`,'ok'); }
+    catch(e){ toast('Save failed: '+e.message,'err'); }
+  } else {
+    const blob=new Blob([content],{type:'text/plain'});
+    const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:tab.name});
+    a.click(); URL.revokeObjectURL(a.href);
+    tab.content=content; tab.dirty=false; renderTabs(); renderChanges(); toast(`Downloaded "${tab.name}"`,'info');
+  }
+}
+
+// ── Build pipeline ────────────────────────────────
+function setBuildBtn(id, state){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const base=id==='bb-live'?'build-btn publish':'build-btn';
+  el.className=`${base} ${state}`;
+  if(state==='ok'||state==='err') setTimeout(()=>el.className=base, 3500);
+}
+
+async function spoUpload(serverRelUrl, content){
+  // Accept server-relative (/sites/X/...) or site-relative (path/to/file)
+  const fullPath=serverRelUrl.startsWith('/')
+    ?serverRelUrl
+    :`${new URL(A.spo.siteUrl).pathname}/${serverRelUrl}`.replace(/\/\//g,'/');
+  const folder=fullPath.substring(0,fullPath.lastIndexOf('/'));
+  const filename=fullPath.substring(fullPath.lastIndexOf('/')+1);
+  const digest=await getDigest();
+  const enc=encodeURIComponent(folder);
+  const r=await fetch(
+    `${A.spo.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${enc}')/Files/add(overwrite=true,url='${encodeURIComponent(filename)}')`,
+    { method:'POST', headers:{'X-RequestDigest':digest,'Content-Type':'application/octet-stream'}, body:content, credentials:'include' }
+  );
+  if(!r.ok){
+    let msg=`HTTP ${r.status}`;
+    try{ const j=await r.json(); msg=j.error?.message?.value||j.error?.message||msg; }catch{}
+    throw new Error(msg);
+  }
+}
+
+function getActiveContent(){
+  if(!A.activeTab||!A.editor) return null;
+  return { content:A.editor.getValue(), tab:A.tabs.find(t=>t.id===A.activeTab) };
+}
+
+async function packageApp(){
+  const f=getActiveContent(); if(!f){ toast('No file open','warn'); return; }
+  setBuildBtn('bb-pkg','busy');
+  try {
+    const ts=new Date().toISOString().slice(0,16).replace(/[-T:]/g,'');
+    const filename=`${cfg.build.prefix||'PULSE'}-${ts}.${f.tab.name.split('.').pop()}`;
+    if(A.spo.ok && cfg.build.releasesPath){
+      await spoUpload(`${cfg.build.releasesPath}/${filename}`, f.content);
+      toast(`Packaged → ${cfg.build.releasesPath}/${filename}`,'ok');
+    } else {
+      download(f.content, filename);
+      toast(`Downloaded ${filename}`,'ok');
+    }
+    setBuildBtn('bb-pkg','ok');
+  } catch(e){ setBuildBtn('bb-pkg','err'); toast('Package failed: '+e.message,'err'); }
+}
+
+async function deployTest(){
+  if(!A.spo.ok){ toast('Connect SharePoint first','warn'); return; }
+  const f=getActiveContent(); if(!f){ toast('No file open','warn'); return; }
+  if(!cfg.build.testPath){ toast('Set test path in Settings → Build & Deploy','warn'); openSettings(); return; }
+  setBuildBtn('bb-test','busy');
+  try {
+    await spoUpload(cfg.build.testPath, f.content);
+    const url=cfg.build.liveUrl||(A.spo.siteUrl?`${A.spo.siteUrl}/${cfg.build.testPath}`:'');
+    setBuildBtn('bb-test','ok');
+    showDeployResult('Test environment', url);
+    toast('Deployed to test ✓','ok');
+  } catch(e){ setBuildBtn('bb-test','err'); toast('Test deploy failed: '+e.message,'err'); }
+}
+
+async function deployLive(){
+  if(!A.spo.ok){ toast('Connect SharePoint first','warn'); return; }
+  const f=getActiveContent(); if(!f){ toast('No file open','warn'); return; }
+  if(!cfg.build.livePath){ toast('Set live path in Settings → Build & Deploy','warn'); openSettings(); return; }
+  if(!confirm(`⚠ PUBLISH TO LIVE\n\nThis replaces the running app for all users.\nPath: ${cfg.build.livePath}\n\nProceed?`)) return;
+  setBuildBtn('bb-live','busy');
+  try {
+    await spoUpload(cfg.build.livePath, f.content);
+    const url=cfg.build.liveUrl||(A.spo.siteUrl?`${A.spo.siteUrl}/${cfg.build.livePath}`:'');
+    setBuildBtn('bb-live','ok');
+    showDeployResult('Live app', url);
+    toast('Published 🚀','ok');
+  } catch(e){ setBuildBtn('bb-live','err'); toast('Publish failed: '+e.message,'err'); }
+}
+
+function showDeployResult(label, url){
+  document.getElementById('dt-title').textContent=`${label} deployed`;
+  document.getElementById('dt-url').textContent=url;
+  const a=document.getElementById('dt-open'); a.href=url;
+  document.getElementById('dt-copy').onclick=()=>{ navigator.clipboard?.writeText(url); toast('URL copied','ok'); };
+  const el=document.getElementById('deploy-toast'); el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 12000);
+}
+
+function download(content, filename){ const b=new Blob([content],{type:'text/plain'}); const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(b),download:filename}); a.click(); URL.revokeObjectURL(a.href); }
+
+// ── Ask Sage AI (OpenAI-compatible endpoint) ──────
+async function sageChat(messages, maxTokens=2048){
+  if(!cfg.ai.key) throw new Error('Enter your Ask Sage API key in Settings → Ask Sage AI');
+  const res=await fetch('https://api.asksage.ai/server/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${cfg.ai.key}`},
+    body:JSON.stringify({ model:cfg.ai.model||'gpt-4.1-mini', messages, temperature:0.2, max_tokens:maxTokens })
+  });
+  if(!res.ok){
+    const e=await res.json().catch(()=>({error:{message:`HTTP ${res.status}`}}));
+    throw new Error(e.error?.message||e.message||`HTTP ${res.status}`);
+  }
+  const data=await res.json();
+  return data.choices?.[0]?.message?.content||'(No response)';
+}
+
+// ── AI ────────────────────────────────────────────
+const QA_PROMPTS={
+  explain:'Explain what this code does, step by step.',
+  fix:'Find and fix any bugs, errors, or issues. Show the corrected code.',
+  refactor:'Refactor this code for clarity, maintainability, and performance. Explain the key changes.',
+  tests:'Write comprehensive unit tests for this code.',
+  docs:'Add clear JSDoc/docstring comments to all functions and types.',
+  review:'Code review: identify issues with correctness, security, performance, and maintainability.',
+};
+function qa(type){ if(!QA_PROMPTS[type]) return; const inp=document.getElementById('ai-input'); inp.value=QA_PROMPTS[type]; inp.focus(); sendAI(); }
+
+function updateAICtx(tab){
+  const row=document.getElementById('ai-ctx-row');
+  if(!tab){ row.innerHTML=''; return; }
+  row.innerHTML=`<div class="ctx-chip"><span class="lang-pip" style="background:${lc(tab.lang)}"></span><span>${esc(tab.name)}</span></div>`;
+}
+
+function aiResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
+function aiKey(e){ aiResize(e.target); if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendAI(); } }
+
+async function sendAI(){
+  const inp=document.getElementById('ai-input');
+  const text=inp.value.trim(); if(!text) return;
+  if(!cfg.ai.key){ openSettings(); toast('Enter your Ask Sage API key in Settings → Ask Sage AI','info'); return; }
+  inp.value=''; inp.style.height='auto';
+  if(!A.activeChatId) newChat();
+
+  // Build code context to append to the message
+  let codeCtx='';
+  if(A.activeTab&&A.editor){
+    const tab=A.tabs.find(t=>t.id===A.activeTab);
+    const sel=A.editor.getSelection();
+    const selected=A.editor.getModel()?.getValueInRange(sel)?.trim();
+    if(selected) codeCtx=`\n\nFile: ${tab?.name}\nSelected code:\n\`\`\`${tab?.lang||''}\n${selected}\n\`\`\``;
+    else if(tab) codeCtx=`\n\nFile: ${tab.name}\n\`\`\`${tab.lang||''}\n${tab.content.slice(0,24000)}\n\`\`\``;
+  }
+
+  appendMsgEl('user',text);
+  saveMsgToChat('user',text);
+  A.aiHistory.push({ role:'user', content:text+codeCtx });
+
+  const thinkEl=appendThinking();
+  document.getElementById('ai-send-btn').disabled=true;
+
+  try {
+    const sysPrompt=`You are an expert software engineer embedded in PULSE CODE, a web IDE for SharePoint-hosted repositories. Be precise and code-first. When proposing code changes always wrap them in a fenced code block with the correct language tag so the user can apply it with the Apply button.${A.user?` You are assisting ${A.user.name}.`:''}`;
+    const messages=[{role:'system',content:sysPrompt},...A.aiHistory.slice(-10)];
+    const reply=await sageChat(messages);
+    A.aiHistory.push({ role:'assistant', content:reply });
+    saveMsgToChat('assistant',reply);
+    setMsgEl(thinkEl, reply);
+  } catch(e){ setMsgEl(thinkEl,`Error: ${e.message}`,true); }
+  document.getElementById('ai-send-btn').disabled=false;
+  refreshAIStatus();
+}
+
+function appendMsgEl(role, text){
+  const c=document.getElementById('ai-msgs');
+  const el=document.createElement('div');
+  el.className=`ai-msg ${role}`;
+  el.innerHTML=`<span class="ai-msg-role">${role==='user'?esc(A.user?.name||'You'):'PULSE AI'}</span><div class="ai-msg-body">${formatAI(text)}</div>`;
+  c.appendChild(el); c.scrollTop=c.scrollHeight;
+  return el;
+}
+function appendThinking(){
+  const c=document.getElementById('ai-msgs');
+  const el=document.createElement('div');
+  el.className='ai-msg ai';
+  el.innerHTML='<span class="ai-msg-role">PULSE AI</span><div class="ai-msg-body ai-thinking">thinking</div>';
+  c.appendChild(el); c.scrollTop=c.scrollHeight;
+  return el;
+}
+function setMsgEl(el, text, isErr){
+  const b=el.querySelector('.ai-msg-body');
+  b.classList.remove('ai-thinking');
+  if(isErr){ b.style.color='var(--red)'; b.textContent=text; } else { b.innerHTML=formatAI(text); }
+  const c=document.getElementById('ai-msgs'); c.scrollTop=c.scrollHeight;
+}
+
+function formatAI(raw){
+  const blocks=[]; let i=0;
+  const withTokens=raw.replace(/```(\w*)\n?([\s\S]*?)```/g,(_,lang,code)=>{ const idx=blocks.length; blocks.push({lang,code:code.trim()}); return `@@CODE_${idx}@@`; });
+  let html=esc(withTokens)
+    .replace(/`([^`]+)`/g,'<span class="ai-inline-code">$1</span>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+  html=html.replace(/@@CODE_(\d+)@@/g,(_,idx)=>{
+    const {lang,code}=blocks[idx];
+    const b64=btoa(unescape(encodeURIComponent(code)));
+    return `<div class="ai-code-wrap"><div class="ai-code-head"><span class="ai-code-lang">${lang||'code'}</span><div class="ai-code-actions"><button class="code-btn" onclick="copyCb(this)" data-code="${b64}">⎘ Copy</button><button class="code-btn apply" onclick="applyCb(this)" data-code="${b64}" data-lang="${esc(lang)}">⤴ Apply</button></div></div><div class="ai-code-block">${esc(code)}</div></div>`;
+  });
+  return html;
+}
+
+function copyCb(btn){ const code=decodeURIComponent(escape(atob(btn.dataset.code))); navigator.clipboard?.writeText(code); toast('Copied','ok'); }
+
+function applyCb(btn){
+  const code=decodeURIComponent(escape(atob(btn.dataset.code)));
+  const lang=btn.dataset.lang||'';
+  if(!A.activeTab||!A.editor){ openFile({ name:`snippet.${lang||'txt'}`, path:`snippet.${lang||'txt'}`, content:code }); return; }
+  const tab=A.tabs.find(t=>t.id===A.activeTab);
+  showDiff(tab?.content||'', code, lang||tab?.lang||'plaintext');
+}
+
+function clearAIMsgs(){
+  document.getElementById('ai-msgs').innerHTML=`<div class="ai-msg ai"><span class="ai-msg-role">PULSE AI</span><div class="ai-msg-body">New conversation started. How can I help?</div></div>`;
+}
+function clearChat(){ A.aiHistory=[]; if(A.activeChatId) newChat(); else clearAIMsgs(); }
+
+// ── Diff modal ────────────────────────────────────
+function showDiff(original, modified, lang){
+  document.getElementById('diff-veil').classList.remove('hidden');
+  const mount=document.getElementById('diff-editor-mount');
+  if(A.diffEditor){ A.diffEditor.dispose(); A.diffEditor=null; }
+  A.diffEditor=monaco.editor.createDiffEditor(mount,{ theme:'pulse', readOnly:false, renderSideBySide:true, fontSize:13 });
+  const om=monaco.editor.createModel(original,lang);
+  const mm=monaco.editor.createModel(modified,lang);
+  A.diffEditor.setModel({ original:om, modified:mm });
+  A.pendingDiff={ mm };
+}
+function closeDiff(){ document.getElementById('diff-veil').classList.add('hidden'); A.pendingDiff=null; }
+function acceptDiff(){
+  if(!A.pendingDiff||!A.editor) return;
+  const newContent=A.pendingDiff.mm.getValue();
+  A.editor.setValue(newContent);
+  const tab=A.tabs.find(t=>t.id===A.activeTab);
+  if(tab){ tab.dirty=true; renderTabs(); renderChanges(); }
+  closeDiff(); toast('Changes applied','ok');
+}
+
+// ── Sidebar helpers ───────────────────────────────
+function switchSidebarTab(which){
+  A.sidebarTab=which;
+  document.getElementById('chat-view').classList.toggle('hidden',which!=='chats');
+  document.getElementById('file-view').classList.toggle('hidden',which!=='files');
+  document.getElementById('sbt-chats').classList.toggle('active',which==='chats');
+  document.getElementById('sbt-files').classList.toggle('active',which==='files');
+}
+function toggleSidebar(){ const s=document.getElementById('sidebar'); const closed=s.classList.toggle('closed'); document.getElementById('btn-sb').classList.toggle('on',!closed); setTimeout(()=>A.editor?.layout(),200); }
+function toggleAI(){ const p=document.getElementById('ai-panel'); const closed=p.classList.toggle('closed'); document.getElementById('btn-ai').classList.toggle('on',!closed); setTimeout(()=>A.editor?.layout(),200); }
+
+// ── File helpers ──────────────────────────────────
+function openLocal(){ const inp=Object.assign(document.createElement('input'),{type:'file'}); inp.onchange=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>openFile({name:f.name,path:f.name,content:r.result}); r.readAsText(f); }; inp.click(); }
+function newFile(){ const n=prompt('File name:','untitled.ts'); if(n?.trim()) openFile({name:n.trim(),path:n.trim(),content:''}); }
+function refreshTree(){ if(A.spo.ok) connectSPO(); }
+
+// ── Status helpers ────────────────────────────────
+function refreshSPOStatus(){
+  const dot=document.getElementById('spo-dot'), lbl=document.getElementById('spo-label');
+  const proj=activeProject();
+  if(A.spo.ok){
+    let host='connected';
+    try{ host=new URL(A.spo.siteUrl).hostname.split('.')[0]; }catch{}
+    dot.className='sb-dot ok'; lbl.textContent=`SPO: ${host}`;
+  } else if(proj){ dot.className='sb-dot warn'; lbl.textContent='SPO: click ⚡ to connect'; }
+  else { dot.className='sb-dot'; lbl.textContent='No project'; }
+}
+function refreshAIStatus(){
+  const dot=document.getElementById('ai-dot'), lbl=document.getElementById('ai-label'), badge=document.getElementById('ai-badge');
+  if(cfg.ai.key){ dot.className='sb-dot ok'; lbl.textContent=`AI: ${cfg.ai.model||'gpt-4.1-mini'}`; badge.textContent=cfg.ai.model||'gpt-4.1-mini'; }
+  else { dot.className='sb-dot warn'; lbl.textContent='AI: not configured'; badge.textContent='Ask Sage — not configured'; }
+}
+
+// ── Settings ──────────────────────────────────────
+let cfgTabIdx=0;
+function cfgTab(i,btn){ cfgTabIdx=i; document.querySelectorAll('.cfg-tab').forEach((t,j)=>t.classList.toggle('active',i===j)); document.querySelectorAll('.cfg-panel').forEach((p,j)=>p.classList.toggle('active',i===j)); }
+function openSettings(){
+  loadCfg();
+  document.getElementById('f-ai-key').value         = cfg.ai.key;
+  document.getElementById('f-ai-model').value       = cfg.ai.model || 'gpt-4.1-mini';
+  document.getElementById('f-test-path').value      = cfg.build.testPath;
+  document.getElementById('f-live-path').value      = cfg.build.livePath;
+  document.getElementById('f-releases-path').value  = cfg.build.releasesPath;
+  document.getElementById('f-release-prefix').value = cfg.build.prefix;
+  document.getElementById('f-live-url').value       = cfg.build.liveUrl;
+  document.getElementById('f-fontsize').value       = cfg.editor.fontSize;
+  document.getElementById('f-tabsize').value        = cfg.editor.tabSize;
+  document.getElementById('f-wordwrap').value       = cfg.editor.wordWrap;
+  document.getElementById('f-minimap').value        = String(cfg.editor.minimap);
+  document.getElementById('settings-veil').classList.remove('hidden');
+}
+function closeSettings(){ document.getElementById('settings-veil').classList.add('hidden'); }
+function readForm(){
+  cfg.ai.key        = document.getElementById('f-ai-key').value.trim();
+  cfg.ai.model      = document.getElementById('f-ai-model').value.trim()||'gpt-4.1-mini';
+  cfg.build.testPath     = document.getElementById('f-test-path').value.trim();
+  cfg.build.livePath     = document.getElementById('f-live-path').value.trim();
+  cfg.build.releasesPath = document.getElementById('f-releases-path').value.trim();
+  cfg.build.prefix       = document.getElementById('f-release-prefix').value.trim();
+  cfg.build.liveUrl      = document.getElementById('f-live-url').value.trim();
+  cfg.editor.fontSize    = parseInt(document.getElementById('f-fontsize').value)||14;
+  cfg.editor.tabSize     = parseInt(document.getElementById('f-tabsize').value)||2;
+  cfg.editor.wordWrap    = document.getElementById('f-wordwrap').value;
+  cfg.editor.minimap     = document.getElementById('f-minimap').value==='true';
+}
+function saveSettings(){
+  readForm(); saveCfg();
+  saveSPOConfig(); // write AI key + build/editor prefs to SiteAssets/pulse-code-config.json
+  if(A.editor) A.editor.updateOptions({ fontSize:cfg.editor.fontSize, tabSize:cfg.editor.tabSize, wordWrap:cfg.editor.wordWrap, minimap:{ enabled:cfg.editor.minimap } });
+  refreshAIStatus(); refreshSPOStatus(); closeSettings(); toast('Settings saved','ok');
+}
+async function testSPO(){ readForm(); toast('Testing SPO connection…','info'); try{await connectSPO();}catch(e){toast('Test failed: '+e.message,'err');} }
+async function testAI(){
+  readForm();
+  if(!cfg.ai.key){ toast('Enter your Ask Sage API key first','err'); return; }
+  toast('Testing Ask Sage AI…','info');
+  try {
+    const reply=await sageChat([{role:'user',content:'Reply with just the word: ok'}],20);
+    refreshAIStatus(); toast(`Ask Sage ✓ — "${reply.trim().slice(0,40)}"`,'ok');
+  } catch(e){ toast('AI test failed: '+e.message,'err'); }
+}
+
+function veilClick(e,id){ if(e.target.id===id) document.getElementById(id).classList.add('hidden'); }
+
+// ── Command palette ───────────────────────────────
+const CMDS=[
+  {icon:'⚙',name:'Settings',           kbd:'Ctrl+,',       run:openSettings},
+  {icon:'✦',name:'Toggle AI Panel',    kbd:'Ctrl+Shift+A', run:toggleAI},
+  {icon:'⊟',name:'Toggle Sidebar',     kbd:'Ctrl+B',       run:toggleSidebar},
+  {icon:'⚡',name:'Connect SharePoint', kbd:'Ctrl+Shift+C', run:connectSPO},
+  {icon:'↓',name:'Save File',          kbd:'Ctrl+S',       run:saveFile},
+  {icon:'⊞',name:'Package',                               run:packageApp},
+  {icon:'⬡',name:'Deploy Test',                           run:deployTest},
+  {icon:'▲',name:'Publish Live',                          run:deployLive},
+  {icon:'◈',name:'New Project',                            run:openNewProject},
+  {icon:'＋',name:'New Chat',                              run:newChat},
+  {icon:'+',name:'New File',                               run:newFile},
+  {icon:'↑',name:'Open Local File',                        run:openLocal},
+  {icon:'↻',name:'Refresh File Tree',                      run:refreshTree},
+  {icon:'⊗',name:'Clear AI Chat',                         run:clearChat},
+];
+let cmdSel=0, cmdAll=[];
+function openCmd(){ document.getElementById('cmd-palette').classList.remove('hidden'); const inp=document.getElementById('cmd-input'); inp.value=''; inp.focus(); filterCmd(); }
+function closeCmd(){ document.getElementById('cmd-palette').classList.add('hidden'); A.editor?.focus(); }
+function filterCmd(){
+  const q=document.getElementById('cmd-input').value.toLowerCase();
+  const files=A.cmdItems.filter(f=>!q||f.name.toLowerCase().includes(q)||f.path.toLowerCase().includes(q)).map(f=>({ icon:`<span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${lc(getLang(f.name))}"></span>`, name:f.name, path:f.path, run:()=>loadSPOFile(f) }));
+  const cmds=CMDS.filter(c=>!q||c.name.toLowerCase().includes(q));
+  cmdAll=(q?[...files,...cmds]:[...cmds,...files]).slice(0,40);
+  cmdSel=0;
+  document.getElementById('cmd-results').innerHTML=cmdAll.map((item,i)=>`
+    <div class="cmd-item${i===0?' sel':''}" onclick="runCmd(${i})">
+      <span class="cmd-icon">${item.icon||'›'}</span>
+      <span class="cmd-name">${esc(item.name)}</span>
+      ${item.path?`<span class="cmd-path">${esc(item.path)}</span>`:''}
+      ${item.kbd?`<span class="cmd-kbd">${esc(item.kbd)}</span>`:''}
+    </div>`).join('');
+}
+function runCmd(i){ const item=cmdAll[i]; if(item){ closeCmd(); item.run(); } }
+function cmdKey(e){
+  const items=document.querySelectorAll('.cmd-item');
+  if(e.key==='ArrowDown'){ e.preventDefault(); items[cmdSel]?.classList.remove('sel'); cmdSel=Math.min(cmdSel+1,items.length-1); items[cmdSel]?.classList.add('sel'); items[cmdSel]?.scrollIntoView({block:'nearest'}); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); items[cmdSel]?.classList.remove('sel'); cmdSel=Math.max(cmdSel-1,0); items[cmdSel]?.classList.add('sel'); items[cmdSel]?.scrollIntoView({block:'nearest'}); }
+  else if(e.key==='Enter'){ e.preventDefault(); runCmd(cmdSel); }
+  else if(e.key==='Escape') closeCmd();
+}
+
+// ── Utility ───────────────────────────────────────
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function genId(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+function toast(msg,type){ const el=document.createElement('div'); el.className=`toast ${type||'info'}`; el.textContent=msg; document.getElementById('toasts').appendChild(el); setTimeout(()=>el.remove(),4500); }
+
+// ── Global keyboard ───────────────────────────────
+document.addEventListener('keydown',e=>{
+  const mod=e.ctrlKey||e.metaKey;
+  if(mod&&e.key==='b')                                { e.preventDefault(); toggleSidebar(); }
+  if(mod&&e.key===',')                                { e.preventDefault(); openSettings(); }
+  if(mod&&e.key==='p')                                { e.preventDefault(); openCmd(); }
+  if(mod&&e.shiftKey&&e.key.toLowerCase()==='a')     { e.preventDefault(); toggleAI(); }
+  if(mod&&e.shiftKey&&e.key.toLowerCase()==='c')     { e.preventDefault(); connectSPO(); }
+  if(e.key==='Escape'){
+    if(!document.getElementById('diff-veil').classList.contains('hidden')) closeDiff();
+    else if(!document.getElementById('cmd-palette').classList.contains('hidden')) closeCmd();
+    else if(!document.getElementById('newproj-veil').classList.contains('hidden')) closeNewProject();
+    else if(!document.getElementById('settings-veil').classList.contains('hidden')) closeSettings();
+    else if(document.getElementById('project-dropdown').classList.contains('open')) toggleProjectDropdown();
+  }
+});
+</script>
+</body></html>

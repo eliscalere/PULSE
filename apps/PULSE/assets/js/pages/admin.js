@@ -1535,7 +1535,7 @@ function drawReleases(body) {
             <div>
               <div style="font-size:11.5px;color:var(--aewttr-muted,#64748b);background:var(--aewttr-bg-subtle,#f8fafc);padding:6px 10px;border-radius:4px;font-family:monospace;margin-bottom:10px;word-break:break-all;">
                 <div><i class="bx bx-file"></i> releases/${escapeHtml(rel.filename)}</div>
-                ${rel.fsFilename !== rel.filename ? `<div style="margin-top:2px;"><i class="bx bx-folder"></i> FS packages/${escapeHtml(rel.fsFilename)}</div>` : ""}
+                ${rel.fsFilename !== rel.filename ? `<div style="margin-top:2px;"><i class="bx bx-folder"></i> fs-packages/${escapeHtml(rel.fsFilename)}</div>` : ""}
               </div>
               <div style="display:flex;align-items:center;gap:8px;">
                 <button type="button" class="btn-aewttr-outline btn-aewttr-sm btn-copy-cmd" data-cmd="${escapeHtml(rel.command)}" style="width:100%;justify-content:center;"><i class="bx bx-copy"></i> Copy build command</button>

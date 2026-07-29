@@ -427,7 +427,7 @@ re-renders — teammates' changes appear without a manual reload.
 | `assets/js/sharepoint-repo.js` | mappers, ProjectCode↔ID map, `Repo.save`/`Repo.remove`, per-object debounce |
 | `assets/js/app.js` | boot sequence, mode detection, background refresh |
 
-Ship step: `node scripts/build-sharepoint-package.js "FS packages/PULSE-v1.0.0.html"`
+Ship step: `node scripts/build-sharepoint-package.js "fs-packages/PULSE-v1.0.0.html"`
 produces the single-file Firepit upload.
 
 ## 6. Gotchas for the next maintainer

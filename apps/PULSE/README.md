@@ -16,7 +16,7 @@ PULSE is a browser-based SharePoint/Firepit application. Start here when maintai
 
 - `assets/` and `vendor/` are runtime source dependencies; keep their relative paths intact.
 - `docs/` is the maintenance reference: begin with `docs/handoff/AI-HANDOFF.md` and `docs/02-TECHNICAL-REFERENCE.md`.
-- `FS packages/` contains the preferred SharePoint/Firepit upload packages.
+- `fs-packages/` contains the preferred SharePoint/Firepit upload packages.
 - `releases/` contains Forge builds and reference deployment packages, not editable application source.
 - `validation/` contains verification samples, not runtime code.
 - `tools/packaging/` contains handoff copies of both package builders and a local `Forge.html` reference/template. The canonical scripts remain in `scripts/`; keep the copies synchronized after changes.
@@ -26,7 +26,7 @@ PULSE is a browser-based SharePoint/Firepit application. Start here when maintai
 From this folder, create a SharePoint-ready package with:
 
 ```sh
-node scripts/build-sharepoint-package.js "FS packages/PULSE-v1.0.0.html"
+node scripts/build-sharepoint-package.js "fs-packages/PULSE-v1.0.0.html"
 ```
 
 Use semantic versioning (`MAJOR.MINOR.PATCH`) in release filenames. Increment MINOR for backward-compatible features and PATCH for backward-compatible fixes. See `docs/handoff/FS-FORGE-STEPS.md` for the fuller packaging procedure.

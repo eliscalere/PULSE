@@ -125,7 +125,7 @@ The implementation uses these CSS classes for styling:
 ```bash
 node scripts/build-sharepoint-package.js
 ```
-Output: `FS packages/PULSE-v1.0.0.html`
+Output: `fs-packages/PULSE-v1.0.0.html`
 
 ## Future Enhancements
 - Add a toggle to "Show only direct notes" vs "Show all nested notes"

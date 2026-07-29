@@ -4,7 +4,7 @@ const path = require("path");
 const ROOT = path.resolve(__dirname, "..");
 const APPS = path.resolve(ROOT, "..");
 const RELEASES = path.resolve(ROOT, "..", "..", "releases");
-const FS_PACKAGES = path.join(ROOT, "FS packages");
+const FS_PACKAGES = path.join(ROOT, "fs-packages");
 const buildScript = path.join(ROOT, "scripts", "build-sharepoint-package.js");
 
 // PULSE-native packages: built with the PULSE SharePoint package builder
@@ -76,7 +76,7 @@ for (const pkg of pulsePackages) {
   console.log(`  Source: ${pkg.entry}`);
   try {
     execSync(`node "${buildScript}" "${fsPath}" "${entryPath}"`, { stdio: "inherit" });
-    console.log(`  FS Output: FS packages/${pkg.fsOutput}`);
+    console.log(`  FS Output: fs-packages/${pkg.fsOutput}`);
     execSync(`node "${buildScript}" "${relPath}" "${entryPath}"`, { stdio: "inherit" });
     console.log(`  Release Output: releases/${pkg.releaseOutput}`);
     console.log(`  ✓ Success\n`);
@@ -92,7 +92,7 @@ for (const pkg of externalPackages) {
   console.log(`Building [${pkg.name}]...`);
   try {
     execSync(`${pkg.useNode} "${pkg.script}" "${fsPath}"`, { stdio: "inherit" });
-    console.log(`  FS Output: FS packages/${pkg.fsOutput}`);
+    console.log(`  FS Output: fs-packages/${pkg.fsOutput}`);
     execSync(`${pkg.useNode} "${pkg.script}" "${relPath}"`, { stdio: "inherit" });
     console.log(`  Release Output: releases/${pkg.releaseOutput}`);
     console.log(`  ✓ Success\n`);

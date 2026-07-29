@@ -79,7 +79,7 @@ apps/PULSE/
 │   ├── build-sharepoint-package.js  Preferred packaging script (see §4)
 │   └── build-forge.js               Secondary/offline-wrapper packaging script (see §4)
 ├── dist/                          Output of build-forge.js (not the preferred ship artifact)
-├── FS packages/                   Output of build-sharepoint-package.js — THE SHIP ARTIFACT
+├── fs-packages/                   Output of build-sharepoint-package.js — THE SHIP ARTIFACT
 ├── releases/reference-packages/                  Known-good reference copy of a real Forge-tool output
 ├── AI-HANDOFF.md                  Maintainer handoff notes — hard requirements, editing priorities
 ├── FIREPIT-DEVELOPER-GUIDE.md     Firepit/Forge deep-dive, postmortems
@@ -117,7 +117,7 @@ Firepit consumes exactly **one artifact**: a flat `.html` file, typically upload
 This is the correct tool for shipping to Firepit/SharePoint. Run it with:
 
 ```bash
-node "scripts/build-sharepoint-package.js" "FS packages/PULSE-v1.0.0.html"
+node "scripts/build-sharepoint-package.js" "fs-packages/PULSE-v1.0.0.html"
 ```
 
 What it does, mechanically:
@@ -132,7 +132,7 @@ What it does, mechanically:
 8. **Hard-fails** (throws) if it finds any `https://` script or stylesheet reference, rather than silently skipping it.
 9. Writes the final single-file HTML to the path given as the second CLI argument.
 
-Output lands in `FS packages/`. This is the file you upload to SharePoint.
+Output lands in `fs-packages/`. This is the file you upload to SharePoint.
 
 ### 4.2 `scripts/build-forge.js` — secondary / offline-wrapper script
 
@@ -157,10 +157,10 @@ The project initially used the offline/iframe-wrapper approach for what was actu
     assets/js/*.js, assets/css/style.css, index.html, vendor/*
         │
  2. Rebuild
-    node "scripts/build-sharepoint-package.js" "FS packages/<name>.html"
+    node "scripts/build-sharepoint-package.js" "fs-packages/<name>.html"
         │
  3. Ship
-    Upload the resulting FS packages/<name>.html to the SharePoint
+    Upload the resulting fs-packages/<name>.html to the SharePoint
     document library backing the Firepit web part
         │
  4. Verify
@@ -406,7 +406,7 @@ Top-level export entry point. Calls `buildStatusSlide(pptx, proj)` which assembl
 4. **Never make the boot handler `async`-block on a network call before first render.** A slow or hung SharePoint call (common on constrained networks) would otherwise leave the page blank indefinitely with no feedback to the user.
 5. **Never swallow errors in a broad `try/catch` without surfacing them somewhere** (the boot log, a toast, the Activity Log). Every historical "my data just disappeared" bug traced back to a throw that a catch-all silently absorbed.
 6. **`await` on `Repo.save()` really does mean "written."** Code that depends on a record's `_spId` existing must run after the `await`, not assume a fire-and-forget save has already landed.
-7. **Rebuild before every ship**: `node "scripts/build-sharepoint-package.js" "FS packages/<name>.html"` (§4.1, §5).
+7. **Rebuild before every ship**: `node "scripts/build-sharepoint-package.js" "fs-packages/<name>.html"` (§4.1, §5).
 8. **Verify inside a real Firepit web part**, not just a local browser tab, before considering the change done (§5).
 9. For SharePoint-specific issues, diagnose in this order before assuming an architecture change is needed: does `/_api/web/currentuser` succeed (Admin → SharePoint Setup diagnostics)? Does the detected site URL look right? Does the Activity Log show live rows? Is a "missing" field actually missing from the schema, or just hidden from the SharePoint list UI?
 
@@ -449,6 +449,6 @@ Top-level export entry point. Calls `buildStatusSlide(pptx, proj)` which assembl
 | `assets/js/pages/*.js` | One file per feature (see User Guide for the full feature list) |
 | `scripts/build-sharepoint-package.js` | **Preferred** packaging script — produces the Firepit ship artifact |
 | `scripts/build-forge.js` | Secondary/offline-wrapper packaging script |
-| `FS packages/` | Shipped SharePoint artifacts (output of the preferred script) |
+| `fs-packages/` | Shipped SharePoint artifacts (output of the preferred script) |
 | `releases/reference-packages/` | Known-good reference copy of real Forge-tool output |
 | `dist/` | Output of `build-forge.js` (not the preferred ship path) |

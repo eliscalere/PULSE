@@ -32,7 +32,7 @@ Browser + SharePoint session → one-file PULSE package → shell + feature modu
 Use:
 
 ```bash
-node scripts/build-sharepoint-package.js "FS packages/PULSE-v1.0.0.html"
+node scripts/build-sharepoint-package.js "fs-packages/PULSE-v1.0.0.html"
 ```
 
 The preferred builder reads `index.html`, inlines styles and scripts, rewrites CSS URLs and selected images to data URIs, strips development cache queries, protects the presentation-library UMD global, writes a provenance manifest, and fails external runtime dependencies. The secondary wrapper builder is for portable/iframe distribution, not the normal hosted release.
