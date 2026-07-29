@@ -22,6 +22,8 @@ Local route capture reflects the 2026-07-29 set described in [Screenshot Manifes
 | Documentation package | `apps/pulse-documentation` | Build verified; boot and asset integrity verified top-level and in a sandboxed iframe | [VERIFY] rendering on the hosted page |
 | PULSE CODE | `apps/PULSE-CODE` | Build verified; not functionally exercised | [VERIFY] authentication, file read/write, and AI features |
 | REST and role resolution | adapter, repository, schema modules | Not applicable | [VERIFY] on approved SharePoint site |
+| Behaviour at scale | paging guard, server-side sorts, full-workspace refresh | Not applicable; no large data set exists | [VERIFY] on a loaded development site per SOP 10 |
+| Development environment | none present in source or configuration | Not applicable | Not yet established; see SOP 10 and document 10 |
 
 `[VERIFY]` means the repository supports the feature but the current workspace has no authorized live SharePoint endpoint to validate it.
 

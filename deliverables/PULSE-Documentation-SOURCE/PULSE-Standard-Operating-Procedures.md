@@ -121,3 +121,23 @@ Available packages are **PULSE** (full application), **Travel Request Forms**, *
 6. Record which package version is published on which page, so a later regression can be traced to an artifact.
 
 **Verification:** a controlled read and write for the tool's record type is visible in the full application, and the Activity Log shows the action under the expected actor. **Cautions:** a focused package carries the full script set and is configured only by `PULSE_PORT_CONFIG`; do not hand-trim scripts from a package to make it smaller, which has previously broken boot. **Records:** published artifact, page address, validation evidence, and activity record.
+
+## SOP 10: Stand up a development site and validate at scale
+
+**Purpose:** create a disposable SharePoint environment for PULSE development, establish what the application does under realistic data volumes, and evaluate whether Dataverse is a better store. **Applies to:** developers and maintainers. **Prerequisites:** authority to request a separate site collection, and agreement that no production records will be copied into it.
+
+**Status: not yet performed.** PULSE currently has no development environment, no automated tests, and no measured scale evidence. Development runs against browser-local fallback state or against a site holding real records. Until this procedure is completed, PULSE should make no claim about the data volumes it supports.
+
+1. Request a separate site collection for PULSE development, outside any retention or records scope that would make deletion difficult.
+2. Publish the current package to a page on that site, run **SharePoint Setup** against the empty site, and record every list and column provisioned and every failure. This is the first observation of provisioning from a clean start.
+3. Confirm identity and role resolution for one administrator and one ordinary member.
+4. Seed synthetic records only, using neutral role display names and `example.mil` addresses. Do not copy production records.
+5. Load the site past the ceilings in the code — roughly 5,000 items for lists loaded without an explicit page size and roughly 25,000 for those paged at 500 — using a generator held in the repository that requires its target site to be passed explicitly.
+6. Measure boot time and request count, refresh duration and overlap, render time for the heaviest views, memory after idling, and save duration under load.
+7. Provoke the known failure modes: silent truncation at the request guard, list-view-threshold failures on server-sorted date columns, render stalls on large trackers, and save behaviour while refreshes run.
+8. Evaluate Dataverse against the same loaded data set, comparing query behaviour at volume, paging, relationships, identity, licensing, migration, and whether single-file packaging survives.
+9. Record a written recommendation on the refresh and paging model, and on Dataverse: adopt, reject, or revisit at a stated threshold.
+
+**Verification:** counts shown in the application match counts in the list on every list, at volumes above the guard. A page that renders is not evidence of a complete dataset. **Cautions:** point any data generator only at the development site; an empty or stale site value is a realistic way to load synthetic records into the wrong place. **Records:** provisioning log, rebuild procedure, generator and its volumes, measured results stamped with package version and site state, confirmed failure points with the volume at which each appears, and the two written recommendations.
+
+Full detail, including the specific ceilings, suggested volumes, and the Dataverse comparison, is in documentation library document 10, *Development Environment & Scale Validation*.

@@ -11,3 +11,7 @@
 - [POLICY VERIFY] Are the standalone travel tools acceptable surfaces for submitting and approving travel of record, or must those transactions occur in the full application?
 - [POLICY VERIFY] Is PULSE CODE approved for use against production source, and by which roles?
 - [POLICY VERIFY] Who owns the portfolio documentation PDFs, and what is the approved process for reissuing them when the application changes?
+- [POLICY VERIFY] Who authorizes a separate SharePoint site collection for PULSE development, and is it exempt from retention and records scope so it can be deleted and rebuilt?
+- [POLICY VERIFY] Is generating large volumes of synthetic records on a development site acceptable, and are there tenant limits or costs that constrain it?
+- [POLICY VERIFY] Is Dataverse an approved platform for this workload, what licensing applies per user, and who approves that cost?
+- [POLICY VERIFY] If PULSE moves to Dataverse, does the approved hosting model still permit a single-file package on a SharePoint page?

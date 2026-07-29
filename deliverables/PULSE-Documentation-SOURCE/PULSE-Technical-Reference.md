@@ -78,6 +78,24 @@ Current schema list titles include **PULSE App Roles**, **PULSE Projects**, **PU
 
 Support tickets are stored in **PULSE Issues** rather than a separate ticket list. The repository maps the `ticket` record kind onto that list and translates the type and status vocabularies in both directions, so a ticket raised in the Tickets package and an issue report raised from the full application land in the same list and are visible to both.
 
+### Scale ceilings and the refresh model
+
+These limits are in the current source and are the first things a large dataset would expose. They are unmeasured; see the development-environment section below.
+
+The REST item fetch follows SharePoint's continuation link in a loop bounded by a guard of 50 requests. On reaching the guard it returns what it has, with no error, warning, or marker. Lists loaded without an explicit page size page at 100 per request, giving a ceiling of roughly 5,000 items; lists loaded with a page size of 500 give roughly 25,000. Past the guard the application presents a complete-looking view of an incomplete dataset, so any scale check must compare counts against the list rather than confirm that a page renders.
+
+Three loads sort server-side on a date column — issues and tickets on `OccurredAt`, the audit log on `ActionTime` — and these are the lists that grow without bound. Past SharePoint's 5,000-item view threshold, a sorted or filtered query against an unindexed column fails rather than degrading, so indexed columns are likely a prerequisite rather than an optimisation.
+
+PULSE holds the whole workspace in memory. Boot reads every PULSE list plus a field-definition probe per list and assembles one object graph; background refresh repeats that load and replaces the graph wholesale rather than fetching deltas. Refresh runs on a timer gated to no more than one successful refresh every five seconds while the tab is visible, and additionally on navigation and on the tab regaining focus.
+
+### Development environment
+
+There is no development environment. There is no isolated site defined in configuration or documentation, no test directory, and no test script; development runs against browser-local fallback state or against a site holding real records. Consequently schema provisioning and destructive operations have only ever been exercised against sites in use, and behaviour past a few hundred records per list is unmeasured.
+
+`manualSharePointSiteUrl` in `app-config.js` is the intended hook for aiming a build at a specific site and is empty today.
+
+Standing up a disposable development site, loading it past the ceilings above, measuring what breaks, and evaluating Dataverse as an alternative store are specified as SOP 10 and detailed in documentation library document 10, *Development Environment & Scale Validation*. Until that work is done, PULSE should make no claim about supported data volumes.
+
 ### Site detection inside web-part iframes
 
 A focused package hosted as a SharePoint web part runs in a sandboxed iframe that does not receive `_spPageContextInfo`; only the host page has it. Site detection therefore resolves in order from the frame's own context, explicit configuration, the parent window, the top window, a server-relative path combined with the current origin, and finally a site URL cached by the full application on a previous successful boot. If every step fails the package runs in local-only mode, which is the intended signal that it was loaded outside a SharePoint page and is not a system of record.

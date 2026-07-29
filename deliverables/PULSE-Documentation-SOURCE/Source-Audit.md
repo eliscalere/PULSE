@@ -11,6 +11,11 @@
 - Focused packages are ordinary PULSE entry files differing only by `PULSE_PORT_CONFIG`; they carry the same script set as `index.html`.
 - Support tickets resolve to the **PULSE Issues** list. There is no separate ticket list in the schema, and the repository translates ticket type and status onto the issue vocabulary.
 - The documentation package boot path was exercised locally, top-level and inside a sandboxed iframe, with no failed asset requests and no page errors.
+- There is no development environment: no isolated site in configuration or documentation, no test directory, and no test script. `manualSharePointSiteUrl` in `app-config.js` is the intended hook for aiming at a specific site and is empty.
+- The REST item fetch pages on SharePoint's continuation link under a guard of 50 requests and returns silently on reaching it, giving ceilings of roughly 5,000 items for lists loaded without an explicit page size and roughly 25,000 for those paged at 500.
+- Issues, tickets, and the audit log are sorted server-side on date columns and grow without bound, so they are the lists most exposed to SharePoint's 5,000-item view threshold.
+- Background refresh reloads the entire workspace rather than fetching deltas, gated to no more than one successful refresh every five seconds while the tab is visible, and also on navigation and tab focus.
+- No Dataverse reference exists anywhere in the source; evaluating it would be new work with no existing commitment.
 
 ## Items requiring confirmation
 
@@ -20,6 +25,7 @@
 - [VERIFY] Organizational retention, records-management, privacy, and classification controls are not specified in code.
 - [VERIFY] Site resolution for focused packages hosted as web parts depends on the host page exposing SharePoint context to the frame's parent window; this can only be confirmed on a real hosted page.
 - [VERIFY] PULSE CODE authentication, file read/write behavior, and AI features were not functionally exercised in this workspace; only its build was verified.
+- [VERIFY] Behaviour at realistic data volumes is unmeasured. The ceilings above are read from source, not observed; the volume at which each first causes a visible failure is unknown until SOP 10 is performed.
 
 ## Documentation library composition
 
@@ -30,6 +36,8 @@ Document 09, **Focused Tools & Package Delivery**, closes the coverage gap for M
 - Content source: `apps/pulse-documentation/documents/09-focused-tools.mjs`
 - Generator: `apps/pulse-documentation/scripts/build-source-document.mjs`
 - Command: `node apps/pulse-documentation/scripts/build-source-document.mjs 09`
+
+Document 10, **Development Environment & Scale Validation**, is generated the same way from `apps/pulse-documentation/documents/10-development-environment.mjs`. It records that PULSE has no development environment, states the scale ceilings read from source, and specifies the work needed to stand up a disposable development site, load it past those ceilings, and evaluate Dataverse. It describes planned work; nothing in it is a current capability.
 
 Any future document should be authored the same way rather than as a PDF with a separate extraction. Reissuing documents 01 through 08 on that basis remains an open ownership question.
 
