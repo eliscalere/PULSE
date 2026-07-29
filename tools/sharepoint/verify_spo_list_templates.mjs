@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { FileBlob, SpreadsheetFile } from "@oai/artifact-tool";
 
-const workspaceRoot = "/Users/eliscalere/Downloads/AEWTTR PAS";
+const workspaceRoot = path.resolve(import.meta.dirname, "..", "..");
 const outputDir = path.join(workspaceRoot, "artifacts/generated/spo-list-templates-20260630");
 const workbookPath = path.join(outputDir, "PULSE_SharePoint_List_Templates.xlsx");
 const renderDir = path.join(outputDir, "renders");

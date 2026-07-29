@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import vm from "node:vm";
 
-const workspaceRoot = "/Users/eliscalere/Downloads/AEWTTR PAS";
+const workspaceRoot = path.resolve(import.meta.dirname, "..", "..");
 const schemaPath = path.join(workspaceRoot, "apps/PULSE/assets/js/sharepoint-schema.js");
 const outputDir = path.join(workspaceRoot, "artifacts/generated/spo-column-schemas-20260630");
 
