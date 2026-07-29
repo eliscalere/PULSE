@@ -22,6 +22,7 @@ const SP_LISTS = {
   docReviewerGroup: "PULSE Doc Reviewer Groups",
   auditLog: "PULSE Audit Log",
   issue: "PULSE Issues",
+  ticket: "PULSE Tickets",
   notification: "PULSE Notifications",
   notificationConfig: "PULSE Notification Config",
   appSettings: "PULSE App Settings",
@@ -1213,6 +1214,46 @@ function spItemToIssue(item) {
   };
 }
 
+/* ---------- mappers: tickets ---------- */
+
+function ticketToSpItem(t) {
+  return {
+    Title: String(t.title || "Support ticket").slice(0, 255),
+    TicketCode: String(t.id || "").slice(0, 120),
+    TicketType: t.type || "Question",
+    TicketStatus: t.status || "Open",
+    Priority: String(t.priority || "").slice(0, 255),
+    Reporter: String(t.reporter || "").slice(0, 255),
+    ReporterEmail: String(t.reporterEmail || "").slice(0, 255),
+    OpenedAt: t.opened || new Date().toISOString(),
+    ProjectRef: String(t.project || "").slice(0, 255),
+    Detail: String(t.detail || "").slice(0, 18000),
+    Workaround: String(t.workaround || "").slice(0, 12000),
+    ESDP: String(t.esdp || "").slice(0, 12000),
+    UpdatesJson: JSON.stringify(t.updates || []).slice(0, 30000)
+  };
+}
+
+function spItemToTicket(item) {
+  return {
+    _spId: item.Id,
+    id: item.TicketCode || `TKT-${String(item.Id).padStart(4, "0")}`,
+    title: item.Title || "Support ticket",
+    type: item.TicketType || "Question",
+    status: item.TicketStatus || "Open",
+    priority: item.Priority || "",
+    reporter: item.Reporter || "",
+    reporterEmail: item.ReporterEmail || "",
+    opened: item.OpenedAt || item.Created || "",
+    project: item.ProjectRef || "",
+    detail: item.Detail || "",
+    workaround: item.Workaround || "",
+    esdp: item.ESDP || "",
+    updates: safeJsonParse(item.UpdatesJson, []),
+    affected: [item.ProjectRef || ""].filter(Boolean)
+  };
+}
+
 /* ---------- mappers: notification config ---------- */
 
 function notificationConfigToSpItem(cfg) {
@@ -1461,7 +1502,7 @@ async function loadAllFromSharePoint(siteUrl, options) {
     fieldProbe("PULSE Issues fields", SP_LISTS.issue),
     fieldProbe("PULSE App Settings fields", SP_LISTS.appSettings)
   ]);
-  const [roleRecords, projectItems, riskItems, actionItems, travelItems, debriefItems, teamEventItems, docItems, docReviewGroupItems, meetingItems, auditItems, notificationConfigItems, locationConfigItems, projectFieldDefinitions, riskFieldDefinitions, actionFieldDefinitions, travelFieldDefinitions, debriefFieldDefinitions, teamEventFieldDefinitions, docFieldDefinitions, docReviewGroupFieldDefinitions, meetingFieldDefinitions, auditFieldDefinitions, notificationConfigFieldDefinitions, locationConfigFieldDefinitions, roleFieldDefinitions] = await Promise.all([
+  const [roleRecords, projectItems, riskItems, actionItems, travelItems, debriefItems, teamEventItems, docItems, docReviewGroupItems, meetingItems, auditItems, notificationConfigItems, locationConfigItems, ticketItems, projectFieldDefinitions, riskFieldDefinitions, actionFieldDefinitions, travelFieldDefinitions, debriefFieldDefinitions, teamEventFieldDefinitions, docFieldDefinitions, docReviewGroupFieldDefinitions, meetingFieldDefinitions, auditFieldDefinitions, notificationConfigFieldDefinitions, locationConfigFieldDefinitions, ticketFieldDefinitions, roleFieldDefinitions] = await Promise.all([
     loadListWithFallback("PULSE App Roles", () => a.getRoleRecords(siteUrl), []),
     loadListWithFallback(SP_LISTS.project, () => listOrEmpty(siteUrl, SP_LISTS.project), []),
     loadListWithFallback(SP_LISTS.risk, () => listOrEmpty(siteUrl, SP_LISTS.risk), []),
@@ -1475,6 +1516,7 @@ async function loadAllFromSharePoint(siteUrl, options) {
     loadListWithFallback(SP_LISTS.auditLog, () => sharePointAdapter.getItems(siteUrl, SP_LISTS.auditLog, { top: 500, orderby: "ActionTime desc" }), []),
     loadListWithFallback(SP_LISTS.notificationConfig, () => listOrEmpty(siteUrl, SP_LISTS.notificationConfig), []),
     loadListWithFallback(SP_LISTS.locationConfig, () => listOrEmpty(siteUrl, SP_LISTS.locationConfig), []),
+    loadListWithFallback(SP_LISTS.ticket, () => sharePointAdapter.getItems(siteUrl, SP_LISTS.ticket, { top: 500, orderby: "OpenedAt desc" }), []),
     fieldProbe("PULSE Projects fields", SP_LISTS.project),
     fieldProbe("PULSE Risks fields", SP_LISTS.risk),
     fieldProbe("PULSE Action Items fields", SP_LISTS.actionItem),
@@ -1487,6 +1529,7 @@ async function loadAllFromSharePoint(siteUrl, options) {
     fieldProbe("PULSE Audit Log fields", SP_LISTS.auditLog),
     fieldProbe("PULSE Notification Config fields", SP_LISTS.notificationConfig),
     fieldProbe("PULSE Location Config fields", SP_LISTS.locationConfig),
+    fieldProbe("PULSE Tickets fields", SP_LISTS.ticket),
     fieldProbe("PULSE App Roles fields", SP_LISTS.appRole)
   ]);
   const [issueItems, appSettingsItems, issueFieldDefinitions, appSettingsFieldDefinitions] = await issueDataPromise;
@@ -1509,6 +1552,7 @@ async function loadAllFromSharePoint(siteUrl, options) {
   const normalizedNotificationConfigItems = normalizeItemsToSchema(notificationConfigItems, notificationConfigFieldDefinitions, SP_LISTS.notificationConfig);
   const normalizedAppSettingsItems = normalizeItemsToSchema(appSettingsItems, appSettingsFieldDefinitions, SP_LISTS.appSettings);
   const normalizedLocationConfigItems = normalizeItemsToSchema(locationConfigItems, locationConfigFieldDefinitions, SP_LISTS.locationConfig);
+  const normalizedTicketItems = normalizeItemsToSchema(ticketItems, ticketFieldDefinitions, SP_LISTS.ticket);
 
   normalizedProjectItems
     .filter((item) => !isArchivedProjectItem(item))
@@ -1661,6 +1705,7 @@ async function loadAllFromSharePoint(siteUrl, options) {
 
   db.auditLog = normalizedAuditItems.map(spItemToAuditLog).sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
   db.issues = normalizedIssueItems.map(spItemToIssue).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  db.tickets = normalizedTicketItems.map(spItemToTicket).sort((a, b) => String(b.opened).localeCompare(String(a.opened)));
   if (normalizedNotificationConfigItems.length) {
     db.notificationConfig = spItemToNotificationConfig(normalizedNotificationConfigItems[0]);
   } else {
@@ -1726,6 +1771,7 @@ function mapKindToPayload(kind, obj) {
     case "docReviewerGroup": return docReviewerGroupToSpItem(obj);
     case "meetingSession": return meetingSessionToSpItem(obj, obj._projectCode || "");
     case "issue": return issueToSpItem(obj);
+    case "ticket": return ticketToSpItem(obj);
     case "notificationConfig": return notificationConfigToSpItem(obj);
     case "appSettings": return appSettingsToSpItem(obj);
     case "locationConfig": return locationConfigToSpItem(obj);
@@ -1882,6 +1928,24 @@ async function ensureIssueFields(siteUrl) {
   _issueFieldsReady = true;
 }
 
+let _ticketFieldsReady = false;
+async function ensureTicketFields(siteUrl) {
+  if (_ticketFieldsReady || !siteUrl || typeof sharePointAdapter === "undefined" || !sharePointAdapter.ensureField) return;
+  const schema = typeof SHAREPOINT_SCHEMA !== "undefined" && SHAREPOINT_SCHEMA[SP_LISTS.ticket];
+  if (schema && typeof sharePointAdapter.ensureListSchema === "function") {
+    const results = await sharePointAdapter.ensureListSchema(siteUrl, { [SP_LISTS.ticket]: schema });
+    const result = results && results[0];
+    const failed = result && (result.errors || []).find((entry) => entry && entry.error);
+    if (failed) throw failed.error;
+    _ticketFieldsReady = true;
+    return;
+  }
+  for (const field of (schema && schema.fields) || []) {
+    await sharePointAdapter.ensureField(siteUrl, SP_LISTS.ticket, field);
+  }
+  _ticketFieldsReady = true;
+}
+
 let _appSettingsFieldsReady = false;
 async function ensureAppSettingsFields(siteUrl) {
   if (_appSettingsFieldsReady || !siteUrl || typeof sharePointAdapter === "undefined" || !sharePointAdapter.ensureField) return;
@@ -1940,6 +2004,9 @@ async function writeRecord(kind, obj) {
   }
   if (kind === "issue") {
     await ensureIssueFields(siteUrl);
+  }
+  if (kind === "ticket") {
+    await ensureTicketFields(siteUrl);
   }
   if (kind === "appSettings") {
     await ensureAppSettingsFields(siteUrl);

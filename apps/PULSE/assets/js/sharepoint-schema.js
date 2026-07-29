@@ -333,6 +333,24 @@ const SHAREPOINT_SCHEMA = {
     ]
   },
 
+  "PULSE Tickets": {
+    description: "Support tickets created by PULSE users — blockers, bugs, access needs, platform issues, and questions.",
+    fields: [
+      { name: "TicketCode", type: "Text", required: true },
+      { name: "TicketType", type: "Choice", choices: ["Blocker", "Bug", "Access", "Platform", "Question", "Feature Request"] },
+      { name: "TicketStatus", type: "Choice", choices: ["Open", "In Progress", "Resolved"] },
+      { name: "Priority", type: "Text" },
+      { name: "Reporter", type: "Text" },
+      { name: "ReporterEmail", type: "Text" },
+      { name: "OpenedAt", type: "DateTime" },
+      { name: "ProjectRef", type: "Text" },
+      { name: "Detail", type: "Note", numLines: 12 },
+      { name: "Workaround", type: "Note", numLines: 8 },
+      { name: "ESDP", type: "Note", numLines: 8 },
+      { name: "UpdatesJson", type: "Note", numLines: 30 }
+    ]
+  },
+
   "PULSE Notifications": {
     description: "Outbound notification queue for Power Automate. BodyHtml stores Adaptive Card JSON for Teams.",
     fields: [

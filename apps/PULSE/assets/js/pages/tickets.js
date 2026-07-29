@@ -197,7 +197,7 @@ function drawTicketDetail(t) {
     // Status change
     $("#tktd-status", page).addEventListener("change", (e) => {
       t.status = e.target.value;
-      aewttrSaveStore();
+      if (typeof Repo !== "undefined") Repo.save("ticket", t); else aewttrSaveStore();
       notifyReporterOfTicketUpdate(t, `Status changed to ${t.status}`);
       toast(`${t.id} status set to ${t.status}`, "success");
       render(); // re-render to update resolve button visibility
@@ -207,7 +207,7 @@ function drawTicketDetail(t) {
     const resolveBtn = $("#tktd-resolve", page);
     if (resolveBtn) resolveBtn.addEventListener("click", () => {
       t.status = "Resolved";
-      aewttrSaveStore();
+      if (typeof Repo !== "undefined") Repo.save("ticket", t); else aewttrSaveStore();
       notifyReporterOfTicketUpdate(t, "Status changed to Resolved");
       toast(`${t.id} resolved`, "success");
       render();
@@ -224,7 +224,7 @@ function drawTicketDetail(t) {
       }
       const idx = db.tickets.findIndex(x => x.id === t.id);
       if (idx !== -1) db.tickets.splice(idx, 1);
-      aewttrSaveStore();
+      if (typeof Repo !== "undefined") Repo.remove("ticket", t); else aewttrSaveStore();
       navigate("tickets");
       toast(`${t.id} deleted`, "success");
     });
@@ -321,7 +321,7 @@ function drawTicketDetail(t) {
       const update = { date: new Date().toISOString().slice(0, 10), author: db.user.name, text };
       if (pendingScreenshot) update.screenshot = pendingScreenshot;
       t.updates.unshift(update);
-      aewttrSaveStore();
+      if (typeof Repo !== "undefined") Repo.save("ticket", t); else aewttrSaveStore();
       notifyReporterOfTicketUpdate(t, "New update posted");
       render();
     });
@@ -373,7 +373,7 @@ function openNewTicketModalWithOptions(opts, onDone) {
       updates: []
     };
     db.tickets.unshift(ticket);
-    aewttrSaveStore();
+    if (typeof Repo !== "undefined") Repo.save("ticket", ticket); else aewttrSaveStore();
     notifyAdminsOfNewTicket(ticket);
     closeModal();
     toast(`${id} created`, "success");
