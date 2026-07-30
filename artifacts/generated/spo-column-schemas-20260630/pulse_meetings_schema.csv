@@ -8,6 +8,8 @@ MeetingSeries,Text,No,,
 SeriesKey,Text,No,,
 MeetingDate,DateTime,No,,
 AgendaJson,Note,No,,Suggested lines: 20
+DocBlocksJson,Note,No,,Suggested lines: 30
+DocHtml,Note,No,,Suggested lines: 50
 Attendees,Note,No,,
 AttendanceJson,Note,No,,
 Notes,Note,No,,

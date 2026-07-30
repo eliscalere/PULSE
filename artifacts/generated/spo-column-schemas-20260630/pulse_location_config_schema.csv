@@ -1,10 +1,12 @@
 ListName,PULSE Location Config
-Description,"Single-row, admin-managed catalogs for locations, portfolios, contractors, and config end items."
+Description,"Single-row, admin-managed catalogs for locations, portfolios, contractors, contractor employees, and config end items."
 
 ColumnName,ColumnType,Required,Choices,Notes
 Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
 LocationsJson,Note,No,,Suggested lines: 10
 PortfolioCatalogJson,Note,No,,Suggested lines: 10
 ContractorCatalogJson,Note,No,,Suggested lines: 10
+ContractorPeopleJson,Note,No,,Suggested lines: 20
+ContractCatalogJson,Note,No,,Suggested lines: 10
 ConfigEndItemCatalogJson,Note,No,,Suggested lines: 10
 HideUnaffiliatedPeople,Boolean,No,,

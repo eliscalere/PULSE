@@ -172,6 +172,7 @@ const SHAREPOINT_SCHEMA = {
       { name: "FormMode", type: "Choice", choices: ["Standard", "Engineering", "Leave", "Contractor"] },
       { name: "RequestType", type: "Choice", choices: ["Standard", "Engineering", "Project Travel", "Personal Leave", "Contractor Travel"] },
       { name: "TripTitle", type: "Text" },
+      { name: "ContractorCompany", type: "Text" },
       { name: "TravelersJson", type: "Note", numLines: 12 },
       { name: "ProjectIdsJson", type: "Note" },
       { name: "Destination", type: "Text" },
@@ -189,10 +190,10 @@ const SHAREPOINT_SCHEMA = {
       { name: "TravelNotes", type: "Note" },
       { name: "ReqStatus", type: "Choice", choices: ["Draft", "Submitted", "Withdrawn", "Cancelled", "Completed"] },
       { name: "ChargeObject", type: "Text" },
-      { name: "ChargeObjectStatus", type: "Choice", choices: ["Pending", "Assigned"] },
+      { name: "ChargeObjectStatus", type: "Choice", choices: ["Pending", "Assigned", "Not required"] },
       { name: "ChargeObjectAssignedBy", type: "Text" },
       { name: "ChargeObjectAssignedAt", type: "Text" },
-      { name: "CustomerConcurrenceStatus", type: "Choice", choices: ["Pending", "Concurred"] },
+      { name: "CustomerConcurrenceStatus", type: "Choice", choices: ["Pending", "Concurred", "Not required"] },
       { name: "CustomerConcurredBy", type: "Text" },
       { name: "CustomerConcurredAt", type: "Text" },
       { name: "RequiresConcurrence", type: "Boolean" },
@@ -400,11 +401,14 @@ const SHAREPOINT_SCHEMA = {
   },
 
   "PULSE Location Config": {
-    description: "Single-row, admin-managed catalogs for locations, portfolios, contractors, and config end items.",
+    description: "Single-row, admin-managed catalogs for locations, portfolios, contractors, contractor employees, and config end items.",
     fields: [
       { name: "LocationsJson", type: "Note", numLines: 10 },
       { name: "PortfolioCatalogJson", type: "Note", numLines: 10 },
       { name: "ContractorCatalogJson", type: "Note", numLines: 10 },
+      /* Contractor employees keyed by company, for the contractor-travel name
+         picker: { "acme systems": [{ name, email }] }. */
+      { name: "ContractorPeopleJson", type: "Note", numLines: 20 },
       { name: "ContractCatalogJson", type: "Note", numLines: 10 },
       { name: "ConfigEndItemCatalogJson", type: "Note", numLines: 10 },
       { name: "HideUnaffiliatedPeople", type: "Boolean" }

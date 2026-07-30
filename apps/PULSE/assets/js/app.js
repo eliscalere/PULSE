@@ -486,6 +486,11 @@ function getLocationConfig() {
   if (!Array.isArray(db.locationConfig.locations)) db.locationConfig.locations = [];
   if (!Array.isArray(db.locationConfig.portfolios)) db.locationConfig.portfolios = [];
   if (!Array.isArray(db.locationConfig.contractors)) db.locationConfig.contractors = [];
+  /* Contractor employees, keyed by lower-cased company name — see
+     getKnownContractorPeople. An object, not an array, because it is a lookup
+     per company rather than one flat catalog. */
+  if (!db.locationConfig.contractorPeople || typeof db.locationConfig.contractorPeople !== "object"
+    || Array.isArray(db.locationConfig.contractorPeople)) db.locationConfig.contractorPeople = {};
   if (!Array.isArray(db.locationConfig.configEndItems)) db.locationConfig.configEndItems = [];
   if (db.locationConfig.hideUnaffiliatedPeople == null) db.locationConfig.hideUnaffiliatedPeople = true;
   if (!Array.isArray(db.locationConfig.meetingAdminEmails)) db.locationConfig.meetingAdminEmails = [];
@@ -707,6 +712,85 @@ function rememberContractorNames(names) {
   });
   if (!changed) return;
   cfg.contractors = getKnownContractorNames();
+  if (typeof Repo !== "undefined" && Repo && typeof Repo.save === "function") {
+    try { Repo.save("locationConfig", cfg); } catch (_) { /* local / pre-init */ }
+  }
+}
+
+/* ---------- contractor employees ----------
+
+   The people who work for a contractor company, keyed by company name. The
+   company catalog above answers "who do we contract with"; this answers "who
+   from them is travelling", which contractor travel requests need and nothing
+   else recorded.
+
+   Read pulls from three places so the picker is useful on day one rather than
+   starting empty: names saved here, contractor persons already on project
+   rosters (those carry a company), and names used on past contractor travel.
+   Write only ever touches the config, so the derived sources stay derived. */
+function contractorPeopleKey(company) {
+  return normalizeContractorName(company).toLowerCase();
+}
+
+function getKnownContractorPeople(company) {
+  const key = contractorPeopleKey(company);
+  if (!key) return [];
+  const byKey = new Map();
+  const add = (name, email) => {
+    const clean = normalizeContractorName(name);
+    if (!clean) return;
+    const k = clean.toLowerCase();
+    const existing = byKey.get(k);
+    /* First write wins on the name's casing; an email fills in later if the
+       first source did not have one. */
+    if (existing) {
+      if (!existing.email && email) existing.email = String(email).trim();
+      return;
+    }
+    byKey.set(k, { name: clean, email: String(email || "").trim() });
+  };
+
+  const cfg = getLocationConfig();
+  const stored = (cfg.contractorPeople && cfg.contractorPeople[key]) || [];
+  stored.forEach((person) => add(person && person.name, person && person.email));
+
+  const db = (window.AEWTTR && window.AEWTTR.db) || {};
+  Object.values(db.projectPeople || {}).forEach((roster) => {
+    (roster || []).forEach((person) => {
+      if (!person || person.type !== "person") return;
+      if (contractorPeopleKey(person.company) !== key) return;
+      add(person.label, person.email);
+    });
+  });
+  (db.travelRequests || []).forEach((request) => {
+    if (!request || contractorPeopleKey(request.contractorCompany) !== key) return;
+    (request.travelers || []).forEach((traveler) => add(traveler && traveler.name, traveler && traveler.email));
+  });
+
+  return [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+}
+
+function rememberContractorPeople(company, people) {
+  const key = contractorPeopleKey(company);
+  if (!key || !(people || []).length) return;
+  const cfg = getLocationConfig();
+  if (!cfg.contractorPeople || typeof cfg.contractorPeople !== "object") cfg.contractorPeople = {};
+  const list = Array.isArray(cfg.contractorPeople[key]) ? cfg.contractorPeople[key] : [];
+  let changed = false;
+  people.forEach((raw) => {
+    const name = normalizeContractorName(raw && raw.name ? raw.name : raw);
+    if (!name) return;
+    const email = String((raw && raw.email) || "").trim();
+    const found = list.find((person) => normalizeContractorName(person.name).toLowerCase() === name.toLowerCase());
+    if (found) {
+      if (!found.email && email) { found.email = email; changed = true; }
+      return;
+    }
+    list.push({ name, email });
+    changed = true;
+  });
+  if (!changed) return;
+  cfg.contractorPeople[key] = list;
   if (typeof Repo !== "undefined" && Repo && typeof Repo.save === "function") {
     try { Repo.save("locationConfig", cfg); } catch (_) { /* local / pre-init */ }
   }

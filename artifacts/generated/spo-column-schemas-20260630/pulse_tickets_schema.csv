@@ -1,0 +1,17 @@
+ListName,PULSE Tickets
+Description,"Support tickets created by PULSE users — blockers, bugs, access needs, platform issues, and questions."
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+TicketCode,Text,Yes,,
+TicketType,Choice,No,Blocker | Bug | Access | Platform | Question | Feature Request,
+TicketStatus,Choice,No,Open | In Progress | Resolved,
+Priority,Text,No,,
+Reporter,Text,No,,
+ReporterEmail,Text,No,,
+OpenedAt,DateTime,No,,
+ProjectRef,Text,No,,
+Detail,Note,No,,Suggested lines: 12
+Workaround,Note,No,,Suggested lines: 8
+ESDP,Note,No,,Suggested lines: 8
+UpdatesJson,Note,No,,Suggested lines: 30

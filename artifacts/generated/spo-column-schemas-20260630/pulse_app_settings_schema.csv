@@ -1,0 +1,8 @@
+ListName,PULSE App Settings
+Description,"Single-row, admin-managed application-wide display settings."
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+CuiMarkingEnabled,Boolean,No,,
+LastActionItemDigestDate,Text,No,,
+LastActionItemDigestClaimToken,Text,No,,

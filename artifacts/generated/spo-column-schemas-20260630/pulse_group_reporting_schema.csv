@@ -1,0 +1,16 @@
+ListName,PULSE Group Reporting
+Description,"Slide content for a Portfolio/Program/End Item Config's combined status slide, and which member projects are currently included in its export deck — these groups are just name tags on individual projects, not their own SharePoint records, so this list is the one place to persist group-level Technical Status bullets, a formatted Description, a Risk Summary, extra ad-hoc milestones (beyond each member project's own Contract/FAT/SAT/etc. dates), the one photo (pulled from a member project's Photos tab) representing the config, and the deck's project inclusion selection."
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+GroupKey,Text,Yes,,
+GroupType,Text,No,,
+GroupName,Text,No,,
+TechBullets,Note,No,,Suggested lines: 10
+Description,Note,No,,Suggested lines: 20
+OtherMilestones,Note,No,,Suggested lines: 10
+PhotoProjectId,Text,No,,
+PhotoUrl,Text,No,,
+PhotoName,Text,No,,
+IncludedProjectIds,Note,No,,Suggested lines: 6
+RiskRows,Note,No,,Suggested lines: 6

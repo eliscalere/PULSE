@@ -585,6 +585,7 @@ function travelRequestToSpItem(r) {
     FormMode: r.formMode || "Standard",
     RequestType: r.requestType || r.formMode || "Standard",
     TripTitle: r.tripTitle || "",
+    ContractorCompany: r.contractorCompany || "",
     TravelersJson: JSON.stringify(r.travelers || []),
     ProjectIdsJson: JSON.stringify((r.projectIds || []).map(spIdForProjectCode).filter(Boolean)),
     Destination: r.destination,
@@ -602,7 +603,7 @@ function travelRequestToSpItem(r) {
     TravelNotes: r.notes || "",
     ReqStatus: r.status || "Submitted",
     ChargeObject: r.chargeObject || "",
-    ChargeObjectStatus: r.chargeObjectStatus || "Pending",
+    ChargeObjectStatus: r.chargeObjectStatus === null ? "Not required" : (r.chargeObjectStatus || "Pending"),
     ChargeObjectAssignedBy: r.chargeObjectAssignedBy || "",
     ChargeObjectAssignedAt: r.chargeObjectAssignedAt || "",
     CustomerConcurrenceStatus: r.customerConcurrenceStatus || "Pending",
@@ -626,6 +627,7 @@ function spItemToTravelRequest(item) {
     formMode: item.FormMode || (item.RequestType === "Engineering" ? "Engineering" : "Standard"),
     requestType: item.RequestType || item.FormMode || "Standard",
     tripTitle: item.TripTitle || item.Title || "",
+    contractorCompany: item.ContractorCompany || "",
     travelers: safeJsonParse(item.TravelersJson, []),
     projectIds: safeJsonParse(item.ProjectIdsJson, []).map(projectCodeForSpId).filter(Boolean),
     destination: item.Destination || "",
@@ -1374,6 +1376,7 @@ function locationConfigToSpItem(cfg) {
     LocationsJson: JSON.stringify(cfg.locations || []),
     PortfolioCatalogJson: JSON.stringify(cfg.portfolios || []),
     ContractorCatalogJson: JSON.stringify(cfg.contractors || []),
+    ContractorPeopleJson: JSON.stringify(cfg.contractorPeople || {}),
     ContractCatalogJson: JSON.stringify(cfg.contracts || []),
     ConfigEndItemCatalogJson: JSON.stringify(cfg.configEndItems || []),
     HideUnaffiliatedPeople: cfg.hideUnaffiliatedPeople !== false
@@ -1386,6 +1389,7 @@ function spItemToLocationConfig(item) {
   const contractors = safeJsonParse(item.ContractorCatalogJson, []);
   const contracts = safeJsonParse(item.ContractCatalogJson, []);
   const configEndItems = safeJsonParse(item.ConfigEndItemCatalogJson, []);
+  const contractorPeople = safeJsonParse(item.ContractorPeopleJson, {});
   return {
     _spId: item.Id,
     locations: Array.isArray(locations) ? locations.map((n) => String(n == null ? "" : n).trim()).filter(Boolean) : [],
@@ -1393,6 +1397,7 @@ function spItemToLocationConfig(item) {
     contractors: Array.isArray(contractors) ? contractors.map((n) => String(n == null ? "" : n).trim()).filter(Boolean) : [],
     contracts: Array.isArray(contracts) ? contracts.map((n) => String(n == null ? "" : n).trim()).filter(Boolean) : [],
     configEndItems: Array.isArray(configEndItems) ? configEndItems.map((n) => String(n == null ? "" : n).trim()).filter(Boolean) : [],
+    contractorPeople: (contractorPeople && typeof contractorPeople === "object" && !Array.isArray(contractorPeople)) ? contractorPeople : {},
     hideUnaffiliatedPeople: item.HideUnaffiliatedPeople !== false
   };
 }
@@ -1966,6 +1971,11 @@ async function ensureLocationConfigFields(siteUrl) {
     type: "Boolean"
   });
   await sharePointAdapter.ensureField(siteUrl, SP_LISTS.locationConfig, {
+    name: "ContractorPeopleJson",
+    type: "Note",
+    numLines: 10
+  });
+  await sharePointAdapter.ensureField(siteUrl, SP_LISTS.locationConfig, {
     name: "ContractorCatalogJson",
     type: "Note",
     numLines: 10
@@ -2078,6 +2088,28 @@ async function ensureActionItemFields(siteUrl) {
   _actionItemFieldsReady = true;
 }
 
+/* Travel columns predate per-kind provisioning and were expected to exist from
+   the list template, so a site created before contractor travel has no
+   ContractorCompany column — and filterItemPayloadForExistingFields drops
+   unknown columns silently, which would lose the contractor with no error.
+   Provision the ones contractor travel needs the same way every other kind
+   does. Choice fields get the new "Not required" value added; ensureField is
+   idempotent, so this is a no-op on an already-correct list. */
+let _travelRequestFieldsReady = false;
+async function ensureTravelRequestFields(siteUrl) {
+  if (_travelRequestFieldsReady) return;
+  if (!siteUrl || typeof sharePointAdapter === "undefined" || !sharePointAdapter.ensureField) return;
+  const fields = [
+    { name: "ContractorCompany", type: "Text" },
+    { name: "ChargeObjectStatus", type: "Choice", choices: ["Pending", "Assigned", "Not required"] },
+    { name: "CustomerConcurrenceStatus", type: "Choice", choices: ["Pending", "Concurred", "Not required"] }
+  ];
+  for (const field of fields) {
+    await sharePointAdapter.ensureField(siteUrl, SP_LISTS.travelRequest, field);
+  }
+  _travelRequestFieldsReady = true;
+}
+
 async function writeRecord(kind, obj) {
   const siteUrl = currentSiteUrl();
   const listTitle = SP_LISTS[kind];
@@ -2091,6 +2123,9 @@ async function writeRecord(kind, obj) {
   }
   if (kind === "locationConfig") {
     await ensureLocationConfigFields(siteUrl);
+  }
+  if (kind === "travelRequest") {
+    await ensureTravelRequestFields(siteUrl);
   }
   if (kind === "issue") {
     await ensureIssueFields(siteUrl);

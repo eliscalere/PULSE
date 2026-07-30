@@ -1,0 +1,3 @@
+Title,TicketCode,TicketType,TicketStatus,Priority,Reporter,ReporterEmail,OpenedAt,ProjectRef,Detail,Workaround,ESDP,UpdatesJson
+PULSE Tickets Sample 1,TicketCode sample 1,Blocker,Open,Priority sample 1,Reporter sample 1,ReporterEmail sample 1,2026-07-01,ProjectRef sample 1,Detail sample text,Workaround sample text,ESDP sample text,UpdatesJson sample text
+PULSE Tickets Sample 2,TicketCode sample 2,Blocker,Open,Priority sample 2,Reporter sample 2,ReporterEmail sample 2,2026-07-15,ProjectRef sample 2,Detail sample text,Workaround sample text,ESDP sample text,UpdatesJson sample text

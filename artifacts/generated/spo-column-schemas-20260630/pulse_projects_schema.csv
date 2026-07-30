@@ -13,7 +13,7 @@ Tools,Text,No,,
 Stakeholders,Text,No,,
 Description,Note,No,,
 Scope,Note,No,,Suggested lines: 10
-Objectives,Note,No,,Suggested lines: 10
+DeliverablesJson,Note,No,,Suggested lines: 20
 CoverImageUrl,Text,No,,
 ProjectImagesJson,Note,No,,Suggested lines: 30
 HistoryJson,Note,No,,Suggested lines: 10
@@ -53,3 +53,7 @@ ReimbursableAmount,Number,No,,
 FundingNotes,Note,No,,Suggested lines: 6
 TechnicalStatus,Choice,No,Green | Amber | Red,
 LifecycleStatus,Choice,No,Planned | Awaiting Funding | Active | Paused | Complete,
+ClassificationType,Choice,No,Development | Sustainment | Development & Sustainment | Other,
+ATO,Text,No,,
+AquOnly,Boolean,No,,
+RelatedProjects,Text,No,,

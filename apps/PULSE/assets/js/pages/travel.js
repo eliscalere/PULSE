@@ -329,6 +329,7 @@ function hydrateTravelSubmitForm(body, request) {
   };
   set("tr-title", request.tripTitle || "");
   set("tr-dest", request.destination || "");
+  set("tr-contractor-input", request.contractorCompany || "");
   set("tr-start", request.start || "");
   set("tr-end", request.end || "");
   set("tr-start-time", request.startTime || "");
@@ -450,7 +451,7 @@ function drawTravelList(body, forcedView) {
         ? requests.filter((r) => r.status === "Submitted" && doesTravelNeedCurrentUserAction(r)).length
         : 0,
       "Awaiting Finance": isAll && canAssignTravelCo()
-        ? requests.filter((r) => r.status === "Submitted" && r.chargeObjectStatus === "Pending" && travelCategory(r) !== "Leave").length
+        ? requests.filter((r) => r.status === "Submitted" && r.chargeObjectStatus === "Pending" && travelNeedsChargeObject(r)).length
         : 0
     };
 
@@ -521,7 +522,7 @@ function drawTravelList(body, forcedView) {
       const needsAction = isAll && doesTravelNeedCurrentUserAction(r);
       const travelerNames = (r.travelers && r.travelers.length ? r.travelers.map((t) => t.name).filter(Boolean) : [r.requester]).join(", ");
       const isLeave = travelCategory(r) === "Leave";
-      const needsConcurrence = r.customerConcurrenceStatus === "Pending" && (isLeave ? r.requiresConcurrence : true);
+      const needsConcurrence = r.customerConcurrenceStatus === "Pending" && travelNeedsConcurrence(r);
       return `
         <tr>
           <td>${r.id}${(isUnreadStatus || needsAction) && typeof renderAlertIndicator === "function" ? renderAlertIndicator(1, { variant: "icon", label: needsAction ? "Needs your action" : "Unread status update" }) : ""}<div style="font-size:11px;color:var(--aewttr-muted);margin-top:4px;">${escapeHtml(r.tripTitle || "Travel Request")}</div></td>
@@ -538,7 +539,7 @@ function drawTravelList(body, forcedView) {
             !isAll && r.exportFileUrl ? travelActionBtn("open-export", r.id, { label: "Open Document", icon: "bx-desktop", tip: "Open travel document in Word" }) : "",
             !isAll && r.start ? `<a class="btn-travel-action" href="data:text/calendar;charset=utf-8,${encodeURIComponent(buildTravelIcsContent(r))}" download="${escapeHtml(r.id)}.ics" title="Download .ics" aria-label="Download calendar event"><i class="bx bx-calendar-plus"></i><span>Add to Calendar</span></a>` : "",
             isAll && r.status === "Submitted" && needsConcurrence && canRecordConcurrence() ? travelActionBtn("concur", r.id, { tone: "primary", tip: isLeave ? "Record customer concurrence for this leave request" : "Record customer concurrence" }) : "",
-            isAll && r.status === "Submitted" && r.chargeObjectStatus === "Pending" && !isLeave && canAssignTravelCo() ? travelActionBtn("assign-co", r.id, { tone: "primary", tip: "Enter charge object number" }) : "",
+            isAll && r.status === "Submitted" && r.chargeObjectStatus === "Pending" && travelNeedsChargeObject(r) && canAssignTravelCo() ? travelActionBtn("assign-co", r.id, { tone: "primary", tip: "Enter charge object number" }) : "",
             isAll && canAdminCancelTravel(r) ? travelActionBtn("cancel", r.id, { tone: "danger", tip: "Cancel this travel request" }) : "",
             travelDebriefRowButtons(r)
           ])}</td>
@@ -570,6 +571,35 @@ function travelCategory(request) {
   const mode = String(request.formMode || request.requestType || "").toLowerCase();
   if (mode === "leave" || request.requestType === "Personal Leave" || request.category === "Leave") return "Leave";
   return "Travel";
+}
+
+/* Contractor travel is a company's people travelling on their own contract, so
+   the two government-side gates do not apply: nobody assigns it one of our
+   charge objects and there is no customer to concur. Leave has never needed a
+   charge object either, and only asks for concurrence when the requester ticks
+   the box.
+
+   These two predicates exist because the rule was previously spelled out
+   inline at a dozen call sites as `travelCategory(r) !== "Leave"`, which is
+   the kind of thing that gets updated in eleven places out of twelve. */
+function isContractorTravel(request) {
+  if (!request) return false;
+  return !!request.contractorTravel
+    || String(request.formMode || "").toLowerCase() === "contractor"
+    || request.requestType === "Contractor Travel";
+}
+
+function travelNeedsChargeObject(request) {
+  if (!request) return false;
+  if (isContractorTravel(request)) return false;
+  return travelCategory(request) !== "Leave";
+}
+
+function travelNeedsConcurrence(request) {
+  if (!request) return false;
+  if (isContractorTravel(request)) return false;
+  if (travelCategory(request) === "Leave") return !!request.requiresConcurrence;
+  return true;
 }
 
 function travelStatusSortRank(status) {
@@ -617,7 +647,7 @@ function applyTravelListFilter(list, statusFilt) {
   const filt = statusFilt || "Upcoming";
   return (list || []).filter((r) => {
     if (filt === "Upcoming") return isUpcomingOrCurrentTravel(r);
-    if (filt === "Awaiting Finance") return r.status === "Submitted" && r.chargeObjectStatus === "Pending" && travelCategory(r) !== "Leave";
+    if (filt === "Awaiting Finance") return r.status === "Submitted" && r.chargeObjectStatus === "Pending" && travelNeedsChargeObject(r);
     if (filt === "Completed") return TRAVEL_CLOSED_STATUSES.includes(r.status);
     if (filt !== "All" && r.status !== filt) return false;
     return true;
@@ -694,8 +724,8 @@ function openTravelFromRouteQuery(body, redrawFn) {
 function doesTravelNeedCurrentUserAction(request) {
   if (!request || request.status !== "Submitted") return false;
   const isLeave = travelCategory(request) === "Leave";
-  if (canRecordConcurrence() && request.customerConcurrenceStatus === "Pending" && (isLeave ? request.requiresConcurrence : true)) return true;
-  if (!isLeave && canAssignTravelCo() && request.chargeObjectStatus === "Pending") return true;
+  if (canRecordConcurrence() && request.customerConcurrenceStatus === "Pending" && travelNeedsConcurrence(request)) return true;
+  if (travelNeedsChargeObject(request) && canAssignTravelCo() && request.chargeObjectStatus === "Pending") return true;
   return false;
 }
 
@@ -709,8 +739,8 @@ function getTravelMetrics() {
     needsMyActionCount: needsMyAction.length,
     statusUpdateCount,
     totalAlertCount: needsMyAction.length + statusUpdateCount,
-    pendingConcurrenceCount: canRecordConcurrence() ? requests.filter((r) => r.status === "Submitted" && r.customerConcurrenceStatus === "Pending").length : 0,
-    pendingCoCount: canAssignTravelCo() ? requests.filter((r) => r.status === "Submitted" && r.chargeObjectStatus === "Pending" && travelCategory(r) !== "Leave").length : 0
+    pendingConcurrenceCount: canRecordConcurrence() ? requests.filter((r) => r.status === "Submitted" && r.customerConcurrenceStatus === "Pending" && travelNeedsConcurrence(r)).length : 0,
+    pendingCoCount: canAssignTravelCo() ? requests.filter((r) => r.status === "Submitted" && r.chargeObjectStatus === "Pending" && travelNeedsChargeObject(r)).length : 0
   };
 }
 
@@ -850,22 +880,21 @@ function travelStatusChangePreview(request) {
 
 function travelStatusBadgeGroup(request) {
   if (!request) return "";
-  const isLeave = travelCategory(request) === "Leave";
   const parts = [];
   parts.push(statusPill(request.status));
+  /* A badge for a gate that does not apply reads as an outstanding item that
+     will never clear, so contractor travel shows neither. */
   if (request.status === "Submitted") {
-    if (!isLeave) {
+    if (travelNeedsConcurrence(request)) {
       const concStatus = request.customerConcurrenceStatus || "Pending";
       const concColor = concStatus === "Concurred" ? "var(--aewttr-green,#1a8a4a)" : "var(--aewttr-amber,#b45309)";
       parts.push(`<span class="travel-badge" style="color:${concColor};border-color:${concColor};" title="Customer Concurrence: ${concStatus}">Concurrence: ${concStatus}</span>`);
+    }
+    if (travelNeedsChargeObject(request)) {
       const coStatus = request.chargeObjectStatus || "Pending";
       const coColor = coStatus === "Assigned" ? "var(--aewttr-green,#1a8a4a)" : "var(--aewttr-muted,#888)";
       const coLabel = coStatus === "Assigned" ? `C/O: ${escapeHtml(request.chargeObject || "Assigned")}` : "C/O: Pending";
       parts.push(`<span class="travel-badge" style="color:${coColor};border-color:${coColor};" title="Charge Object: ${coStatus}">${coLabel}</span>`);
-    } else if (request.requiresConcurrence) {
-      const concStatus = request.customerConcurrenceStatus || "Pending";
-      const concColor = concStatus === "Concurred" ? "var(--aewttr-green,#1a8a4a)" : "var(--aewttr-amber,#b45309)";
-      parts.push(`<span class="travel-badge" style="color:${concColor};border-color:${concColor};" title="Customer Concurrence: ${concStatus}">Concurrence: ${concStatus}</span>`);
     }
   }
   return parts.join("<br>");
@@ -877,8 +906,8 @@ function getTravelNotificationEvents() {
   const requests = db.travelRequests || [];
   requests.filter(doesTravelNeedCurrentUserAction).forEach((request) => {
     const isLeave = travelCategory(request) === "Leave";
-    const needsConcurrence = request.customerConcurrenceStatus === "Pending" && canRecordConcurrence() && (isLeave ? request.requiresConcurrence : true);
-    const needsCo = !isLeave && request.chargeObjectStatus === "Pending" && canAssignTravelCo();
+    const needsConcurrence = request.customerConcurrenceStatus === "Pending" && canRecordConcurrence() && travelNeedsConcurrence(request);
+    const needsCo = travelNeedsChargeObject(request) && request.chargeObjectStatus === "Pending" && canAssignTravelCo();
     events.push({
       id: `travel-action-${request.id}`,
       route: "travel/all",
@@ -1087,7 +1116,12 @@ function wireAllDayToggle(body, prefix) {
    fields belong to actual travel, not time away. Hide them for Leave
    instead of maintaining a whole separate panel, since the dates/
    notes rows are otherwise identical to Standard. Travelers stay hidden
-   too (leave is always just the requester). */
+   too (leave is always just the requester).
+
+   Contractor travel shares the panel the same way. It records a company and
+   the people from it who are travelling, so it swaps the internal traveler
+   picker for the contractor pair, and drops the trip title and destination —
+   both of which are ours to state on our own travel, not the contractor's. */
 function updateTripPanelForMode(body, formMode) {
   const titleRow = $("#tr-title-row", body);
   const destTypeRow = $("#tr-dest-type-row", body);
@@ -1095,17 +1129,157 @@ function updateTripPanelForMode(body, formMode) {
   const budgetTitle = $("#tr-budget-title", body);
   const leaveNotesRow = $("#tr-leave-notes-row", body);
   const leaveRequesterRow = $("#tr-leave-requester-row", body);
+  const contractorBlock = $("#tr-contractor-block", body);
   const isLeave = formMode === "Leave";
-  if (titleRow) titleRow.hidden = isLeave;
-  if (destTypeRow) destTypeRow.hidden = isLeave;
+  const isContractor = formMode === "Contractor";
+  if (titleRow) titleRow.hidden = isLeave || isContractor;
+  if (destTypeRow) destTypeRow.hidden = isLeave || isContractor;
   if (costRow) costRow.hidden = isLeave;
+  if (contractorBlock) contractorBlock.hidden = !isContractor;
   if (leaveNotesRow) leaveNotesRow.hidden = !isLeave;
   if (leaveRequesterRow) leaveRequesterRow.hidden = !isLeave;
   const leaveConcurrenceRow = $("#tr-leave-concurrence-row", body);
   if (leaveConcurrenceRow) leaveConcurrenceRow.hidden = !isLeave;
   if (budgetTitle) budgetTitle.textContent = isLeave ? "Coverage & notes" : "Estimated costs";
   const aboutTitle = body.querySelector('[data-tw-step="trip"] .travel-wizard-step-card-title');
-  if (aboutTitle) aboutTitle.textContent = isLeave ? "Leave details" : "About the trip";
+  if (aboutTitle) {
+    aboutTitle.textContent = isLeave ? "Leave details"
+      : isContractor ? "Contractor and travel dates"
+      : "About the trip";
+  }
+}
+
+/* Contractor company + the people from it who are travelling. The company
+   comes from the app-wide contractor catalog (the one projects already use);
+   the names are that company's employees, so the list only opens once a
+   company is chosen and re-filters when it changes.
+
+   Deliberately does not touch getTravelerDirectory: this picker must never
+   offer internal site users, which is the whole point of separating it. */
+function wireContractorTravelPickers(body, state, onChange) {
+  const companyInput = $("#tr-contractor-input", body);
+  const companySuggest = $("#tr-contractor-suggestions", body);
+  const peopleMount = $("#tr-contractor-people-selected", body);
+  const peopleInput = $("#tr-contractor-people-input", body);
+  const peopleSuggest = $("#tr-contractor-people-suggestions", body);
+  if (!companyInput || !peopleInput) return { refresh() {} };
+
+  const notify = () => { if (typeof onChange === "function") onChange(); };
+
+  function renderPeopleChips() {
+    peopleMount.innerHTML = state.people.length
+      ? state.people.map((person, index) => `
+        <span class="traveler-chip">
+          <span>${escapeHtml(person.name)}${person.email ? ` <small>${escapeHtml(person.email)}</small>` : ""}</span>
+          <button type="button" data-remove-cperson="${index}" aria-label="Remove ${escapeHtml(person.name)}">&times;</button>
+        </span>`).join("")
+      : `<span class="traveler-empty">No contractor names selected.</span>`;
+    $all("[data-remove-cperson]", peopleMount).forEach((btn) => btn.addEventListener("click", () => {
+      state.people.splice(Number(btn.dataset.removeCperson), 1);
+      renderPeopleChips();
+      notify();
+    }));
+  }
+
+  function syncPeopleAvailability() {
+    const ready = !!state.company;
+    peopleInput.disabled = !ready;
+    peopleInput.placeholder = ready
+      ? `Search ${state.company} employees, or type a new name…`
+      : "Pick a contractor first…";
+  }
+
+  function closeSuggestions(node) { node.innerHTML = ""; }
+
+  function showCompanySuggestions() {
+    const query = companyInput.value.trim().toLowerCase();
+    const known = typeof getKnownContractorNames === "function" ? getKnownContractorNames() : [];
+    const matches = known.filter((name) => !query || name.toLowerCase().includes(query)).slice(0, 8);
+    const exact = known.some((name) => name.toLowerCase() === query);
+    const rows = matches.map((name) => `<button type="button" class="traveler-suggestion" data-company="${escapeHtml(name)}">${escapeHtml(name)}</button>`);
+    if (query && !exact) {
+      rows.push(`<button type="button" class="traveler-suggestion" data-company-new="${escapeHtml(companyInput.value.trim())}"><i class="bx bx-plus"></i> Add "${escapeHtml(companyInput.value.trim())}"</button>`);
+    }
+    companySuggest.innerHTML = rows.join("") || `<div class="traveler-suggestion-empty">No contractors yet — type a name to add one.</div>`;
+    $all("[data-company], [data-company-new]", companySuggest).forEach((btn) => btn.addEventListener("click", () => {
+      setCompany(btn.dataset.company || btn.dataset.companyNew);
+    }));
+  }
+
+  function setCompany(name) {
+    const clean = typeof normalizeContractorName === "function" ? normalizeContractorName(name) : String(name || "").trim();
+    if (!clean) return;
+    /* Changing company invalidates the names picked under the old one — they
+       work for a different employer. */
+    if (state.company && state.company.toLowerCase() !== clean.toLowerCase()) {
+      state.people.length = 0;
+      renderPeopleChips();
+    }
+    state.company = clean;
+    companyInput.value = clean;
+    closeSuggestions(companySuggest);
+    syncPeopleAvailability();
+    notify();
+  }
+
+  function showPeopleSuggestions() {
+    if (!state.company) return;
+    const query = peopleInput.value.trim().toLowerCase();
+    const known = typeof getKnownContractorPeople === "function" ? getKnownContractorPeople(state.company) : [];
+    const taken = new Set(state.people.map((person) => person.name.toLowerCase()));
+    const matches = known
+      .filter((person) => !taken.has(person.name.toLowerCase()))
+      .filter((person) => !query || person.name.toLowerCase().includes(query) || String(person.email || "").toLowerCase().includes(query))
+      .slice(0, 8);
+    const typed = peopleInput.value.trim();
+    const exact = known.some((person) => person.name.toLowerCase() === query);
+    const rows = matches.map((person) => `<button type="button" class="traveler-suggestion" data-cperson="${escapeHtml(person.name)}" data-cemail="${escapeHtml(person.email || "")}">${escapeHtml(person.name)}${person.email ? ` <small>${escapeHtml(person.email)}</small>` : ""}</button>`);
+    if (typed && !exact && !taken.has(query)) {
+      rows.push(`<button type="button" class="traveler-suggestion" data-cperson-new="${escapeHtml(typed)}"><i class="bx bx-plus"></i> Add "${escapeHtml(typed)}"</button>`);
+    }
+    peopleSuggest.innerHTML = rows.join("") || `<div class="traveler-suggestion-empty">No names on file for ${escapeHtml(state.company)} — type one to add it.</div>`;
+    $all("[data-cperson], [data-cperson-new]", peopleSuggest).forEach((btn) => btn.addEventListener("click", () => {
+      addPerson(btn.dataset.cperson || btn.dataset.cpersonNew, btn.dataset.cemail || "");
+    }));
+  }
+
+  function addPerson(name, email) {
+    const clean = typeof normalizeContractorName === "function" ? normalizeContractorName(name) : String(name || "").trim();
+    if (!clean) return;
+    if (state.people.some((person) => person.name.toLowerCase() === clean.toLowerCase())) return;
+    state.people.push({ name: clean, email: String(email || "").trim(), source: "contractor" });
+    peopleInput.value = "";
+    closeSuggestions(peopleSuggest);
+    renderPeopleChips();
+    notify();
+  }
+
+  companyInput.addEventListener("input", showCompanySuggestions);
+  companyInput.addEventListener("focus", showCompanySuggestions);
+  companyInput.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter") return;
+    ev.preventDefault();
+    setCompany(companyInput.value);
+  });
+  companyInput.addEventListener("blur", () => setTimeout(() => {
+    /* Treat a typed-but-unconfirmed company as chosen rather than losing it. */
+    if (companyInput.value.trim() && companyInput.value.trim() !== state.company) setCompany(companyInput.value);
+    closeSuggestions(companySuggest);
+  }, 150));
+
+  peopleInput.addEventListener("input", showPeopleSuggestions);
+  peopleInput.addEventListener("focus", showPeopleSuggestions);
+  peopleInput.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter") return;
+    ev.preventDefault();
+    addPerson(peopleInput.value, "");
+  });
+  peopleInput.addEventListener("blur", () => setTimeout(() => closeSuggestions(peopleSuggest), 150));
+
+  if (state.company) companyInput.value = state.company;
+  syncPeopleAvailability();
+  renderPeopleChips();
+  return { refresh() { syncPeopleAvailability(); renderPeopleChips(); } };
 }
 
 function wirePrimaryTravelerPicker(body, travelers, onChange) {
@@ -2753,12 +2927,22 @@ function validateTravelWizardStep(stepId, body, formMode, travelers) {
   }
   if (formMode === "Standard" || formMode === "Contractor") {
     if (stepId === "trip") {
+      /* Contractor travel asks for the company, its people, and the dates —
+         no trip title, no destination, and never the internal traveler list. */
+      if (formMode === "Contractor") {
+        if (!travelWizardReadValue(body, "tr-contractor-input")) return { ok: false, message: "Select a contractor." };
+        if (!travelers.length) return { ok: false, message: "Add at least one contractor name." };
+        if (!travelWizardReadValue(body, "tr-start") || !travelWizardReadValue(body, "tr-end")) {
+          return { ok: false, message: "Travel dates are required." };
+        }
+      } else {
       if (!travelWizardReadValue(body, "tr-title")) return { ok: false, message: "Trip title is required." };
       if (!travelers.length) return { ok: false, message: "Select at least one traveler." };
       if (!travelWizardReadValue(body, "tr-dest") || !travelWizardReadValue(body, "tr-start") || !travelWizardReadValue(body, "tr-end")) {
         return { ok: false, message: "Destination and dates are required." };
       }
-      if ($("#tr-type", body) && $("#tr-type", body).value === "Other" && !travelWizardReadValue(body, "tr-type-other")) {
+      }
+      if (formMode !== "Contractor" && $("#tr-type", body) && $("#tr-type", body).value === "Other" && !travelWizardReadValue(body, "tr-type-other")) {
         return { ok: false, message: "Describe the travel type when Other is selected." };
       }
       const allDayNode = $("#tr-allday", body);
@@ -2820,7 +3004,21 @@ function buildTravelReviewHtml(body, formMode, travelers) {
       row("Dates", dateTimeRangeText("tr-start", "tr-end", "tr-allday", "tr-start-time", "tr-end-time")),
       row("Notes", travelWizardReadValue(body, "tr-leave-notes") || travelWizardReadValue(body, "tr-notes"))
     ].join("")));
-  } else if (formMode === "Standard" || formMode === "Contractor") {
+  } else if (formMode === "Contractor") {
+    sections.push(block("trip", "Contractor and travel dates", [
+      row("Form type", "Contractor travel"),
+      row("Contractor", travelWizardReadValue(body, "tr-contractor-input")),
+      row("Contractor name(s)", travelerList || "—"),
+      row("Dates", dateTimeRangeText("tr-start", "tr-end", "tr-allday", "tr-start-time", "tr-end-time"))
+    ].join("")));
+    sections.push(block("purpose", "Purpose", [
+      row("Purpose", travelWizardReadValue(body, "tr-purpose"))
+    ].join("")));
+    sections.push(block("impact", "Impact & alternatives", [
+      row("Impact if not approved", travelWizardReadValue(body, "tr-impact") || "—"),
+      row("Alternatives", travelWizardReadValue(body, "tr-alternatives") || "—")
+    ].join("")));
+  } else if (formMode === "Standard") {
     sections.push(block("trip", "Trip overview", [
       row("Form type", formMode),
       row("Trip title", travelWizardReadValue(body, "tr-title")),
@@ -3085,6 +3283,25 @@ function travelWizardPanelsHtml(db, editing) {
           <label>Requester</label>
           <input class="input-aewttr" id="tr-leave-requester" value="${escapeHtml(requester)}" disabled>
         </div>
+        <div id="tr-contractor-block" hidden>
+          <div class="form-row">
+            <label>Contractor <span class="required-star">*</span></label>
+            <div class="traveler-picker">
+              <input class="input-aewttr" id="tr-contractor-input" placeholder="Search or add a contractor company…" autocomplete="off">
+              <div id="tr-contractor-suggestions" class="traveler-suggestions"></div>
+            </div>
+            <p style="font-size:11.5px;color:var(--aewttr-muted);margin:6px 0 0;">The same contractor list used on projects. A new name is remembered for next time.</p>
+          </div>
+          <div class="form-row">
+            <label>Contractor name(s) <span class="required-star">*</span></label>
+            <div class="traveler-picker">
+              <div id="tr-contractor-people-selected" class="traveler-chip-list"></div>
+              <input class="input-aewttr" id="tr-contractor-people-input" placeholder="Pick a contractor first…" autocomplete="off" disabled>
+              <div id="tr-contractor-people-suggestions" class="traveler-suggestions"></div>
+            </div>
+            <p style="font-size:11.5px;color:var(--aewttr-muted);margin:6px 0 0;" id="tr-contractor-people-hint">Who from that company is travelling. Type a name that is not listed to add them.</p>
+          </div>
+        </div>
         <div class="form-row" id="tr-title-row"><label>Trip title</label><input class="input-aewttr" id="tr-title" placeholder="e.g. Ship check in San Diego"></div>
         <div class="form-grid-2" id="tr-dest-type-row">
           <div class="form-row"><label>Destination</label><input class="input-aewttr" id="tr-dest" placeholder="City, State"></div>
@@ -3159,19 +3376,28 @@ async function submitTravelRequest(body, formMode, travelers, db, editing) {
     exportFileUrl: "",
     exportFileName: ""
   };
+  const contractorCompany = formMode === "Contractor" ? travelWizardReadValue(body, "tr-contractor-input") : "";
+  /* Contractor travel has no trip title of its own, but the rest of the app —
+     lists, the calendar, notification subject lines — reads tripTitle, so it
+     gets one built from what it does have rather than being left blank. */
   const tripTitle = formMode === "Leave"
       ? `Leave - ${lastNameOf(req.requester) || "Request"}`
+      : formMode === "Contractor"
+      ? `${contractorCompany || "Contractor"} travel`
       : travelWizardReadValue(body, "tr-title");
   req.formMode = formMode;
   req.requestType = formMode === "Leave" ? "Personal Leave" : formMode === "Contractor" ? "Contractor Travel" : formMode;
   req.category = formMode === "Leave" ? "Leave" : "Travel";
   req.contractorTravel = formMode === "Contractor";
+  req.contractorCompany = contractorCompany;
   req.tripTitle = tripTitle;
   /* Leave is always just the current user — no traveler picker. */
   req.travelers = formMode === "Leave"
     ? [currentTravelerRecord()]
     : travelers.map((traveler) => ({ ...traveler }));
-  req.destination = formMode === "Leave" ? "Leave" : dest;
+  req.destination = formMode === "Leave" ? "Leave"
+    : formMode === "Contractor" ? (contractorCompany || "Contractor")
+    : dest;
   req.start = start;
   req.end = end;
   const allDayCheckbox = $("#tr-allday", body);
@@ -3224,11 +3450,23 @@ async function submitTravelRequest(body, formMode, travelers, db, editing) {
       req.requiresConcurrence = !!(concToggle && concToggle.checked);
       req.customerConcurrenceStatus = req.requiresConcurrence ? "Pending" : "Concurred";
       req.chargeObjectStatus = null;
+    } else if (formMode === "Contractor") {
+      /* Neither gate applies, so neither is left Pending — a Pending status
+         is what puts a request in the Awaiting Finance queue and on the
+         concurrence list, and it would sit there forever. */
+      req.chargeObject = "";
+      req.chargeObjectStatus = null;
+      req.requiresConcurrence = false;
+      req.customerConcurrenceStatus = "Not required";
     } else {
       req.chargeObject = "";
       req.chargeObjectStatus = "Pending";
       req.customerConcurrenceStatus = "Pending";
     }
+  }
+  if (formMode === "Contractor" && contractorCompany) {
+    if (typeof rememberContractorNames === "function") rememberContractorNames([contractorCompany]);
+    if (typeof rememberContractorPeople === "function") rememberContractorPeople(contractorCompany, req.travelers || []);
   }
   if (!editing) db.travelRequests.unshift(req);
   req._auditAction = editing ? "Update" : "Submit";
@@ -3236,7 +3474,7 @@ async function submitTravelRequest(body, formMode, travelers, db, editing) {
   Repo.save("travelRequest", req);
   markTravelRequestStatusSeen(req.id, req.status);
   if (!editing) notifyAdminsOfTravelRequest(req);
-  if (!editing && formMode !== "Leave") notifyFinanceAdminsOfTravelRequest(req);
+  if (!editing && travelNeedsChargeObject(req)) notifyFinanceAdminsOfTravelRequest(req);
   if (!editing) notifyRequesterTravelSubmitted(req);
   refreshTravelNotifications();
 
@@ -3377,6 +3615,20 @@ function drawSubmitRequest(body, initialMode, editId) {
   const travelerPicker = wireTravelerPicker(body, travelers);
   travelerPicker.refresh();
   wirePrimaryTravelerPicker(body, travelers);
+  /* Contractor travel writes into the same `travelers` array so everything
+     downstream — the calendar, notifications, the generated document — keeps
+     working unchanged; only where the names come from is different. */
+  /* Starting straight in Contractor mode (deep link or "New contractor
+     travel") seeds travelers with the signed-in user like every other mode;
+     drop that here so the list only ever holds contractor names. */
+  if (formMode === "Contractor" && !editing) travelers.length = 0;
+  const contractorState = {
+    company: editing ? (editing.contractorCompany || "") : "",
+    people: travelers
+  };
+  const contractorPickers = wireContractorTravelPickers(body, contractorState, () => {
+    if (formMode === "Contractor") travelerPicker.refresh();
+  });
   wireTravelDaysAutofill(body);
   if (editing) {
     hydrateTravelSubmitForm(body, editing);
@@ -3418,7 +3670,10 @@ function drawSubmitRequest(body, initialMode, editId) {
     });
     const travelersShared = $("#tw-travelers-shared", root);
     if (travelersShared) {
-      travelersShared.hidden = formMode === "Leave" || formMode === "Engineering"
+      /* Contractor travel has its own company/people pair inside the trip
+         panel; showing the internal directory picker beside it would invite
+         adding site users to a contractor's trip. */
+      travelersShared.hidden = formMode === "Leave" || formMode === "Engineering" || formMode === "Contractor"
         || !(step.id === "trip" || step.id === "info");
     }
     if (step.id === "review") {
@@ -3470,6 +3725,19 @@ function drawSubmitRequest(body, initialMode, editId) {
       return;
     }
     formMode = card.dataset.mode;
+    /* The traveler list is seeded with the signed-in user, which is right for
+       every mode except Contractor — there the list is the contractor's own
+       people, so switching into it starts empty and switching back out
+       restores the default rather than leaving contractor names behind. */
+    if (formMode === "Contractor") {
+      travelers.length = 0;
+    } else if (contractorState.company) {
+      contractorState.company = "";
+      travelers.length = 0;
+      defaultTravelers().forEach((t) => travelers.push(t));
+    }
+    contractorPickers.refresh();
+    travelerPicker.refresh();
     syncTypeCards();
     refreshStepsAfterModeChange();
     updateTripPanelForMode(body, formMode);
@@ -3798,8 +4066,8 @@ function openTravelDetailModal(trId, onChanged) {
         </div>
         ${!isLeave ? `
         <div class="travel-detail-hero-item">
-          <span class="k">Where</span>
-          <strong>${escapeHtml(r.destination || "—")}</strong>
+          <span class="k">${isContractorTravel(r) ? "Contractor" : "Where"}</span>
+          <strong>${escapeHtml((isContractorTravel(r) ? r.contractorCompany : r.destination) || r.destination || "—")}</strong>
         </div>
         <div class="travel-detail-hero-item">
           <span class="k">Est. cost</span>
@@ -3811,7 +4079,8 @@ function openTravelDetailModal(trId, onChanged) {
         <section class="travel-detail-section">
           <h4>${isLeave ? "Requester" : "People"}</h4>
           <div class="travel-detail-rows">
-            <div class="travel-detail-row"><span class="k">${isLeave ? "Person" : "Travelers"}</span><span class="v">${escapeHtml(isLeave ? (r.requester || travelers) : (travelers || r.requester))}</span></div>
+            <div class="travel-detail-row"><span class="k">${isLeave ? "Person" : isContractorTravel(r) ? "Contractor name(s)" : "Travelers"}</span><span class="v">${escapeHtml(isLeave ? (r.requester || travelers) : (travelers || r.requester))}</span></div>
+            ${isContractorTravel(r) ? `<div class="travel-detail-row"><span class="k">Submitted by</span><span class="v">${escapeHtml(r.requester || "—")}</span></div>` : ""}
           </div>
         </section>
 

@@ -1,7 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import vm from "node:vm";
-import { Workbook, SpreadsheetFile } from "@oai/artifact-tool";
+/* The CSVs are the part that has to stay in step with the schema, and they
+   need nothing but node. The workbook is a convenience on top, so its
+   dependency is loaded lazily — a machine without it still regenerates the
+   templates instead of failing outright. */
+let Workbook = null;
+let SpreadsheetFile = null;
+try {
+  ({ Workbook, SpreadsheetFile } = await import("@oai/artifact-tool"));
+} catch {
+  /* handled in main() */
+}
 
 const workspaceRoot = path.resolve(import.meta.dirname, "..", "..");
 const schemaPath = path.join(workspaceRoot, "apps/PULSE/assets/js/sharepoint-schema.js");
@@ -169,10 +179,17 @@ async function main() {
   const schema = parseSchemaObject(sourceText);
 
   await writeCsvFiles(schema);
-  const workbook = await buildWorkbook(schema);
+  const listCount = Object.keys(schema).length;
+  console.log(`Wrote ${listCount} list CSV templates to ${path.relative(workspaceRoot, outputDir)}`);
 
+  if (!Workbook || !SpreadsheetFile) {
+    console.warn("Skipped the .xlsx workbook — @oai/artifact-tool is not installed. The CSVs are current.");
+    return;
+  }
+  const workbook = await buildWorkbook(schema);
   const output = await SpreadsheetFile.exportXlsx(workbook);
   await output.save(path.join(outputDir, "PULSE_SharePoint_List_Templates.xlsx"));
+  console.log("Wrote PULSE_SharePoint_List_Templates.xlsx");
 }
 
 main().catch((error) => {

@@ -1,0 +1,26 @@
+ListName,PULSE Issues
+Description,"User-submitted PULSE issue reports, including page context, diagnostics, and a full-resolution screenshot file. Admin access only."
+
+ColumnName,ColumnType,Required,Choices,Notes
+Title,Built-in SharePoint Title,Yes,,Do not recreate this column.
+IssueCode,Text,Yes,,
+IssueType,Choice,No,Bug / error | Data / saving | Access / permissions | Display / usability | Feature Request | Other,
+IssueStatus,Choice,No,New | Triaged | In Progress | Resolved | Closed,
+ReportedByName,Text,No,,
+ReporterEmail,Text,No,,
+PageTitle,Text,No,,
+Route,Text,No,,
+PageUrl,Note,No,,Suggested lines: 4
+OccurredAt,DateTime,No,,
+Description,Note,No,,Suggested lines: 16
+ExpectedBehavior,Note,No,,Suggested lines: 10
+AdditionalContext,Note,No,,Suggested lines: 10
+ErrorCodesJson,Note,No,,Suggested lines: 10
+LogsJson,Note,No,,Suggested lines: 30
+DiagnosticsJson,Note,No,,Suggested lines: 30
+ScreenshotDataUrl,Note,No,,Suggested lines: 40
+ScreenshotFileUrl,Note,No,,Suggested lines: 4
+ScreenshotServerRelativeUrl,Note,No,,Suggested lines: 4
+ScreenshotFileName,Text,No,,
+ScreenshotMetaJson,Note,No,,Suggested lines: 8
+ResolutionNote,Note,No,,Suggested lines: 10

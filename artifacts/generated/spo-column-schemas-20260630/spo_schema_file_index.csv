@@ -4,15 +4,16 @@ PULSE Projects,pulse_projects_schema.csv,AEWTTR-PULSE project portfolio.
 PULSE Risks,pulse_risks_schema.csv,"Project and portfolio risks with likelihood/impact scoring, mitigation, and meeting review state."
 PULSE Action Items,pulse_action_items_schema.csv,Tracker tasks and checklist items (see Source field). Subtasks are stored as nested JSON in SubtasksJson.
 PULSE Meetings,pulse_meetings_schema.csv,"Weekly Meeting sessions, global and per-project."
-PULSE Rocks,pulse_rocks_schema.csv,EOS-style quarterly rocks tracked from the Weekly Meeting page.
 PULSE Travel Requests,pulse_travel_requests_schema.csv,Travel requests — standard or engineering submissions.
 PULSE Travel Debriefs,pulse_travel_debriefs_schema.csv,Post-trip debriefs linked to a travel request. One row per traveler — a multi-traveler request can have one debrief each.
 PULSE Team Events,pulse_team_events_schema.csv,"One-day, non-travel team events displayed on the PULSE calendar."
 PULSE Document Review,pulse_document_review_schema.csv,"Documents moving through review, concurrence, and signature."
 PULSE Doc Reviewer Groups,pulse_doc_reviewer_groups_schema.csv,Global people groups (Admin-managed + project auto-groups). Used in people pickers app-wide; Document Review expands a selected group into individual reviewers.
-PULSE RAG Config,pulse_rag_config_schema.csv,Admin-editable thresholds that drive each project's automatic RAG status. Single row.
-PULSE AI Config,pulse_ai_config_schema.csv,Admin-editable CapraGPT connection settings for the Document Review AI grammar check. Single row. NOTE: this list stores the API key in plain text — restrict its permissions to Admins only in SharePoint.
+PULSE Group Reporting,pulse_group_reporting_schema.csv,"Slide content for a Portfolio/Program/End Item Config's combined status slide, and which member projects are currently included in its export deck — these groups are just name tags on individual projects, not their own SharePoint records, so this list is the one place to persist group-level Technical Status bullets, a formatted Description, a Risk Summary, extra ad-hoc milestones (beyond each member project's own Contract/FAT/SAT/etc. dates), the one photo (pulled from a member project's Photos tab) representing the config, and the deck's project inclusion selection."
 PULSE Audit Log,pulse_audit_log_schema.csv,Append-only record of user actions across AEWTTR-PULSE. Admin access only.
+PULSE Issues,pulse_issues_schema.csv,"User-submitted PULSE issue reports, including page context, diagnostics, and a full-resolution screenshot file. Admin access only."
+PULSE Tickets,pulse_tickets_schema.csv,"Support tickets created by PULSE users — blockers, bugs, access needs, platform issues, and questions."
 PULSE Notifications,pulse_notifications_schema.csv,Outbound notification queue for Power Automate. BodyHtml stores Adaptive Card JSON for Teams.
 PULSE Notification Config,pulse_notification_config_schema.csv,Single-row settings for outbound Teams/email notifications.
-PULSE Location Config,pulse_location_config_schema.csv,"Single-row, admin-managed catalogs for locations, portfolios, contractors, and config end items."
+PULSE App Settings,pulse_app_settings_schema.csv,"Single-row, admin-managed application-wide display settings."
+PULSE Location Config,pulse_location_config_schema.csv,"Single-row, admin-managed catalogs for locations, portfolios, contractors, contractor employees, and config end items."
