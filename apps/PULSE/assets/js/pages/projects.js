@@ -46,12 +46,73 @@ function applyProjectReadOnlyMode(container, extraSelectors) {
   container.classList.add("project-readonly");
 }
 
+/* ---------- project route keys ----------
+
+   Routes used to carry the raw record id (P04x), which tells a reader nothing
+   and looks like an internal handle in a shared link. They now carry a slug of
+   the project name.
+
+   Two constraints shaped this:
+   - Project names are not unique — nothing in the app enforces it — so a slug
+     that collides falls back to including the code, and an ambiguous slug never
+     silently resolves to the wrong project.
+   - Deep links already sent in notification emails contain the old id form, so
+     resolution accepts an id or a code as well as a slug. Old links keep
+     working; only newly generated ones use the name. */
+
+function projectSlug(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+/* The slug to put in a URL for this project. */
+function projectRouteKey(proj) {
+  if (!proj) return "";
+  const slug = projectSlug(proj.name);
+  if (!slug) return String(proj.id || "");
+  const all = (window.AEWTTR.db.projects || []);
+  const sharing = all.filter((other) => projectSlug(other.name) === slug);
+  if (sharing.length <= 1) return slug;
+  /* Name is shared — qualify with the code so the link is unambiguous. */
+  const qualifier = projectSlug(proj.code || proj.id);
+  return qualifier ? `${slug}--${qualifier}` : String(proj.id || slug);
+}
+
+function projectRouteKeyById(projectId) {
+  const proj = (window.AEWTTR.db.projects || []).find((x) => x.id === projectId);
+  return proj ? projectRouteKey(proj) : String(projectId || "");
+}
+
+/* Accepts a slug, a code, or a record id, so links of any vintage resolve. */
+function resolveProjectRouteKey(key) {
+  const raw = String(key || "");
+  if (!raw) return null;
+  const projects = window.AEWTTR.db.projects || [];
+  const byId = projects.find((proj) => proj.id === raw);
+  if (byId) return byId;
+  const lower = raw.toLowerCase();
+  const byCode = projects.find((proj) => String(proj.code || "").toLowerCase() === lower);
+  if (byCode) return byCode;
+  const matches = projects.filter((proj) => projectRouteKey(proj).toLowerCase() === lower);
+  if (matches.length === 1) return matches[0];
+  /* A bare slug that several projects share: only resolve if exactly one is a
+     plain-slug match, otherwise leave it unresolved rather than guess. */
+  const plain = projects.filter((proj) => projectSlug(proj.name) === lower);
+  return plain.length === 1 ? plain[0] : null;
+}
+
 PAGE_RENDERERS.projects = function (parts) {
   if (!parts || !parts.length) return renderProjectGallery();
   if (parts[0] === "~portfolios") return renderPortfoliosView(parts[1] ? decodeURIComponent(parts[1]) : null);
   if (parts[0] === "~eic") return renderEicView(parts[1] ? decodeURIComponent(parts[1]) : null);
   if (parts[0] === "~program") return renderProgramView(parts[1] ? decodeURIComponent(parts[1]) : null);
-  const id = parts[0];
+  const resolved = resolveProjectRouteKey(parts[0]);
+  const id = resolved ? resolved.id : parts[0];
   const tab = parts[1] || "workspace";
   renderProjectDetail(id, tab, null);
 };
@@ -146,7 +207,7 @@ function renderProjectGallery() {
       </section>
     `;
     wirePGroupTopNav();
-    $all(".proj-list-row[data-id]", $("#page-content")).forEach(r => r.addEventListener("click", () => navigate("projects/" + r.dataset.id)));
+    $all(".proj-list-row[data-id]", $("#page-content")).forEach(r => r.addEventListener("click", () => navigate("projects/" + projectRouteKeyById(r.dataset.id))));
     $("#proj-search").addEventListener("input", (e) => {
       const cursor = e.target.selectionStart;
       st.search = e.target.value;
@@ -1318,10 +1379,10 @@ function renderGroupDetail(groupName, groupType, projects) {
     if (newProjectBtn) newProjectBtn.addEventListener("click", () => openNewProjectModal());
 
     $all(".pgroup-proj-row[data-proj-id]", $("#page-content")).forEach(row => {
-      row.addEventListener("click", () => navigate(`projects/${row.dataset.projId}`));
+      row.addEventListener("click", () => navigate(`projects/${projectRouteKeyById(row.dataset.projId)}`));
     });
     $all(".pgroup-attention-link[data-proj-id]", $("#page-content")).forEach(el => {
-      el.addEventListener("click", ev => { ev.stopPropagation(); navigate(`projects/${el.dataset.projId}`); });
+      el.addEventListener("click", ev => { ev.stopPropagation(); navigate(`projects/${projectRouteKeyById(el.dataset.projId)}`); });
     });
     $all("[data-pgroup-person]", $("#page-content")).forEach((button) => {
       button.addEventListener("click", () => openGroupPersonModal(button.dataset.pgroupPerson));
@@ -1791,7 +1852,7 @@ function openNewProjectModal() {
     closeModal();
     toast("Project created", "success");
     if (typeof notifyLocalDataChanged === "function") notifyLocalDataChanged("project-create");
-    navigate("projects/" + newProj.id);
+    navigate("projects/" + projectRouteKey(newProj));
   });
 }
 
@@ -1895,10 +1956,10 @@ function renderProjectDetail(id, tab, boardId) {
       </main>
     </div>
   `;
-  $all(".project-spo-link", $("#page-content")).forEach((link) => link.addEventListener("click", () => navigate(`projects/${id}/${link.dataset.tab}`)));
+  $all(".project-spo-link", $("#page-content")).forEach((link) => link.addEventListener("click", () => navigate(`projects/${projectRouteKeyById(id)}/${link.dataset.tab}`)));
   $("#project-sidebar-back", $("#page-content")).addEventListener("click", () => navigate("projects"));
   $("#project-workspace-back", $("#page-content")).addEventListener("click", () => navigate("projects"));
-  $("#project-workspace-settings", $("#page-content")).addEventListener("click", () => navigate(`projects/${id}/settings`));
+  $("#project-workspace-settings", $("#page-content")).addEventListener("click", () => navigate(`projects/${projectRouteKeyById(id)}/settings`));
 
   const body = $("#proj-tab-body");
   if (tab === "workspace") return drawWorkspace(body, proj);
@@ -1914,7 +1975,7 @@ function renderProjectDetail(id, tab, boardId) {
   if (tab === "finance") return drawFinance(body, proj);
   if (tab === "tickets") return drawProjectTickets(body, proj);
   if (tab === "settings") return drawProjectSettings(body, proj);
-  navigate(`projects/${id}/workspace`);
+  navigate(`projects/${projectRouteKeyById(id)}/workspace`);
 }
 
 async function exportProjectXlsx(proj) {
@@ -4641,7 +4702,7 @@ function drawProjectNotes(body, proj) {
             </article>`).join("") : `<div class="empty-state" style="padding:32px;text-align:center;">No risks are recorded for this project.</div>`}
         </div>`;
       const registerBtn = $("#proj-notes-open-risks", mainEl);
-      if (registerBtn) registerBtn.addEventListener("click", () => navigate(`projects/${proj.id}/risks`));
+      if (registerBtn) registerBtn.addEventListener("click", () => navigate(`projects/${projectRouteKey(proj)}/risks`));
       $all("[data-open-risk]", mainEl).forEach((btn) => btn.addEventListener("click", () => openRiskModal(proj, btn.dataset.openRisk, () => renderAll())));
       $all("[data-del-risk]", mainEl).forEach((btn) => btn.addEventListener("click", async () => {
         const riskId = btn.dataset.delRisk;
@@ -5571,7 +5632,7 @@ async function notifyPersonAssignedToProjectRole(proj, fieldLabel, entry) {
         { title: "Portfolios", value: (typeof projectPortfolios === "function" ? projectPortfolios(proj) : (proj.portfolios || [])).join(", ") || "—" },
         { title: "Assigned by", value: db.user.name }
       ],
-      actionUrl: typeof pulseAppRouteUrl === "function" ? pulseAppRouteUrl(`projects/${proj.id}`) : pulseAppUrl(),
+      actionUrl: typeof pulseAppRouteUrl === "function" ? pulseAppRouteUrl(`projects/${projectRouteKey(proj)}`) : pulseAppUrl(),
       actionTitle: "Open Project"
     });
   } catch (e) {
@@ -6845,7 +6906,7 @@ function renderTrackerWorkspace(mount, config) {
   }));
   const settingsBtn = $("[data-open-project-settings]", mount);
   if (settingsBtn) {
-    settingsBtn.addEventListener("click", () => navigate(`projects/${proj.id}/settings`));
+    settingsBtn.addEventListener("click", () => navigate(`projects/${projectRouteKey(proj)}/settings`));
   }
 
   // Live-update the tracker badge count in the project sidebar without re-rendering the whole nav.

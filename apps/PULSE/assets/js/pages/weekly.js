@@ -2692,7 +2692,7 @@ function openMeetingProjectDetailsModal(project, onSaved) {
     saveTimer = null;
     if (dirty) await persistDetails();
     closeModal();
-    navigate(`projects/${proj.id}/settings`);
+    navigate(`projects/${projectRouteKey(proj)}/settings`);
   });
   const backdrop = modal.closest(".aewttr-modal-backdrop");
   if (backdrop) {

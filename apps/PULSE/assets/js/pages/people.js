@@ -248,6 +248,6 @@ function renderPersonDetail(personId) {
   `;
 
   $all("[data-open-project]", $("#page-content")).forEach((row) => row.addEventListener("click", () => {
-    navigate(`projects/${row.dataset.openProject}/workspace`);
+    navigate(`projects/${projectRouteKeyById(row.dataset.openProject)}/workspace`);
   }));
 }

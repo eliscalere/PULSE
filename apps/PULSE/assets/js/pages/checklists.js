@@ -369,7 +369,7 @@ function openNewBoardWizard(projectId) {
     await persistProjectBoards(projectId);
     closeModal();
     toast("Board created", "success");
-    navigate(`projects/${projectId}/boards/${id}`);
+    navigate(`projects/${projectRouteKeyById(projectId)}/boards/${id}`);
   });
 }
 
@@ -491,7 +491,7 @@ function renderProjectBoardGallery(body, proj) {
     }));
   }
   $all(".board-card", body).forEach(c => {
-    c.addEventListener("click", () => navigate(`projects/${proj.id}/boards/${c.dataset.id}`));
+    c.addEventListener("click", () => navigate(`projects/${projectRouteKey(proj)}/boards/${c.dataset.id}`));
     c.addEventListener("contextmenu", (e) => {
       e.preventDefault();
       const board = boards.find((b) => b.id === c.dataset.id);
@@ -884,14 +884,14 @@ function renderBoardKanbanView(mount, board, query, redraw) {
 
 function renderProjectBoardDetail(body, proj, id) {
   const board = boardsForProject(proj.id).find((b) => b.id === id);
-  if (!board) { navigate(`projects/${proj.id}/boards`); return; }
+  if (!board) { navigate(`projects/${projectRouteKey(proj)}/boards`); return; }
   renderBoardDetailInto(body, proj, board);
 }
 
 function renderBoardDetail(id) {
   const board = window.AEWTTR.db.checklistBoards.find((b) => b.id === id);
   if (!board || !board.projectId) { navigate("projects"); return; }
-  navigate(`projects/${board.projectId}/boards/${id}`);
+  navigate(`projects/${projectRouteKeyById(board.projectId)}/boards/${id}`);
 }
 
 function renderBoardDetailInto(body, proj, board) {
@@ -946,12 +946,12 @@ function renderBoardDetailInto(body, proj, board) {
     </div>
   `;
 
-  $("#btn-back-boards", body).addEventListener("click", () => navigate(`projects/${proj.id}/boards`));
+  $("#btn-back-boards", body).addEventListener("click", () => navigate(`projects/${projectRouteKey(proj)}/boards`));
   $("#board-menu-btn", body).addEventListener("click", (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     openBoardContextMenu(rect.left, rect.bottom + 4, boardMenuItems(board, {
       onRenamed: redraw,
-      onDeleted: () => navigate(`projects/${proj.id}/boards`)
+      onDeleted: () => navigate(`projects/${projectRouteKey(proj)}/boards`)
     }));
   });
   $("#board-new-item", body).addEventListener("click", () => openBoardItemModal(board, null, null, redraw));

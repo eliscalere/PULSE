@@ -1834,7 +1834,7 @@ PAGE_RENDERERS.overview = function () {
     $all(".ov-res-proj-node", $("#page-content")).forEach(node => {
       node.addEventListener("click", () => {
         const id = node.dataset.projId;
-        if (id) navigate(`projects/${id}/workspace`);
+        if (id) navigate(`projects/${projectRouteKeyById(id)}/workspace`);
       });
     });
 

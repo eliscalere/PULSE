@@ -437,7 +437,7 @@ function drawProjectDocuments(body, proj) {
   }
 
   const goSettings = $("#proj-docs-go-settings", body);
-  if (goSettings) goSettings.addEventListener("click", () => navigate(`projects/${proj.id}/settings`));
+  if (goSettings) goSettings.addEventListener("click", () => navigate(`projects/${projectRouteKey(proj)}/settings`));
 
   // Load linked SPO folder files
   const spoLinkedMount = $("#proj-spo-linked-files", body);
