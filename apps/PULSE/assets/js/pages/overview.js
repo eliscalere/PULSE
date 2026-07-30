@@ -1351,6 +1351,157 @@ PAGE_RENDERERS.overview = function () {
       <div class="resource-scroll-list">${content}</div></section>`;
   }
 
+  /* Program → Portfolio → End Item → Project → People, in one traceable
+     chain. Program/Portfolio/End Item aren't SharePoint records — they're
+     comma-separated tags on the project itself (see projectEndItem above) —
+     so every node above Project is inferred from tag values shared across
+     projects, not a stored relationship. Selecting a node walks strictly
+     up or down one tier at a time so a Program click doesn't also light
+     up sibling branches that merely share a project. */
+  function renderProgramFlow(projectList, personList, projectIndex, projColorMap, selectedId) {
+    function splitTags(raw, fallback) {
+      const arr = Array.isArray(raw) ? raw : String(raw || "").split(",");
+      const clean = arr.map((s) => String(s || "").trim()).filter(Boolean);
+      return clean.length ? clean : [fallback];
+    }
+    const programsOf = (proj) => splitTags(proj.program, "Unassigned");
+    const portfoliosOf = (proj) => splitTags(proj.portfolios, "Unassigned");
+    const eicsOf = (proj) => splitTags(proj.configEndItem, "Unclassified");
+
+    const programMap = new Map(), portfolioMap = new Map(), eicMap = new Map();
+    function bump(map, name, projId) {
+      if (!map.has(name)) map.set(name, { name, projectIds: new Set() });
+      map.get(name).projectIds.add(projId);
+    }
+    projectList.forEach((row) => {
+      const proj = projectIndex.get(row.id) || {};
+      programsOf(proj).forEach((n) => bump(programMap, n, row.id));
+      portfoliosOf(proj).forEach((n) => bump(portfolioMap, n, row.id));
+      eicsOf(proj).forEach((n) => bump(eicMap, n, row.id));
+    });
+
+    const edgeSet = new Set(); const edges = [];
+    function addEdge(from, to) {
+      const key = from + "→" + to;
+      if (edgeSet.has(key)) return;
+      edgeSet.add(key); edges.push({ from, to });
+    }
+    projectList.forEach((row) => {
+      const proj = projectIndex.get(row.id) || {};
+      const programs = programsOf(proj).map((n) => `prog:${n}`);
+      const portfolios = portfoliosOf(proj).map((n) => `pf:${n}`);
+      const eics = eicsOf(proj).map((n) => `eic:${n}`);
+      const projId = `proj:${row.id}`;
+      programs.forEach((p) => portfolios.forEach((f) => addEdge(p, f)));
+      portfolios.forEach((f) => eics.forEach((e) => addEdge(f, e)));
+      eics.forEach((e) => addEdge(e, projId));
+      [...row.people].forEach((name) => addEdge(projId, `person:${name}`));
+    });
+
+    if (!edges.length && !projectList.length && !personList.length) {
+      return `<div class="empty-state">No staffing data to map yet.</div>`;
+    }
+
+    const sortByCountThenName = (a, b) => b.projectIds.size - a.projectIds.size || a.name.localeCompare(b.name);
+    const COLS = [
+      { key: "program", label: "Program", nodes: [...programMap.values()].sort(sortByCountThenName),
+        idOf: (n) => `prog:${n.name}`,
+        cardOf: (n) => ({ title: n.name, sub: `${n.projectIds.size} project${n.projectIds.size !== 1 ? "s" : ""}` }) },
+      { key: "portfolio", label: "Portfolio", nodes: [...portfolioMap.values()].sort(sortByCountThenName),
+        idOf: (n) => `pf:${n.name}`,
+        cardOf: (n) => ({ title: n.name, sub: `${n.projectIds.size} project${n.projectIds.size !== 1 ? "s" : ""}` }) },
+      { key: "eic", label: "End Item", nodes: [...eicMap.values()].sort(sortByCountThenName),
+        idOf: (n) => `eic:${n.name}`,
+        cardOf: (n) => ({ title: n.name, sub: `${n.projectIds.size} project${n.projectIds.size !== 1 ? "s" : ""}` }) },
+      { key: "project", label: "Project", nodes: projectList,
+        idOf: (n) => `proj:${n.id}`,
+        cardOf: (n) => ({ title: n.name, sub: `${n.people.size} people · ${n.tasks} active`, color: projColorMap[n.id], projId: n.id }) },
+      { key: "person", label: "People", nodes: personList,
+        idOf: (n) => `person:${n.name}`,
+        cardOf: (n) => ({ title: n.name, sub: `${n.projects.size} project${n.projects.size !== 1 ? "s" : ""}` }) }
+    ];
+
+    const COL_W = 208, COL_GAP = 108, ROW_H = 58, PAD_Y = 44, PAD_X = 24;
+    const nodePos = new Map();
+    COLS.forEach((col, ci) => {
+      const x = PAD_X + ci * (COL_W + COL_GAP);
+      col.nodes.forEach((n, i) => {
+        nodePos.set(col.idOf(n), { x, y: PAD_Y + i * ROW_H, w: COL_W, h: ROW_H - 12 });
+      });
+    });
+    const maxRows = Math.max(1, ...COLS.map((c) => c.nodes.length));
+    const canvasW = PAD_X * 2 + COLS.length * COL_W + (COLS.length - 1) * COL_GAP;
+    const canvasH = PAD_Y + maxRows * ROW_H + PAD_Y;
+
+    const TIER_PREFIXES = ["prog:", "pf:", "eic:", "proj:", "person:"];
+    function tierOf(id) { return TIER_PREFIXES.findIndex((p) => id.startsWith(p)); }
+
+    let activeNodes = null, activeEdges = null;
+    if (selectedId && nodePos.has(selectedId)) {
+      activeNodes = new Set([selectedId]); activeEdges = new Set();
+      let frontier = new Set([selectedId]);
+      for (let t = tierOf(selectedId); t > 0 && frontier.size; t--) {
+        const next = new Set();
+        edges.forEach((e, idx) => { if (frontier.has(e.to)) { next.add(e.from); activeNodes.add(e.from); activeEdges.add(idx); } });
+        frontier = next;
+      }
+      frontier = new Set([selectedId]);
+      for (let t = tierOf(selectedId); t < COLS.length - 1 && frontier.size; t++) {
+        const next = new Set();
+        edges.forEach((e, idx) => { if (frontier.has(e.from)) { next.add(e.to); activeNodes.add(e.to); activeEdges.add(idx); } });
+        frontier = next;
+      }
+    }
+
+    const edgePaths = edges.map((e, idx) => {
+      const a = nodePos.get(e.from), b = nodePos.get(e.to);
+      if (!a || !b) return "";
+      const x1 = a.x + a.w, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y + b.h / 2, mx = (x1 + x2) / 2;
+      const projId = e.from.startsWith("proj:") ? e.from.slice(5) : e.to.startsWith("proj:") ? e.to.slice(5) : null;
+      const color = projId ? (projColorMap[projId] || "var(--aewttr-border-strong)") : "var(--aewttr-border-strong)";
+      const cls = activeNodes ? (activeEdges.has(idx) ? "ov-flow-edge is-active" : "ov-flow-edge is-dim") : "ov-flow-edge";
+      return `<path class="${cls}" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="${color}"></path>`;
+    }).join("");
+
+    const nodeCards = [];
+    COLS.forEach((col) => {
+      col.nodes.forEach((n) => {
+        const id = col.idOf(n);
+        const pos = nodePos.get(id);
+        const card = col.cardOf(n);
+        const isSelected = id === selectedId;
+        const isDim = activeNodes ? !activeNodes.has(id) : false;
+        const barColor = card.color || "var(--aewttr-border-strong)";
+        const openLink = card.projId ? `<button type="button" class="ov-flow-open-link" data-proj-id="${escapeHtml(card.projId)}" title="Open project workspace"><i class="bx bx-link-external"></i></button>` : "";
+        nodeCards.push(`<div class="ov-flow-node${isSelected ? " is-selected" : ""}${isDim ? " is-dim" : ""}" data-flow-id="${escapeHtml(id)}" style="left:${pos.x}px;top:${pos.y}px;width:${pos.w}px;height:${pos.h}px;border-left-color:${barColor};" tabindex="0" role="button">
+          <span class="ov-flow-kind">${escapeHtml(col.label)}</span>
+          <span class="ov-flow-title">${escapeHtml(String(card.title).slice(0, 30))}</span>
+          <span class="ov-flow-sub">${escapeHtml(card.sub)}</span>
+          ${openLink}
+        </div>`);
+      });
+    });
+
+    const headers = COLS.map((col, ci) => {
+      const x = PAD_X + ci * (COL_W + COL_GAP);
+      return `<div class="ov-flow-col-header" style="left:${x}px;width:${COL_W}px;">${escapeHtml(col.label)}<small>${col.nodes.length}</small></div>`;
+    }).join("");
+
+    const legendHtml = projectList.map((row) => `<span class="ov-res-legend-item"><span class="ov-res-legend-dot" style="background:${projColorMap[row.id]}"></span>${escapeHtml(row.name || row.id)}</span>`).join("");
+
+    return `<div class="ov-flow-wrap">
+      ${legendHtml ? `<div class="ov-resources-legend">${legendHtml}</div>` : ""}
+      <div class="ov-flow-scroll" id="ov-flow-scroll">
+        <div class="ov-flow-canvas" style="width:${canvasW}px;height:${canvasH}px;">
+          ${headers}
+          <svg class="ov-flow-edges" width="${canvasW}" height="${canvasH}">${edgePaths}</svg>
+          ${nodeCards.join("")}
+        </div>
+      </div>
+      <p class="ov-flow-hint">Click any node to trace its chain from Program down to the people staffed on it. Drag to pan.</p>
+    </div>`;
+  }
+
   function renderAllProjectsTable(projects) {
     const f = window.AEWTTR.state.overviewFilters || {};
     const filtered = projects.filter(p => matchesFilter(p, f));
@@ -1969,13 +2120,63 @@ PAGE_RENDERERS.overview = function () {
       btn.addEventListener("click", () => { window.AEWTTR.state.overviewTeamTab = btn.dataset.teamTab; render(); });
     });
 
-    /* Resources graph: click project node to navigate */
-    $all(".ov-res-proj-node", $("#page-content")).forEach(node => {
+    /* Program → Portfolio → End Item → Project → People flow: click a node
+       to trace its chain (see renderProgramFlow), click the open-link icon
+       to jump straight to a project's workspace, drag the canvas to pan. */
+    let flowDragMoved = false;
+    $all(".ov-flow-node", $("#page-content")).forEach((node) => {
       node.addEventListener("click", () => {
-        const id = node.dataset.projId;
-        if (id) navigate(`projects/${projectRouteKeyById(id)}/workspace`);
+        if (flowDragMoved) { flowDragMoved = false; return; }
+        const id = node.dataset.flowId;
+        const cur = window.AEWTTR.state.teamResources.selectedFlowNode;
+        window.AEWTTR.state.teamResources.selectedFlowNode = cur === id ? null : id;
+        render();
+      });
+      node.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        node.click();
       });
     });
+    $all(".ov-flow-open-link", $("#page-content")).forEach((link) => link.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigate(`projects/${projectRouteKeyById(link.dataset.projId)}/workspace`);
+    }));
+    const flowScroll = $("#ov-flow-scroll", $("#page-content"));
+    if (flowScroll) {
+      const savedPos = window.AEWTTR.state.teamResources._flowScrollPos;
+      if (savedPos) { flowScroll.scrollLeft = savedPos.left; flowScroll.scrollTop = savedPos.top; }
+      flowScroll.addEventListener("scroll", () => {
+        window.AEWTTR.state.teamResources._flowScrollPos = { left: flowScroll.scrollLeft, top: flowScroll.scrollTop };
+      });
+      let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+      flowScroll.addEventListener("pointerdown", (e) => {
+        if (e.target.closest(".ov-flow-node")) return;
+        dragging = true; flowDragMoved = false;
+        startX = e.clientX; startY = e.clientY;
+        startLeft = flowScroll.scrollLeft; startTop = flowScroll.scrollTop;
+        flowScroll.setPointerCapture(e.pointerId);
+        flowScroll.classList.add("is-dragging");
+      });
+      flowScroll.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX, dy = e.clientY - startY;
+        if (Math.abs(dx) + Math.abs(dy) > 3) flowDragMoved = true;
+        flowScroll.scrollLeft = startLeft - dx;
+        flowScroll.scrollTop = startTop - dy;
+      });
+      const endDrag = () => { dragging = false; flowScroll.classList.remove("is-dragging"); };
+      flowScroll.addEventListener("pointerup", endDrag);
+      flowScroll.addEventListener("pointercancel", endDrag);
+      flowScroll.addEventListener("click", (e) => {
+        if (flowDragMoved) { flowDragMoved = false; return; }
+        if (e.target.closest(".ov-flow-node")) return;
+        if (window.AEWTTR.state.teamResources.selectedFlowNode) {
+          window.AEWTTR.state.teamResources.selectedFlowNode = null;
+          render();
+        }
+      });
+    }
 
     $all("[data-resource-view]", $("#page-content")).forEach((button) => {
       button.addEventListener("click", () => {

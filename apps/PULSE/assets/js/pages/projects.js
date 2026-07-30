@@ -88,6 +88,21 @@ function projectRouteKeyById(projectId) {
   return proj ? projectRouteKey(proj) : String(projectId || "");
 }
 
+/* One row of the bullet editor. Shared by the project and group editors so an
+   indent looks and behaves the same in both. */
+function techBulletRowHtml(bullet, index) {
+  var b = normalizeTechBullet(bullet);
+  return '<div class="rep-tb-item' + (b.level ? ' rep-tb-item--sub' : '') + '">' +
+    '<button type="button" class="rep-tb-indent" data-bidx="' + index + '" title="' +
+      (b.level ? 'Outdent to a main bullet' : 'Indent as a sub-bullet') + '" aria-label="' +
+      (b.level ? 'Outdent' : 'Indent') + '"><i class="bx ' + (b.level ? 'bx-chevron-left' : 'bx-chevron-right') + '"></i></button>' +
+    '<span class="rep-tb-dot">' + (b.level ? '–' : '•') + '</span>' +
+    '<input type="text" class="input-aewttr rep-tb-inp" data-bidx="' + index + '" value="' + escapeHtml(b.text) + '" placeholder="' +
+      (b.level ? 'Sub-bullet text…' : 'Bullet text…') + '">' +
+    '<button type="button" class="rep-tb-del" data-bidx="' + index + '" title="Remove"><i class="bx bx-x"></i></button>' +
+    '</div>';
+}
+
 /* Accepts a slug, a code, or a record id, so links of any vintage resolve. */
 function resolveProjectRouteKey(key) {
   const raw = String(key || "");
@@ -9269,21 +9284,6 @@ function drawProjectReporting(body, proj) {
       '</div>' +
       '</div></div>';
     scaleSlidePreview();
-  }
-
-  /* One row of the bullet editor. Shared by the project and group editors so an
-     indent looks and behaves the same in both. */
-  function techBulletRowHtml(bullet, index) {
-    var b = normalizeTechBullet(bullet);
-    return '<div class="rep-tb-item' + (b.level ? ' rep-tb-item--sub' : '') + '">' +
-      '<button type="button" class="rep-tb-indent" data-bidx="' + index + '" title="' +
-        (b.level ? 'Outdent to a main bullet' : 'Indent as a sub-bullet') + '" aria-label="' +
-        (b.level ? 'Outdent' : 'Indent') + '"><i class="bx ' + (b.level ? 'bx-chevron-left' : 'bx-chevron-right') + '"></i></button>' +
-      '<span class="rep-tb-dot">' + (b.level ? '–' : '•') + '</span>' +
-      '<input type="text" class="input-aewttr rep-tb-inp" data-bidx="' + index + '" value="' + escapeHtml(b.text) + '" placeholder="' +
-        (b.level ? 'Sub-bullet text…' : 'Bullet text…') + '">' +
-      '<button type="button" class="rep-tb-del" data-bidx="' + index + '" title="Remove"><i class="bx bx-x"></i></button>' +
-      '</div>';
   }
 
   function renderTechBullets() {

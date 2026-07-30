@@ -2272,6 +2272,75 @@ a.btn-travel-action {
 .ov-res-proj-node:hover rect { opacity: 1 !important; }
 .ov-res-person-node { cursor: default; }
 
+/* Program → Portfolio → End Item → Project → People flow (Connections tab).
+   A fixed-size canvas the user pans/scrolls, not a stretch-to-fit SVG — at
+   five columns, shrinking everything to fit the card width makes long
+   program/portfolio names illegible. */
+.ov-flow-wrap { display: flex; flex-direction: column; gap: 12px; }
+.ov-flow-scroll {
+  position: relative;
+  max-height: 560px;
+  overflow: auto;
+  border: 1px solid var(--aewttr-border);
+  border-radius: 8px;
+  background: var(--aewttr-surface-2);
+  cursor: grab;
+}
+.ov-flow-scroll.is-dragging { cursor: grabbing; }
+.ov-flow-canvas { position: relative; }
+.ov-flow-col-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 4px 7px;
+  background: var(--aewttr-surface-2);
+  border-bottom: 1px solid var(--aewttr-border);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--aewttr-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.ov-flow-col-header small { font-weight: 600; color: var(--aewttr-border-strong); text-transform: none; letter-spacing: 0; }
+.ov-flow-edges { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
+.ov-flow-edge { fill: none; stroke-width: 1.5; opacity: .38; transition: opacity .12s ease, stroke-width .12s ease; }
+.ov-flow-edge.is-active { stroke-width: 2.25; opacity: .9; }
+.ov-flow-edge.is-dim { opacity: .08; }
+.ov-flow-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 7px 10px;
+  background: var(--aewttr-surface);
+  border: 1px solid var(--aewttr-border);
+  border-left: 3px solid var(--aewttr-border-strong);
+  border-radius: 6px;
+  box-shadow: var(--aewttr-shadow-1);
+  cursor: pointer;
+  overflow: hidden;
+  transition: opacity .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.ov-flow-node:hover { border-color: var(--aewttr-border-strong); box-shadow: var(--aewttr-shadow-2); }
+.ov-flow-node:focus-visible { outline: 2px solid var(--aewttr-blue); outline-offset: 1px; }
+.ov-flow-node.is-selected { box-shadow: var(--aewttr-shadow-3); }
+.ov-flow-node.is-dim { opacity: .32; }
+.ov-flow-kind { font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--aewttr-muted); }
+.ov-flow-title { font-size: 12.5px; font-weight: 650; color: var(--aewttr-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov-flow-sub { font-size: 11px; color: var(--aewttr-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov-flow-open-link {
+  position: absolute; top: 5px; right: 5px; width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 5px; background: var(--aewttr-surface-2); color: var(--aewttr-muted);
+  cursor: pointer; font-size: 11px;
+}
+.ov-flow-open-link:hover { background: var(--aewttr-blue-tint); color: var(--aewttr-blue); }
+.ov-flow-hint { margin: 0; padding: 0 2px; font-size: 12px; color: var(--aewttr-muted); }
+
 /* Team Resources — operational browsing surface */
 .resource-hub { min-height: 0; border: 1px solid var(--aewttr-border); border-radius: var(--aewttr-radius-md); background: var(--aewttr-surface); overflow: hidden; }
 .resource-hub-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; padding: 20px 22px 16px; border-bottom: 1px solid var(--aewttr-border); }
