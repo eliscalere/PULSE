@@ -3897,14 +3897,14 @@ function meetingHistoryMinutesLog(session) {
   );
 }
 
-function meetingMinutesTitle(scope, session) {
+function meetingRecapTitle(scope, session) {
   const dateLabel = session && session.date ? fmtDate(session.date) : "Meeting";
   if (scope.type === "global") return `Weekly Pulse — ${dateLabel}`;
   const projectId = (scope.project && scope.project.id) || "Project";
   return `${projectId} Meeting — ${dateLabel}`;
 }
 
-function meetingMinutesDeepLink(scope) {
+function meetingRecapDeepLink(scope) {
   if (typeof pulseAppRouteUrl !== "function") return typeof pulseAppUrl === "function" ? pulseAppUrl() : "";
   if (scope.type === "project" && scope.project && scope.project.id) {
     return pulseAppRouteUrl(`projects/${scope.project.id}/meeting`);
@@ -3912,7 +3912,7 @@ function meetingMinutesDeepLink(scope) {
   return pulseAppRouteUrl("weekly");
 }
 
-function collectMeetingMinutesRecipientEmails(scope, session) {
+function collectMeetingRecapRecipientEmails(scope, session) {
   const emails = new Set();
   meetingParticipants(scope).forEach((participant) => {
     const email = participantEmail(participant);
@@ -3925,40 +3925,34 @@ function collectMeetingMinutesRecipientEmails(scope, session) {
   return Array.from(emails);
 }
 
-function buildMeetingMinutesEmailBody(title, session) {
-  const docHtml = session && session.docHtml && session.docHtml.trim() ? session.docHtml : "";
-  const attendees = (session && session.attendees) || [];
-  const guests = (session && session.guestAttendees) || [];
-  const allPresent = [...attendees, ...guests];
-  const attendeeHtml = allPresent.length
-    ? `<p style="margin:0 0 8px;color:#555;font-size:13px;"><strong>Present:</strong> ${allPresent.map(n => escapeHtml(n)).join(", ")}</p>`
-    : "";
-  const docBody = docHtml
-    ? `<div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">${docHtml}</div>`
-    : `<p style="color:#555;">No minutes document was recorded for this session.</p>`;
+/* Agenda only — no minutes doc, no action items, no notes. This is a
+   recap of what the meeting was about, not a record of what happened in it. */
+function buildMeetingRecapEmailBody(title, session) {
+  const items = (session && session.agenda) || [];
+  const listHtml = items.length
+    ? `<ul style="margin:0;padding-left:20px;">${items.map((item) => `<li style="margin-bottom:6px;">${escapeHtml(item.title || "")}</li>`).join("")}</ul>`
+    : `<p style="color:#555;">No agenda items were recorded for this meeting.</p>`;
   return `
-    <p style="margin:0 0 4px;"><strong>${escapeHtml(title)}</strong></p>
-    ${attendeeHtml}
-    ${docBody}`;
+    <p style="margin:0 0 12px;"><strong>${escapeHtml(title)}</strong></p>
+    ${listHtml}`;
 }
 
-function buildMeetingMinutesTeamsText(subject, preview, session, actionUrl) {
-  const docHtml = session && session.docHtml ? session.docHtml : "";
-  const plainText = docHtml.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
-  const snippet = plainText.length > 800 ? `${plainText.slice(0, 797)}…` : plainText;
-  const blocks = [`**${subject}**`, preview, snippet || "No minutes document recorded."];
-  if (actionUrl) blocks.push(`[Open Meeting History](${actionUrl})`);
-  return blocks.filter(Boolean).join("\n\n");
+function buildMeetingRecapTeamsText(subject, session) {
+  const items = (session && session.agenda) || [];
+  const lines = items.length
+    ? items.map((item) => `- ${item.title || ""}`).join("\n")
+    : "No agenda items were recorded for this meeting.";
+  return [`**${subject}**`, lines].join("\n\n");
 }
 
-async function notifyMeetingMinutes(scope, session, recipientEmails) {
+async function notifyMeetingRecap(scope, session, recipientEmails) {
   if (typeof isSharePointMode !== "function" || !isSharePointMode()) return;
   if (typeof notifyUsers !== "function" || !session) return;
   // Only send to attendees who were marked present
   const presentNames = new Set([...(session.attendees || []), ...(session.guestAttendees || [])]);
   const allEmails = Array.isArray(recipientEmails) && recipientEmails.length
     ? recipientEmails
-    : collectMeetingMinutesRecipientEmails(scope, session);
+    : collectMeetingRecapRecipientEmails(scope, session);
   const presentEmails = allEmails.filter(email => {
     const member = (window.AEWTTR.db.members || []).find(m => m.email && m.email.toLowerCase() === email.toLowerCase());
     if (member && presentNames.has(member.name)) return true;
@@ -3970,17 +3964,14 @@ async function notifyMeetingMinutes(scope, session, recipientEmails) {
   const emails = presentEmails.length ? presentEmails : allEmails;
   if (!emails.length) return;
 
-  const title = meetingMinutesTitle(scope, session);
-  const subject = `PULSE Meeting Minutes — ${title}`;
-  const presentCount = (session.attendees || []).length + (session.guestAttendees || []).length;
-  const updatedCount = (session.ganttChanges || []).filter(c => c.reviewStatus === "Updated").length;
-  const preview = `Minutes from ${escapeHtml(fmtDate(session.date))} · ${presentCount} present${updatedCount ? ` · ${updatedCount} updated` : ""}.`;
-  const actionUrl = meetingMinutesDeepLink(scope);
+  const title = meetingRecapTitle(scope, session);
+  const subject = `Meeting Recap — ${title}`;
+  const itemCount = ((session && session.agenda) || []).length;
+  const preview = `Agenda from ${escapeHtml(fmtDate(session.date))} · ${itemCount} item${itemCount === 1 ? "" : "s"}.`;
+  const actionUrl = meetingRecapDeepLink(scope);
   const facts = [
     { title: "Meeting", value: title },
-    { title: "Date", value: fmtDate(session.date) },
-    { title: "Present", value: String(presentCount) },
-    { title: "Tasks Updated", value: String(updatedCount) }
+    { title: "Date", value: fmtDate(session.date) }
   ];
   try {
     await notifyUsers({
@@ -3992,11 +3983,11 @@ async function notifyMeetingMinutes(scope, session, recipientEmails) {
       facts,
       actionUrl,
       actionTitle: "Open Meeting Notes",
-      body: buildMeetingMinutesEmailBody(title, session),
-      teamsText: buildMeetingMinutesTeamsText(subject, preview, session, actionUrl)
+      body: buildMeetingRecapEmailBody(title, session),
+      teamsText: buildMeetingRecapTeamsText(subject, session)
     });
   } catch (e) {
-    console.warn("PULSE: meeting minutes notification failed.", e);
+    console.warn("PULSE: meeting recap notification failed.", e);
   }
 }
 
@@ -4038,7 +4029,7 @@ function openEndMeetingModal(scope, onDone) {
     const attendees = participants.filter((p) => session.attendance[p.id] === "Here").map((p) => p.name);
     const guestAttendees = (session.guests || []).filter((g) => session.attendance[g.id] === "Here").map((g) => g.name);
     const minutesLog = buildMeetingMinutesLog(scope, session, capturedNotes, changes);
-    const minutesRecipients = collectMeetingMinutesRecipientEmails(scope, session);
+    const recapRecipients = collectMeetingRecapRecipientEmails(scope, session);
 
     Object.assign(session, {
       sessionStatus: "ended",
@@ -4069,7 +4060,7 @@ function openEndMeetingModal(scope, onDone) {
       ...taskSaves,
       Repo.save("meetingSession", session, { projectCode: meetingProjectCode(scope) })
     ]).then(() => (Repo.flush ? Repo.flush() : Promise.resolve())).then(async () => {
-      await notifyMeetingMinutes(scope, session, minutesRecipients);
+      await notifyMeetingRecap(scope, session, recapRecipients);
       if (!window.AEWTTR.state.meetingView) window.AEWTTR.state.meetingView = {};
       window.AEWTTR.state.meetingView[meetingScopeKey(scope)] = "history";
       closeModal();
