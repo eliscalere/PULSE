@@ -32,6 +32,9 @@ const TRAVEL_ACTION_ICONS = {
   "open-export": "bx-link-external",
   debrief: "bx-receipt",
   "view-debrief": "bx-file-find",
+  "set-status": "bx-transfer-alt",
+  "nudge-debrief": "bx-bell-ring",
+  "delete-request": "bx-trash",
   close: "bx-x"
 };
 
@@ -63,6 +66,9 @@ function travelActionBtn(kind, idOrOpts, maybeOpts) {
     "open-export": "Open PDF",
     debrief: "Debrief",
     "view-debrief": "View Debrief",
+    "set-status": "Change Status",
+    "nudge-debrief": "Nudge for Debrief",
+    "delete-request": "Delete",
     close: "Close"
   };
   const label = options.label || defaultLabels[kind] || kind;
@@ -574,11 +580,17 @@ function isUpcomingOrCurrentTravel(request) {
   return !!end && end >= today;
 }
 
+/* A request that was withdrawn or cancelled is finished with, the same as one
+   that completed — so Completed is the closed bucket and shows all three. The
+   Withdrawn and Cancelled tabs remain for narrowing to one reason. */
+const TRAVEL_CLOSED_STATUSES = ["Completed", "Withdrawn", "Cancelled"];
+
 function applyTravelListFilter(list, statusFilt) {
   const filt = statusFilt || "Upcoming";
   return (list || []).filter((r) => {
     if (filt === "Upcoming") return isUpcomingOrCurrentTravel(r);
     if (filt === "Awaiting Finance") return r.status === "Submitted" && r.chargeObjectStatus === "Pending" && travelCategory(r) !== "Leave";
+    if (filt === "Completed") return TRAVEL_CLOSED_STATUSES.includes(r.status);
     if (filt !== "All" && r.status !== filt) return false;
     return true;
   });
@@ -889,6 +901,60 @@ function canRequesterCancelApprovedTravel(r) {
 function canRequesterCancelLeave(r) {
   if (!isCurrentUserTravelRequester(r) || travelCategory(r) !== "Leave") return false;
   return r.status === "Submitted" || r.status === "Completed";
+}
+
+/* Statuses an approver may set directly. Deliberately excludes the
+   charge-object and concurrence states, which are set by their own flows and
+   would be misleading to change by hand. */
+const TRAVEL_ADMIN_STATUSES = ["Submitted", "Approved", "Denied", "Completed", "Withdrawn", "Cancelled"];
+
+/* Correcting a record after the fact is an approver action — someone travelled
+   but the request was never moved on, or a status was set in error. */
+function canAdminSetTravelStatus(r) {
+  return !!r && canApproveTravelRequests();
+}
+
+/* Deleting removes the record outright, so it is limited to approvers and is
+   always confirmed. Withdraw/Cancel remain the normal route; this is for
+   duplicates and test entries that should not stay in the list. */
+function canAdminDeleteTravel(r) {
+  return !!r && canApproveTravelRequests();
+}
+
+/* Only worth nudging when the trip is done and at least one traveller still
+   owes a debrief. */
+function travelDebriefOutstanding(r) {
+  if (!r || travelCategory(r) === "Leave") return false;
+  if (!["Completed", "Approved"].includes(r.status)) return false;
+  const end = r.endDate || r.tdyReturnDate || "";
+  if (end && end > new Date().toISOString().slice(0, 10)) return false;
+  const filed = typeof getDebriefsForTravel === "function" ? getDebriefsForTravel(r.id) : [];
+  const travellers = (r.travelers && r.travelers.length) ? r.travelers.length : 1;
+  return filed.length < travellers;
+}
+
+async function notifyTravelDebriefNudge(req) {
+  const recipients = [];
+  if (req.requesterEmail) recipients.push(req.requesterEmail);
+  (req.travelers || []).forEach((t) => { if (t && t.email) recipients.push(t.email); });
+  const to = Array.from(new Set(recipients.filter(Boolean)));
+  if (!isSharePointMode() || !to.length) return false;
+  try {
+    await notifyUsers({
+      to,
+      subject: `PULSE Travel: debrief still needed for ${req.id}`,
+      area: "Travel",
+      kind: "info",
+      preview: `A travel debrief is still outstanding for ${req.id}${req.destination ? ` — ${req.destination}` : ""}. Please file it so the trip can be closed out.`,
+      facts: travelNotificationFacts(req),
+      actionUrl: travelDeepLinkActionUrl("travel/mine", req.id),
+      actionTitle: "File debrief"
+    });
+    return true;
+  } catch (e) {
+    console.warn("PULSE: debrief nudge failed.", e);
+    return false;
+  }
 }
 
 function canAdminCancelTravel(r) {
@@ -3762,6 +3828,9 @@ function openTravelDetailModal(trId) {
         ${canCancel && !canWithdraw ? travelActionBtn("cancel", { elementId: "td-cancel-travel", tip: canAdminCancelTravel(r) ? "Cancel this travel request" : "Cancel this travel request", tone: "danger" }) : ""}
         ${travelDebriefRowButtons(r)}
         ${travelActionBtn("export", { elementId: "td-download-docx", label: "Download DOCX", icon: "bx-download", tip: "Generate and download the travel request document — available at any stage" })}
+        ${canAdminSetTravelStatus(r) ? travelActionBtn("set-status", { elementId: "td-set-status", tip: "Correct this request's status after the fact" }) : ""}
+        ${canAdminSetTravelStatus(r) && travelDebriefOutstanding(r) ? travelActionBtn("nudge-debrief", { elementId: "td-nudge-debrief", tip: "Remind the travellers that a debrief is still outstanding" }) : ""}
+        ${canAdminDeleteTravel(r) ? travelActionBtn("delete-request", { elementId: "td-delete-request", tone: "danger", tip: "Permanently delete this request — use Withdraw or Cancel unless this is a duplicate or test entry" }) : ""}
         ${r.exportFileUrl ? travelActionBtn("open-export", { elementId: "td-open-export", label: "Open Document", icon: "bx-desktop", tip: "Open the filed travel document in Word" }) : ""}
       </div>
       <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="td-close">Close</button>
@@ -3827,6 +3896,87 @@ function openTravelDetailModal(trId) {
       downloadDocxBtn.disabled = false;
       downloadDocxBtn.innerHTML = original;
     }
+  });
+
+  /* Change a status after the fact. An inline select rather than a modal —
+     the correction is one field and a modal on top of a modal is worse. */
+  const setStatusBtn = $("#td-set-status", modal);
+  if (setStatusBtn) setStatusBtn.addEventListener("click", () => {
+    if (modal.querySelector(".td-status-editor")) return;
+    const editor = document.createElement("div");
+    editor.className = "td-status-editor";
+    editor.innerHTML =
+      '<label>Set status to</label>' +
+      '<select class="select-aewttr" id="td-status-pick">' +
+      TRAVEL_ADMIN_STATUSES.map((st) => `<option value="${escapeHtml(st)}"${st === r.status ? " selected" : ""}>${escapeHtml(st)}</option>`).join("") +
+      '</select>' +
+      '<button type="button" class="btn-aewttr btn-aewttr-sm" id="td-status-apply">Apply</button>' +
+      '<button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="td-status-cancel">Cancel</button>';
+    setStatusBtn.parentElement.insertBefore(editor, setStatusBtn.nextSibling);
+    $("#td-status-cancel", modal).addEventListener("click", () => editor.remove());
+    $("#td-status-apply", modal).addEventListener("click", async () => {
+      const next = $("#td-status-pick", modal).value;
+      if (!next || next === r.status) { editor.remove(); return; }
+      const previous = r.status;
+      r.status = next;
+      r.statusChangedBy = (db.user && db.user.name) || "";
+      r.statusChangedAt = new Date().toISOString();
+      r._auditAction = "Set Status";
+      r._auditSummary = `${r.id} status changed from ${previous} to ${next} by ${r.statusChangedBy}`;
+      await Repo.save("travelRequest", r);
+      markTravelRequestStatusSeen(r.id, r.status);
+      notifyRequesterTravelStatusUpdate(r);
+      refreshTravelNotifications();
+      toast(`${r.id} set to ${next}.`, "success");
+      closeModal();
+      if (typeof renderPage === "function") renderPage();
+    });
+  });
+
+  /* Nudge every traveller on the trip, not just the requester — the debrief is
+     owed per traveller. */
+  const nudgeBtn = $("#td-nudge-debrief", modal);
+  if (nudgeBtn) nudgeBtn.addEventListener("click", async () => {
+    nudgeBtn.disabled = true;
+    const sent = await notifyTravelDebriefNudge(r);
+    nudgeBtn.disabled = false;
+    if (sent) {
+      r._auditAction = "Nudge Debrief";
+      r._auditSummary = `Debrief reminder sent for ${r.id}`;
+      await Repo.save("travelRequest", r);
+      toast("Debrief reminder sent.", "success");
+    } else {
+      toast(isSharePointMode() ? "No traveller email addresses on this request." : "Reminders are only sent in SharePoint mode.", "error");
+    }
+  });
+
+  /* Delete is confirm-then-act on the button itself, matching how ticket
+     deletion works elsewhere, so there is no accidental single-click removal. */
+  const deleteBtn = $("#td-delete-request", modal);
+  if (deleteBtn) deleteBtn.addEventListener("click", async () => {
+    if (deleteBtn.dataset.confirmed !== "1") {
+      deleteBtn.dataset.confirmed = "1";
+      const original = deleteBtn.innerHTML;
+      deleteBtn.innerHTML = '<i class="bx bx-trash"></i><span>Confirm delete</span>';
+      setTimeout(() => {
+        if (deleteBtn.dataset.confirmed === "1") { deleteBtn.dataset.confirmed = ""; deleteBtn.innerHTML = original; }
+      }, 4000);
+      return;
+    }
+    deleteBtn.disabled = true;
+    const idx = (db.travelRequests || []).findIndex((x) => x.id === r.id);
+    if (idx !== -1) db.travelRequests.splice(idx, 1);
+    r._auditAction = "Delete";
+    r._auditSummary = `${r.id} deleted by ${(db.user && db.user.name) || ""}`;
+    try {
+      if (typeof Repo !== "undefined" && Repo && typeof Repo.remove === "function") await Repo.remove("travelRequest", r);
+    } catch (e) {
+      console.warn("PULSE: travel request delete failed.", e);
+    }
+    refreshTravelNotifications();
+    toast(`${r.id} deleted.`, "success");
+    closeModal();
+    if (typeof renderPage === "function") renderPage();
   });
 
   const openDocBtn = $("#td-open-export", modal);
