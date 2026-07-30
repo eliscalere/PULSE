@@ -309,13 +309,16 @@ function inlineStyles(html, manifestFiles) {
 function neutralizeExternalAssetRefs(html, cssDataUris) {
   let result = html.replace(/:HL\[\\"\/assets\/[A-Za-z0-9_.\/-]+\.css\\",\\"style\\"\]\\n/g, "");
 
-  const byBasename = {};
-  for (const [href, dataUri] of Object.entries(cssDataUris)) {
-    byBasename[path.posix.basename(href)] = dataUri;
-  }
+  /* The stylesheet is already inlined as a <style> tag, so the reference in the
+     RSC payload only has to *resolve* for React to commit — it does not need to
+     carry the CSS. Substituting the full data: URI put a 38 KB copy at each of
+     the three places the payload names the file, tripling the stylesheet for no
+     benefit. An empty data:text/css resolves instantly at 21 bytes. */
+  const known = new Set(Object.keys(cssDataUris).map((href) => path.posix.basename(href)));
+  const inertCss = "data:text/css;base64,";
   return result.replace(
     /\/assets\/([A-Za-z0-9_.-]+\.css)/g,
-    (match, basename) => byBasename[basename] ?? match,
+    (match, basename) => (known.has(basename) ? inertCss : match),
   );
 }
 

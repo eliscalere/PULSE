@@ -19,18 +19,52 @@ const figuresByDocument: Record<string, Record<string, Figure[]>> = {
   flows: flowFigures as Record<string, Figure[]>,
 };
 
-function FigureCard({ figure }: { figure: Figure }) {
+/* Clicking a figure opens it larger in place. A new tab would show the raw
+   data: URI with no caption and no way back, which is worse than not zooming. */
+function FigureCard({ figure, onOpen }: { figure: Figure; onOpen: (figure: Figure) => void }) {
   const isDiagram = figure.file.endsWith(".svg");
   return <figure className={isDiagram ? "doc-figure doc-figure--diagram" : "doc-figure"}>
-    <a suppressHydrationWarning href={getAssetUrl(figure.file)} target="_blank" rel="noreferrer" aria-label={`Open the full-size ${figure.caption} figure`}>
+    <button type="button" className="doc-figure-open" onClick={() => onOpen(figure)} aria-label={`Enlarge ${figure.caption}`}>
       <img suppressHydrationWarning src={getAssetUrl(figure.file)} alt={figure.caption} loading="lazy" />
-    </a>
+      <span className="doc-figure-zoom" aria-hidden="true">Enlarge</span>
+    </button>
     <figcaption>
       {!figure.hideCaption && <b>{figure.caption}</b>}
       {figure.meta && <code>{figure.meta}</code>}
       {figure.description && <p>{figure.description}</p>}
     </figcaption>
   </figure>;
+}
+
+function FigureLightbox({ figure, onClose }: { figure: Figure; onClose: () => void }) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKeyDown);
+    /* Keep the page from scrolling behind the overlay. */
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onClose]);
+
+  return <div className="figure-lightbox" role="dialog" aria-modal="true" aria-label={figure.caption}>
+    <button type="button" className="figure-lightbox-backdrop" onClick={onClose} aria-label="Close" tabIndex={-1} />
+    <div className="figure-lightbox-panel">
+      <header>
+        <div>
+          <b>{figure.caption}</b>
+          {figure.meta && <code>{figure.meta}</code>}
+        </div>
+        <button type="button" className="figure-lightbox-close" onClick={onClose} autoFocus aria-label="Close the enlarged figure">Close ✕</button>
+      </header>
+      <div className="figure-lightbox-image">
+        <img suppressHydrationWarning src={getAssetUrl(figure.file)} alt={figure.caption} />
+      </div>
+      {figure.description && <p>{figure.description}</p>}
+    </div>
+  </div>;
 }
 
 type Document = {
@@ -123,6 +157,7 @@ export default function Home() {
      boot effect corrects it. Rendering it straight from hasAsset() would be a
      hydration mismatch, since the server cannot see the asset map. */
   const [pdfsBundled, setPdfsBundled] = useState(true);
+  const [lightbox, setLightbox] = useState<Figure | null>(null);
 
   useEffect(() => {
     setPdfsBundled(hasAsset(`/source-pdfs/${documents[1].pdfFile}`));
@@ -320,6 +355,7 @@ export default function Home() {
 
   return <>
     {bootPhase !== "ready" && <PulseBootLoader exiting={bootPhase === "exiting"} />}
+    {lightbox && <FigureLightbox figure={lightbox} onClose={() => setLightbox(null)} />}
     <main className={bootPhase === "ready" ? "pulse-app-shell" : "pulse-app-shell pulse-app-shell--booting"} aria-hidden={bootPhase === "ready" ? undefined : true}>
     <aside className={`sidebar ${mobileOpen ? "open" : ""}`}>
       <a className="brand" href="#top" onClick={() => choose("overview")}><img suppressHydrationWarning src={getAssetUrl("/brand-assets/PULSE_Wordmark_White_Transparent.png")} alt="PULSE" /></a>
@@ -361,7 +397,7 @@ export default function Home() {
             : <div className="reader-stream">{selectedPages.map((raw, index) => {
               const sectionFigures = figuresByDocument[selected.id]?.[String(index + 1)];
               return <div className="reader-section" data-section={index + 1} id={`section-${index + 1}`} key={`${selected.id}-${index}`}>
-                <DocumentPage raw={raw} pageNumber={index + 1} documentTitle={selected.title} figures={sectionFigures?.map((figure) => <FigureCard figure={figure} key={figure.file} />)} />
+                <DocumentPage raw={raw} pageNumber={index + 1} documentTitle={selected.title} figures={sectionFigures?.map((figure) => <FigureCard figure={figure} onOpen={setLightbox} key={figure.file} />)} />
               </div>;
             })}</div>}
           {selectedPages.length > 1 && <div className="reader-end"><span>End of {selected.title}</span><button onClick={() => { setActiveSection(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Back to top ↑</button></div>}

@@ -384,3 +384,36 @@ main { display:flex; min-height:100vh; }.sidebar { position:fixed; z-index:10; i
   .brand-page, .screens-page, .flows-page { padding:0 !important; background:#fff !important; }
   a { text-decoration:none !important; color:#26282c !important; }
 }
+
+/* Figure lightbox: enlarging happens in place. Opening a data: URI in a new tab
+   loses the caption and the way back, so the figure opens over the document. */
+.doc-figure-open { position:relative; display:block; width:100%; padding:0; border:1px solid var(--line); border-radius:2px; background:var(--mist); line-height:0; cursor:zoom-in; transition:border-color 160ms ease-out; }
+.doc-figure-open:hover { border-color:#a9adb6; }
+.doc-figure-open:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.doc-figure-open img { width:100%; height:auto; display:block; }
+.doc-figure-zoom { position:absolute; right:10px; bottom:10px; padding:5px 9px; border-radius:2px; background:rgba(7,7,8,.82); color:var(--field); font-size:10px; font-weight:600; letter-spacing:.4px; line-height:1; opacity:0; transition:opacity 160ms ease-out; }
+.doc-figure-open:hover .doc-figure-zoom, .doc-figure-open:focus-visible .doc-figure-zoom { opacity:1; }
+.doc-figure--diagram .doc-figure-open { border:0; background:transparent; }
+
+.figure-lightbox { position:fixed; inset:0; z-index:60; display:grid; place-items:center; padding:32px; }
+.figure-lightbox-backdrop { position:absolute; inset:0; border:0; padding:0; background:rgba(7,7,8,.72); cursor:zoom-out; animation:lightbox-fade 160ms ease-out; }
+.figure-lightbox-panel { position:relative; display:flex; flex-direction:column; gap:0; width:min(1180px,100%); max-height:100%; border-radius:2px; background:var(--field); overflow:hidden; animation:lightbox-rise 180ms cubic-bezier(.2,.8,.2,1); }
+.figure-lightbox-panel header { flex:none; display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:16px 18px; border-bottom:1px solid var(--line); }
+.figure-lightbox-panel header > div { display:grid; gap:3px; }
+.figure-lightbox-panel header b { font-size:13px; letter-spacing:-.2px; }
+.figure-lightbox-panel header code { color:var(--graphite); font:10.5px ui-monospace,SFMono-Regular,Menlo,monospace; }
+.figure-lightbox-close { flex:none; padding:8px 13px; border:1px solid var(--line); border-radius:2px; background:var(--field); font-size:11px; font-weight:600; color:var(--ink); transition:border-color 160ms ease-out, background 160ms ease-out; }
+.figure-lightbox-close:hover { border-color:var(--ink); background:var(--mist); }
+.figure-lightbox-close:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.figure-lightbox-image { min-height:0; overflow:auto; background:var(--mist); padding:14px; }
+.figure-lightbox-image img { display:block; width:100%; height:auto; margin:0 auto; background:var(--field); }
+.figure-lightbox-panel > p { flex:none; max-width:82ch; margin:0; padding:14px 18px; border-top:1px solid var(--line); color:var(--graphite); font-size:12px; line-height:1.6; }
+@keyframes lightbox-fade { from { opacity:0; } to { opacity:1; } }
+@keyframes lightbox-rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@media (max-width:860px) { .figure-lightbox { padding:14px; } }
+@media (prefers-reduced-motion:reduce) {
+  .figure-lightbox-backdrop, .figure-lightbox-panel { animation:none; }
+  .doc-figure-open, .doc-figure-zoom, .figure-lightbox-close { transition:none; }
+  .doc-figure-zoom { opacity:1; }
+}
+@media print { .figure-lightbox { display:none !important; } .doc-figure-zoom { display:none !important; } .doc-figure-open { border-color:var(--line) !important; } }
