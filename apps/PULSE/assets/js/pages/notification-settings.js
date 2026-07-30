@@ -143,7 +143,7 @@ PAGE_RENDERERS["notification-settings"] = function () {
                 ${defaultPageOptionsForCurrentUser().map((opt) => `<option value="${escapeHtml(opt.route)}" ${current.defaultPage === opt.route ? "selected" : ""}>${escapeHtml(opt.label)}</option>`).join("")}
               </select>
             </label>
-            <p class="notif-settings-note notif-settings-note--inline">"Automatic" uses PULSE's normal role-based default (Team Overview for Admins, Awaiting Finance for Finance Admins, Dashboard otherwise).</p>
+            <p class="notif-settings-note notif-settings-note--inline">"Automatic" uses PULSE's normal role-based default (Team Overview for Admins, Awaiting Finance for Finance Admins, Document Review for Document Admins, Dashboard otherwise).</p>
           </section>
 
           <section class="notif-panel notif-panel--docreview">

@@ -87,14 +87,19 @@ function pulseBrandLockup(opts) {
   `;
 }
 
-/* Admins land on Team Overview and Finance Admins land on the Awaiting
-   Finance travel queue by default (instead of Dashboard) since those are
-   the pages they open first in practice — everyone else keeps the
-   existing Dashboard default. Priority, highest first: a port config's
-   explicit defaultRoute (e.g. a Travel-only deployment) always wins;
-   otherwise the user's own saved "Default page" preference (Settings →
-   Notifications) wins over either role-based default, since that's an
-   explicit personal choice. */
+/* Role-based landing pages — Admins land on Team Overview, Finance Admins
+   on the Awaiting Finance travel queue, Document Admins on Document Review,
+   since those are the pages each opens first in practice; everyone else
+   keeps the existing Dashboard default. Priority, highest first: a port
+   config's explicit defaultRoute (e.g. a Travel-only deployment) always
+   wins; then the user's own saved "Default page" preference (Settings →
+   Notifications), since that's an explicit personal choice; then role
+   defaults — Admin BEFORE Finance Admin/Document Admin, because the "Admin"
+   role carries isFinanceAdmin/isDocAdmin too (see sharepoint-adapter.js's
+   getCurrentUserRole: `isFinanceAdmin: role === "Admin" || role === "Finance
+   Admin"`, same pattern for isDocAdmin) — checking those narrower roles
+   first would wrongly route a full Admin to Travel or Document Review
+   instead of Team Overview. */
 function pulseComputeDefaultRoute() {
   if (window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.defaultRoute) {
     return window.PULSE_PORT_CONFIG.defaultRoute;
@@ -104,7 +109,6 @@ function pulseComputeDefaultRoute() {
     ? normalizeNotificationPrefs(user.notificationPrefs).defaultPage
     : "";
   if (savedDefault) return savedDefault;
-  if (user && user.isFinanceAdmin) return "travel/finance";
   if (user && user.isAdmin) {
     if (window.AEWTTR) {
       window.AEWTTR.state = window.AEWTTR.state || {};
@@ -112,6 +116,8 @@ function pulseComputeDefaultRoute() {
     }
     return "overview";
   }
+  if (user && user.isFinanceAdmin) return "travel/finance";
+  if (user && user.isDocAdmin) return "docreview";
   return "dashboard";
 }
 

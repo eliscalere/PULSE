@@ -865,7 +865,10 @@ function renderGroupDetail(groupName, groupType, projects) {
               <span class="rep-qcard-name">Milestones</span>
             </div>
             <div class="rep-qcard-bd">
-              <p class="rep-qcard-hint">Every included project always appears as its own row on the combined slide, using each project's own Contract/FAT/SAT/etc. dates (edit those in the table below or on the project's own Reporting tab). Add extra named milestones that belong to the ${escapeHtml(groupLabel)} itself — not to any one project — and they'll show as additional rows on the slide.</p>
+              <p class="rep-qcard-hint">Tick a project to put its milestone row on the combined slide. Dates come from each project's own Contract/FAT/SAT/etc. fields — edit them in the full table below or on the project's own Reporting tab.</p>
+              <div class="rep-mt-mini" id="grp-rep-mt-mini"></div>
+              <p class="rep-qcard-sub rep-mt-mini-sep">Extra ${escapeHtml(groupLabel)} milestones</p>
+              <p class="rep-qcard-hint">Named milestones belonging to the ${escapeHtml(groupLabel)} itself, not to any one project. These show as additional rows on the slide.</p>
               <div id="grp-rep-om-wrap"></div>
             </div>
           </div>
@@ -1113,6 +1116,7 @@ function renderGroupDetail(groupName, groupType, projects) {
           saveGroupCfg();
         });
       }
+      renderMilestoneMini();
       const omWrap = mount.querySelector("#grp-rep-om-wrap");
       if (omWrap) renderOtherMilestonesEditor(omWrap, groupCfg.otherMilestones, saveGroupCfg);
     }
@@ -1126,19 +1130,81 @@ function renderGroupDetail(groupName, groupType, projects) {
         proj.updated = new Date().toISOString().slice(0, 10);
         if (typeof Repo !== "undefined" && Repo && typeof Repo.save === "function") Repo.save("project", proj);
         inp.classList.toggle("rep-mt-date--set", !!inp.value);
+        /* Keep the compact table in the Milestones card showing the same dates. */
+        if (typeof renderMilestoneMini === "function") renderMilestoneMini();
       });
     });
 
-    // Wire per-project Include checkboxes — persisted on groupCfg so the
-    // deck selection is remembered next time this page is opened.
-    mount.querySelectorAll(".rep-mt-include-ctrl").forEach(function(ctrl) {
-      ctrl.addEventListener("change", function() {
-        const checked = Array.from(mount.querySelectorAll(".rep-mt-include-ctrl:checked")).map(function(c) { return c.dataset.projId; });
-        groupCfg.includedProjectIds = checked.length === projects.length ? [] : checked;
-        saveGroupCfg();
-        const summaryEl = mount.querySelector(".grp-rep-b3-summary");
-        if (summaryEl) summaryEl.textContent = checked.length + " of " + projects.length + " project" + (projects.length === 1 ? "" : "s") + " included";
+    /* Inclusion is now settable from two places — the compact table in the
+       Milestones card and the full table below — so both write through here and
+       both re-sync afterwards. An empty includedProjectIds means "all", which is
+       why it is stored that way when everything is ticked. */
+    function applyInclusion(checkedIds) {
+      groupCfg.includedProjectIds = checkedIds.length === projects.length ? [] : checkedIds.slice();
+      saveGroupCfg();
+      const included = includedIds();
+      mount.querySelectorAll(".rep-mt-include-ctrl, .rep-mt-mini-ctrl").forEach(function(box) {
+        box.checked = included.includes(box.dataset.projId);
       });
+      const summaryEl = mount.querySelector(".grp-rep-b3-summary");
+      if (summaryEl) summaryEl.textContent = included.length + " of " + projects.length + " project" + (projects.length === 1 ? "" : "s") + " included";
+      const miniCount = mount.querySelector(".rep-mt-mini-count");
+      if (miniCount) miniCount.textContent = included.length + " of " + projects.length + " on the slide";
+    }
+
+    function collectChecked(selector) {
+      return Array.from(mount.querySelectorAll(selector)).map(function(c) { return c.dataset.projId; });
+    }
+
+    /* Compact milestone table inside the Milestones card: the same projects and
+       the same dates as the full table, so a PM can set the slide's rows without
+       scrolling past the editor to find the control. */
+    function renderMilestoneMini() {
+      const wrap = mount.querySelector("#grp-rep-mt-mini");
+      if (!wrap) return;
+      if (!projects.length) {
+        wrap.innerHTML = '<p class="rep-qcard-hint rep-mt-mini-empty">No projects in this ' + escapeHtml(groupLabel) + ' yet.</p>';
+        return;
+      }
+      const included = includedIds();
+      wrap.innerHTML =
+        '<div class="rep-mt-mini-head">' +
+          '<span class="rep-mt-mini-count">' + included.length + ' of ' + projects.length + ' on the slide</span>' +
+          '<button type="button" class="rep-mt-mini-all" id="rep-mt-mini-all">' +
+            (included.length === projects.length ? 'Clear all' : 'Select all') +
+          '</button>' +
+        '</div>' +
+        '<div class="rep-mt-mini-rows">' +
+        projects.map(function(proj) {
+          const pm = typeof getProjectMilestones === "function" ? getProjectMilestones(proj) : {};
+          const dates = PROJECT_MILESTONE_CATEGORIES.map(function(c) {
+            const val = pm[c.key] || "";
+            return val
+              ? '<span class="rep-mt-mini-date" title="' + escapeHtml(c.short) + '"><i style="color:' + c.color + '">' + c.sym + '</i>' + escapeHtml(val) + '</span>'
+              : "";
+          }).filter(Boolean).join("");
+          return '<label class="rep-mt-mini-row">' +
+            '<input type="checkbox" class="rep-mt-mini-ctrl" data-proj-id="' + escapeHtml(proj.id) + '"' + (included.includes(proj.id) ? " checked" : "") + '>' +
+            '<span class="rep-mt-mini-name">' + escapeHtml(proj.name || "Untitled project") + '</span>' +
+            '<span class="rep-mt-mini-dates">' + (dates || '<span class="rep-mt-mini-none">No dates set</span>') + '</span>' +
+            '</label>';
+        }).join("") +
+        '</div>';
+
+      wrap.querySelectorAll(".rep-mt-mini-ctrl").forEach(function(box) {
+        box.addEventListener("change", function() { applyInclusion(collectChecked(".rep-mt-mini-ctrl:checked")); });
+      });
+      const allBtn = wrap.querySelector("#rep-mt-mini-all");
+      if (allBtn) allBtn.addEventListener("click", function() {
+        const allOn = includedIds().length === projects.length;
+        applyInclusion(allOn ? [] : projects.map(function(p) { return p.id; }));
+        renderMilestoneMini();
+      });
+    }
+
+    // Wire per-project Include checkboxes in the full table below.
+    mount.querySelectorAll(".rep-mt-include-ctrl").forEach(function(ctrl) {
+      ctrl.addEventListener("change", function() { applyInclusion(collectChecked(".rep-mt-include-ctrl:checked")); });
     });
 
     // Wire Generate PowerPoint — always a full deck, one combined slide per
