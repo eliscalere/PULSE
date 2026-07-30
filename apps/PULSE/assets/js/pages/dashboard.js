@@ -48,7 +48,9 @@ PAGE_RENDERERS.dashboard = function () {
   const db = window.AEWTTR.db;
   const alerts = typeof getAppAlertCounts === "function" ? getAppAlertCounts() : { docreview: 0, travel: 0, overview: 0 };
   const hierarchy = myWorkHierarchy();
-  const totalAssignedTasks = hierarchy.reduce((total, pr) => total + pr.entries.reduce((n, e) => n + 1 + e.mySubtasks.length, 0), 0);
+  const openTaskCount = hierarchy.reduce((n, pr) => n + pr.entries.filter((e) => e.directlyMine).length, 0);
+  const subtaskCount = hierarchy.reduce((n, pr) => n + pr.entries.reduce((m, e) => m + e.mySubtasks.length, 0), 0);
+  const totalAssignedTasks = openTaskCount + subtaskCount;
   setTopbar("Dashboard", `Welcome back, ${db.user.name.split(" ")[0]}.`, "");
 
   if (!window.AEWTTR.state.dashExpanded) window.AEWTTR.state.dashExpanded = {};
@@ -191,7 +193,6 @@ PAGE_RENDERERS.dashboard = function () {
 
   /* Quick stats */
   const activeProjects = (db.projects || []).filter((p) => p.lifecycleStatus === "Active" || (!p.lifecycleStatus && p.status !== "Complete" && p.status !== "Cancelled")).length;
-  const allMyTasks = hierarchy.reduce((n, pr) => n + pr.entries.length, 0);
   const overdueCount = hierarchy.reduce((n, pr) => n + pr.entries.filter((e) => {
     const due = e.task.end || e.task.dueDate;
     return due && new Date(due) < new Date();
@@ -207,7 +208,15 @@ PAGE_RENDERERS.dashboard = function () {
           </div>
           <div class="dash-stat">
             <span class="dash-stat-num">${totalAssignedTasks}</span>
+            <span class="dash-stat-label">Assigned to Me</span>
+          </div>
+          <div class="dash-stat">
+            <span class="dash-stat-num">${openTaskCount}</span>
             <span class="dash-stat-label">Open Tasks</span>
+          </div>
+          <div class="dash-stat">
+            <span class="dash-stat-num">${subtaskCount}</span>
+            <span class="dash-stat-label">Subtasks</span>
           </div>
           <div class="dash-stat">
             <span class="dash-stat-num" style="${overdueCount ? "color:var(--aewttr-red)" : ""}">${overdueCount}</span>

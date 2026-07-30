@@ -961,8 +961,8 @@ function renderMeetingApp(mount, scope) {
   // Page list clicks
   $all("[data-onpage]", mount).forEach(btn => {
     btn.addEventListener("click", async () => {
-      if (typeof window.AEWTTR._flushDocSave === "function") {
-        try { await window.AEWTTR._flushDocSave(); } catch (e) {}
+      if (typeof flushPendingAutosaves === "function") {
+        try { await flushPendingAutosaves(); } catch (e) {}
       }
       window.AEWTTR.state.onenoteSelectedPage[key] = btn.dataset.onpage;
       renderMeetingApp(mount, scope);
@@ -972,8 +972,8 @@ function renderMeetingApp(mount, scope) {
   // Section tab clicks
   $all("[data-on-tab]", mount).forEach(btn => {
     btn.addEventListener("click", async () => {
-      if (typeof window.AEWTTR._flushDocSave === "function") {
-        try { await window.AEWTTR._flushDocSave(); } catch (e) {}
+      if (typeof flushPendingAutosaves === "function") {
+        try { await flushPendingAutosaves(); } catch (e) {}
       }
       window.AEWTTR.state.meetingLiveTab[key] = btn.dataset.onTab;
       renderMeetingApp(mount, scope);
@@ -1225,14 +1225,20 @@ function renderMeetingAgendaTab(body, scope, session) {
 
   $all("[data-agenda-title]", body).forEach((input) => {
     let titleTimer = null;
+    function flushTitle() {
+      unregisterAutosaveFlusher(flushTitle);
+      if (!titleTimer) return;
+      clearTimeout(titleTimer);
+      titleTimer = null;
+      const item = session.agenda.find((e) => e.id === input.dataset.agendaTitle);
+      if (!item) return;
+      item.title = input.value;
+      return saveMeetingSession(scope);
+    }
     input.addEventListener("input", () => {
       clearTimeout(titleTimer);
-      titleTimer = setTimeout(async () => {
-        const item = session.agenda.find((e) => e.id === input.dataset.agendaTitle);
-        if (!item) return;
-        item.title = input.value;
-        await saveMeetingSession(scope);
-      }, 600);
+      registerAutosaveFlusher(flushTitle);
+      titleTimer = setTimeout(flushTitle, 600);
     });
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
@@ -1268,15 +1274,21 @@ function renderMeetingAgendaTab(body, scope, session) {
       ta.dispatchEvent(new Event("input"));
     });
 
+    function flushNotes() {
+      unregisterAutosaveFlusher(flushNotes);
+      if (!saveTimer) return;
+      clearTimeout(saveTimer);
+      saveTimer = null;
+      const item = session.agenda.find((e) => e.id === ta.dataset.agendaNotes);
+      if (!item) return;
+      item.notes = ta.value;
+      return saveMeetingSession(scope);
+    }
     ta.addEventListener("input", () => {
       autoResize(ta);
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(async () => {
-        const item = session.agenda.find((e) => e.id === ta.dataset.agendaNotes);
-        if (!item) return;
-        item.notes = ta.value;
-        await saveMeetingSession(scope);
-      }, 800);
+      registerAutosaveFlusher(flushNotes);
+      saveTimer = setTimeout(flushNotes, 800);
     });
   });
 
@@ -1860,6 +1872,16 @@ function renderMeetingDocEditor(body, scope, session, opts) {
     await Repo.save("meetingSession", session, { projectCode: meetingProjectCode(scope), immediate: true });
   });
 
+  function docFlusher() {
+    unregisterAutosaveFlusher(docFlusher);
+    window.AEWTTR._pendingDocSave = 0;
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    if (!isEditorMounted()) return;
+    session.docHtml = editor.innerHTML;
+    return doSave();
+  }
+
   function schedSave() {
     clearTimeout(saveTimer);
     updateWordCount();
@@ -1868,17 +1890,9 @@ function renderMeetingDocEditor(body, scope, session, opts) {
     // Register a flush function so navigation can save immediately before switching pages.
     if (!window.AEWTTR._pendingDocSave) window.AEWTTR._pendingDocSave = 0;
     window.AEWTTR._pendingDocSave++;
-    window.AEWTTR._flushDocSave = async function() {
-      window.AEWTTR._flushDocSave = null;
-      window.AEWTTR._pendingDocSave = 0;
-      clearTimeout(saveTimer);
-      saveTimer = null;
-      if (!isEditorMounted()) return;
-      session.docHtml = editor.innerHTML;
-      await doSave();
-    };
+    registerAutosaveFlusher(docFlusher);
     saveTimer = setTimeout(async function() {
-      window.AEWTTR._flushDocSave = null;
+      unregisterAutosaveFlusher(docFlusher);
       window.AEWTTR._pendingDocSave = Math.max(0, (window.AEWTTR._pendingDocSave || 1) - 1);
       if (!isEditorMounted()) return;
       session.docHtml = editor.innerHTML;
@@ -2616,14 +2630,20 @@ function openMeetingProjectDetailsModal(project, onSaved) {
     }
   }
 
+  function flushDetails() {
+    unregisterAutosaveFlusher(flushDetails);
+    if (!saveTimer) return;
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    return persistDetails();
+  }
+
   function schedulePersist() {
     dirty = true;
     setStatus("pending", "Unsaved changes…");
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      saveTimer = null;
-      persistDetails();
-    }, 400);
+    registerAutosaveFlusher(flushDetails);
+    saveTimer = setTimeout(flushDetails, 400);
   }
 
   ["mtg-det-name", "mtg-det-desc", "mtg-det-taskorder", "mtg-det-fundingtype", "mtg-det-fiscalyear", "mtg-det-fundingstatus", "mtg-det-handoff"].forEach((id) => {
@@ -2657,7 +2677,9 @@ function openMeetingProjectDetailsModal(project, onSaved) {
   }
 
   async function finishClose() {
+    unregisterAutosaveFlusher(flushDetails);
     clearTimeout(saveTimer);
+    saveTimer = null;
     if (dirty) await persistDetails();
     closeModal();
     if (typeof onSaved === "function") onSaved();
@@ -2665,7 +2687,9 @@ function openMeetingProjectDetailsModal(project, onSaved) {
 
   $(".aewttr-modal-close", modal).addEventListener("click", () => { finishClose(); });
   $("#mtg-details-settings", modal).addEventListener("click", async () => {
+    unregisterAutosaveFlusher(flushDetails);
     clearTimeout(saveTimer);
+    saveTimer = null;
     if (dirty) await persistDetails();
     closeModal();
     navigate(`projects/${proj.id}/settings`);
@@ -3231,10 +3255,17 @@ function renderMeetingQueue(mount, scope, participant) {
     mount.dataset.meetingQueueWheelRouting = "true";
     mount.addEventListener("wheel", (event) => {
       if (!event.deltaY || event.ctrlKey) return;
-      const targets = [
-        ...mount.querySelectorAll(".monday-table-wrap, .monday-gantt, .tracker-view-mount--meeting")
-      ];
-      const scroller = targets.find((node) => node.scrollHeight > node.clientHeight + 1);
+      // Prefer the scroller nearest the cursor so this doesn't hijack wheel
+      // events meant for a different nested scroll area; only fall back to
+      // "any scrollable tracker in this panel" if the hovered element isn't
+      // inside one.
+      let scroller = event.target.closest(".monday-table-wrap, .monday-gantt");
+      if (!scroller || scroller.scrollHeight <= scroller.clientHeight + 1) {
+        const targets = [
+          ...mount.querySelectorAll(".monday-table-wrap, .monday-gantt, .tracker-view-mount--meeting")
+        ];
+        scroller = targets.find((node) => node.scrollHeight > node.clientHeight + 1);
+      }
       if (!scroller) return;
 
       let delta = event.deltaY;
@@ -4456,7 +4487,7 @@ function renderMeetingFullTasksList(mount, scope, projects, onRedraw) {
     });
 
     const ganttMount = $("#mtf-combined-gantt", mount);
-    if (!ganttMount || typeof renderMondayGanttChart !== "function") return;
+    if (!ganttMount || typeof renderGanttChart !== "function") return;
 
     const combined = [];
     list.forEach((proj) => {
@@ -4489,7 +4520,7 @@ function renderMeetingFullTasksList(mount, scope, projects, onRedraw) {
       renderMeetingFullTasksList(mount, scope, projects, onRedraw);
     }
 
-    renderMondayGanttChart(
+    renderGanttChart(
       ganttMount,
       combined,
       expanded,
@@ -4690,8 +4721,13 @@ function renderMeetingFullTasksList(mount, scope, projects, onRedraw) {
 
   function redrawFull() { renderMeetingFullTasksList(mount, scope, projects, onRedraw); }
 
-  // Only rebuild the head HTML on a full redraw (not on search/filter changes)
-  const existingHead = mount.querySelector(".mtf-global-head");
+  // Only rebuild the head HTML on a full redraw (not on search/filter changes).
+  // Keyed on #mtf-unified-body rather than .mtf-global-head — the Timeline
+  // branch above renders its own .mtf-global-head too, so checking that class
+  // alone mistook a stale Timeline head for an already-built Main table head
+  // and skipped rebuilding the table body entirely, leaving Timeline on screen
+  // forever once you switched to it.
+  const existingHead = mount.querySelector("#mtf-unified-body");
   if (!existingHead) {
     mount.innerHTML = `
       <div class="mtf-global-head">

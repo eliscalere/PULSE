@@ -20,6 +20,7 @@ const SP_LISTS = {
   teamEvent: "PULSE Team Events",
   docReviewItem: "PULSE Document Review",
   docReviewerGroup: "PULSE Doc Reviewer Groups",
+  groupReportConfig: "PULSE Group Reporting",
   auditLog: "PULSE Audit Log",
   issue: "PULSE Issues",
   ticket: "PULSE Issues",
@@ -890,6 +891,42 @@ function spItemToDocReviewerGroup(item) {
   };
 }
 
+/* ---------- mappers: group reporting (Portfolio/Program/EIC slide content) ---------- */
+
+function groupReportConfigToSpItem(cfg) {
+  return {
+    Title: cfg.groupKey || "",
+    GroupKey: cfg.groupKey || "",
+    GroupType: cfg.groupType || "",
+    GroupName: cfg.groupName || "",
+    TechBullets: JSON.stringify(cfg.techBullets || []),
+    Description: cfg.description || "",
+    OtherMilestones: JSON.stringify(cfg.otherMilestones || []),
+    PhotoProjectId: cfg.photoProjectId || "",
+    PhotoUrl: cfg.photoUrl || "",
+    PhotoName: cfg.photoName || "",
+    IncludedProjectIds: JSON.stringify(cfg.includedProjectIds || []),
+    RiskRows: JSON.stringify(cfg.riskRows || [])
+  };
+}
+
+function spItemToGroupReportConfig(item) {
+  return {
+    _spId: item.Id,
+    groupKey: item.GroupKey || item.Title || "",
+    groupType: item.GroupType || "",
+    groupName: item.GroupName || "",
+    techBullets: safeJsonParse(item.TechBullets, []),
+    description: item.Description || "",
+    otherMilestones: safeJsonParse(item.OtherMilestones, []),
+    photoProjectId: item.PhotoProjectId || "",
+    photoUrl: item.PhotoUrl || "",
+    photoName: item.PhotoName || "",
+    includedProjectIds: safeJsonParse(item.IncludedProjectIds, []),
+    riskRows: safeJsonParse(item.RiskRows, [])
+  };
+}
+
 /* ---------- mappers: meeting session + rocks ---------- */
 
 /* A meeting document is a typed list of editable blocks. Normalize it at the
@@ -1308,20 +1345,24 @@ function notificationConfigDefaults() {
 /* ---------- mappers: application settings ---------- */
 
 function appSettingsDefaults() {
-  return { cuiMarkingEnabled: false };
+  return { cuiMarkingEnabled: false, lastActionItemDigestDate: "", lastActionItemDigestClaimToken: "" };
 }
 
 function appSettingsToSpItem(cfg) {
   return {
     Title: "Default",
-    CuiMarkingEnabled: !!(cfg && cfg.cuiMarkingEnabled)
+    CuiMarkingEnabled: !!(cfg && cfg.cuiMarkingEnabled),
+    LastActionItemDigestDate: String((cfg && cfg.lastActionItemDigestDate) || ""),
+    LastActionItemDigestClaimToken: String((cfg && cfg.lastActionItemDigestClaimToken) || "")
   };
 }
 
 function spItemToAppSettings(item) {
   return {
     _spId: item.Id,
-    cuiMarkingEnabled: item.CuiMarkingEnabled === true
+    cuiMarkingEnabled: item.CuiMarkingEnabled === true,
+    lastActionItemDigestDate: item.LastActionItemDigestDate || "",
+    lastActionItemDigestClaimToken: item.LastActionItemDigestClaimToken || ""
   };
 }
 
@@ -1418,6 +1459,7 @@ function buildSharePointBackedEmptyDb() {
     }, {}),
     docReviewerGroups: [],
     groups: [],
+    groupReportConfigs: {},
     checklistBoards: [],
     checklistTasks: {},
     tickets: [],
@@ -1531,7 +1573,7 @@ async function loadAllFromSharePoint(siteUrl, options) {
     fieldProbe("PULSE Issues fields", SP_LISTS.issue),
     fieldProbe("PULSE App Settings fields", SP_LISTS.appSettings)
   ]);
-  const [roleRecords, projectItems, riskItems, actionItems, travelItems, debriefItems, teamEventItems, docItems, docReviewGroupItems, meetingItems, auditItems, notificationConfigItems, locationConfigItems, ticketItems, projectFieldDefinitions, riskFieldDefinitions, actionFieldDefinitions, travelFieldDefinitions, debriefFieldDefinitions, teamEventFieldDefinitions, docFieldDefinitions, docReviewGroupFieldDefinitions, meetingFieldDefinitions, auditFieldDefinitions, notificationConfigFieldDefinitions, locationConfigFieldDefinitions, ticketFieldDefinitions, roleFieldDefinitions] = await Promise.all([
+  const [roleRecords, projectItems, riskItems, actionItems, travelItems, debriefItems, teamEventItems, docItems, docReviewGroupItems, groupReportConfigItems, meetingItems, auditItems, notificationConfigItems, locationConfigItems, ticketItems, projectFieldDefinitions, riskFieldDefinitions, actionFieldDefinitions, travelFieldDefinitions, debriefFieldDefinitions, teamEventFieldDefinitions, docFieldDefinitions, docReviewGroupFieldDefinitions, groupReportConfigFieldDefinitions, meetingFieldDefinitions, auditFieldDefinitions, notificationConfigFieldDefinitions, locationConfigFieldDefinitions, ticketFieldDefinitions, roleFieldDefinitions] = await Promise.all([
     loadListWithFallback("PULSE App Roles", () => a.getRoleRecords(siteUrl), []),
     loadListWithFallback(SP_LISTS.project, () => listOrEmpty(siteUrl, SP_LISTS.project), []),
     loadListWithFallback(SP_LISTS.risk, () => listOrEmpty(siteUrl, SP_LISTS.risk), []),
@@ -1541,6 +1583,7 @@ async function loadAllFromSharePoint(siteUrl, options) {
     loadListWithFallback(SP_LISTS.teamEvent, () => listOrEmpty(siteUrl, SP_LISTS.teamEvent), []),
     loadListWithFallback(SP_LISTS.docReviewItem, () => listOrEmpty(siteUrl, SP_LISTS.docReviewItem), []),
     loadListWithFallback(SP_LISTS.docReviewerGroup, () => listOrEmpty(siteUrl, SP_LISTS.docReviewerGroup), []),
+    loadListWithFallback(SP_LISTS.groupReportConfig, () => listOrEmpty(siteUrl, SP_LISTS.groupReportConfig), []),
     loadListWithFallback(SP_LISTS.meetingSession, () => listOrEmpty(siteUrl, SP_LISTS.meetingSession), []),
     loadListWithFallback(SP_LISTS.auditLog, () => sharePointAdapter.getItems(siteUrl, SP_LISTS.auditLog, { top: 500, orderby: "ActionTime desc" }), []),
     loadListWithFallback(SP_LISTS.notificationConfig, () => listOrEmpty(siteUrl, SP_LISTS.notificationConfig), []),
@@ -1554,6 +1597,7 @@ async function loadAllFromSharePoint(siteUrl, options) {
     fieldProbe("PULSE Team Events fields", SP_LISTS.teamEvent),
     fieldProbe("PULSE Document Review fields", SP_LISTS.docReviewItem),
     fieldProbe("PULSE Doc Reviewer Groups fields", SP_LISTS.docReviewerGroup),
+    fieldProbe("PULSE Group Reporting fields", SP_LISTS.groupReportConfig),
     fieldProbe("PULSE Meetings fields", SP_LISTS.meetingSession),
     fieldProbe("PULSE Audit Log fields", SP_LISTS.auditLog),
     fieldProbe("PULSE Notification Config fields", SP_LISTS.notificationConfig),
@@ -1575,6 +1619,7 @@ async function loadAllFromSharePoint(siteUrl, options) {
   const normalizedTeamEventItems = normalizeItemsToSchema(teamEventItems, teamEventFieldDefinitions, SP_LISTS.teamEvent);
   const normalizedDocItems = normalizeItemsToSchema(docItems, docFieldDefinitions, SP_LISTS.docReviewItem);
   const normalizedDocReviewGroupItems = normalizeItemsToSchema(docReviewGroupItems, docReviewGroupFieldDefinitions, SP_LISTS.docReviewerGroup);
+  const normalizedGroupReportConfigItems = normalizeItemsToSchema(groupReportConfigItems, groupReportConfigFieldDefinitions, SP_LISTS.groupReportConfig);
   const normalizedMeetingItems = normalizeItemsToSchema(meetingItems, meetingFieldDefinitions, SP_LISTS.meetingSession);
   const normalizedAuditItems = normalizeItemsToSchema(auditItems, auditFieldDefinitions, SP_LISTS.auditLog);
   const normalizedIssueItems = normalizeItemsToSchema(issueItems, issueFieldDefinitions, SP_LISTS.issue);
@@ -1684,6 +1729,12 @@ async function loadAllFromSharePoint(siteUrl, options) {
   });
   db.groups = normalizedDocReviewGroupItems.map(spItemToDocReviewerGroup);
   db.docReviewerGroups = db.groups;
+
+  db.groupReportConfigs = {};
+  normalizedGroupReportConfigItems.forEach((item) => {
+    const cfg = spItemToGroupReportConfig(item);
+    if (cfg.groupKey) db.groupReportConfigs[cfg.groupKey] = cfg;
+  });
 
   /* Meetings: every session is one list item. The newest item per scope
      (highest Id) is the live "current session"; the rest are the archive. */
@@ -1798,6 +1849,7 @@ function mapKindToPayload(kind, obj) {
     case "teamEvent": return teamEventToSpItem(obj);
     case "docReviewItem": return docReviewItemToSpItem(obj, obj._column || "Not Started");
     case "docReviewerGroup": return docReviewerGroupToSpItem(obj);
+    case "groupReportConfig": return groupReportConfigToSpItem(obj);
     case "meetingSession": return meetingSessionToSpItem(obj, obj._projectCode || "");
     case "issue": return issueToSpItem(obj);
     case "ticket": return ticketToSpItem(obj);

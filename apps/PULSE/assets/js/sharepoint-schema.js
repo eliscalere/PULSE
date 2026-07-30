@@ -16,7 +16,7 @@ const SHAREPOINT_SCHEMA = {
       { name: "LoginName", type: "Text" },
       { name: "PrincipalType", type: "Number" },
       { name: "IsSiteAdmin", type: "Boolean" },
-      { name: "Role", type: "Choice", choices: ["Admin", "Meeting Admin", "Finance Admin", "Document Admin", "Manager", "Member", "Viewer"] },
+      { name: "Role", type: "Choice", choices: ["Admin", "PM Admin", "Meeting Admin", "Finance Admin", "Document Admin", "Manager", "Member", "Viewer"] },
       { name: "JobTitle", type: "Text" },
       { name: "SpoAccess", type: "Choice", choices: ["None", "View", "Full"] },
       { name: "PowerBiAccess", type: "Choice", choices: ["None", "View", "Full"] },
@@ -290,6 +290,23 @@ const SHAREPOINT_SCHEMA = {
     ]
   },
 
+  "PULSE Group Reporting": {
+    description: "Slide content for a Portfolio/Program/End Item Config's combined status slide, and which member projects are currently included in its export deck — these groups are just name tags on individual projects, not their own SharePoint records, so this list is the one place to persist group-level Technical Status bullets, a formatted Description, a Risk Summary, extra ad-hoc milestones (beyond each member project's own Contract/FAT/SAT/etc. dates), the one photo (pulled from a member project's Photos tab) representing the config, and the deck's project inclusion selection.",
+    fields: [
+      { name: "GroupKey", type: "Text", required: true },
+      { name: "GroupType", type: "Text" },
+      { name: "GroupName", type: "Text" },
+      { name: "TechBullets", type: "Note", numLines: 10 },
+      { name: "Description", type: "Note", numLines: 20 },
+      { name: "OtherMilestones", type: "Note", numLines: 10 },
+      { name: "PhotoProjectId", type: "Text" },
+      { name: "PhotoUrl", type: "Text" },
+      { name: "PhotoName", type: "Text" },
+      { name: "IncludedProjectIds", type: "Note", numLines: 6 },
+      { name: "RiskRows", type: "Note", numLines: 6 }
+    ]
+  },
+
   "PULSE Audit Log": {
     description: "Append-only record of user actions across AEWTTR-PULSE. Admin access only.",
     fields: [
@@ -376,7 +393,9 @@ const SHAREPOINT_SCHEMA = {
   "PULSE App Settings": {
     description: "Single-row, admin-managed application-wide display settings.",
     fields: [
-      { name: "CuiMarkingEnabled", type: "Boolean" }
+      { name: "CuiMarkingEnabled", type: "Boolean" },
+      { name: "LastActionItemDigestDate", type: "Text" },
+      { name: "LastActionItemDigestClaimToken", type: "Text" }
     ]
   },
 

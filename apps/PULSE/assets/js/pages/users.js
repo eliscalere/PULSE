@@ -230,7 +230,7 @@ function drawUsersTable(body, directory, roleRecords) {
     const hay = `${u.displayName || ""} ${u.email || ""} ${u.loginName || ""}`.toLowerCase();
     return hay.includes(q);
   });
-  const roleChoices = ["Admin", "Meeting Admin", "Finance Admin", "Document Admin", "Manager", "Member", "Viewer"];
+  const roleChoices = ["Admin", "PM Admin", "Meeting Admin", "Finance Admin", "Document Admin", "Manager", "Member", "Viewer"];
   const sourceHelp = tab === "aewttr"
     ? `Showing ${displayUsers.length} people associated with PULSE (active App Roles). Service accounts are hidden from this list. Unassign removes app access without deleting the directory entry.`
     : `Showing ${displayUsers.length} people from the pulled SharePoint directory. Service accounts are hidden. Assign someone to PULSE to grant app access. Import more people from Admin → SharePoint Setup.`;

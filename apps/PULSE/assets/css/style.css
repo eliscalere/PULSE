@@ -90,11 +90,13 @@ button { font-family: inherit; }
   background: var(--aewttr-bg);
   overflow: hidden;
 }
-.pulse-cui-marking {
-  height: 20px; min-height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  padding: 2px 12px; background: #237a45; color: #ffffff; border-color: #185a32;
-  border-style: solid; border-width: 0; font-size: 9.5px; font-weight: 800; letter-spacing: .12em;
-  line-height: 1; text-align: center;
+.cui-bar {
+  width: 100%; flex-shrink: 0; box-sizing: border-box;
+  background: #00843d; color: #fff;
+  padding: 3px 16px; text-align: center; border-radius: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  line-height: 1.4;
 }
 
 /* Notes now includes a structured risk context view. Keep it closer to an
@@ -112,9 +114,6 @@ button { font-family: inherit; }
 .proj-notes-risk-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--aewttr-muted); font-size: 12px; }
 .proj-notes-risk-meta b, .proj-notes-risk-mitigation b { color: var(--aewttr-text); font-weight: 600; }
 .proj-notes-risk-mitigation { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--aewttr-border); color: var(--aewttr-muted); font-size: 12px; line-height: 1.45; }
-.pulse-cui-marking--top { border-bottom-width: 1px; }
-.pulse-cui-marking--bottom { border-top-width: 1px; }
-
 .aewttr-topnav {
   position: sticky; top: 0; z-index: 90;
   height: var(--nav-height);
@@ -2039,27 +2038,6 @@ a.btn-travel-action {
 }
 
 /* ---- Dashboard tab ---- */
-.ov-dash-kpi-strip {
-  display: flex;
-  flex-wrap: wrap;
-  border: 1px solid var(--aewttr-border);
-  border-radius: var(--aewttr-radius-md);
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-.ov-dash-kpi {
-  flex: 1 1 100px;
-  padding: 14px 18px;
-  border-right: 1px solid var(--aewttr-border);
-}
-.ov-dash-kpi:last-child { border-right: 0; }
-.ov-dash-kpi strong { display: block; font-size: 24px; font-weight: 700; line-height: 1.1; color: var(--aewttr-text); }
-.ov-dash-kpi span { display: block; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--aewttr-muted); margin-top: 4px; }
-.ov-dash-kpi small { display: block; font-size: 11px; color: var(--aewttr-muted); margin-top: 1px; }
-.ov-dash-kpi--green strong { color: var(--aewttr-green); }
-.ov-dash-kpi--amber strong { color: var(--aewttr-amber); }
-.ov-dash-kpi--red strong { color: var(--aewttr-red); }
-
 .ov-dash-layout {
   display: grid;
   grid-template-columns: 1fr 272px;
@@ -2074,6 +2052,11 @@ a.btn-travel-action {
   margin-bottom: 14px;
   flex-wrap: wrap;
 }
+.ov-dash-health-donut { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.ov-dash-health-donut-legend { display: flex; flex-direction: column; gap: 3px; }
+.ov-dash-health-donut-legend span { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--aewttr-muted); white-space: nowrap; }
+.ov-dash-health-donut-legend i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ov-donut-empty { font-size: 11px; color: var(--aewttr-muted); }
 .ov-dash-chart-card {
   display: flex;
   align-items: center;
@@ -2096,20 +2079,19 @@ a.btn-travel-action {
   gap: 6px;
   padding: 12px 14px;
   border: 1px solid var(--aewttr-border);
-  border-left: 4px solid var(--aewttr-border);
   border-radius: var(--aewttr-radius-md);
   background: var(--aewttr-surface);
   text-align: left;
   cursor: pointer;
   width: 100%;
-  transition: background 0.1s;
+  transition: background 0.1s, border-color 0.1s;
 }
 .ov-health-card:hover { background: var(--aewttr-surface-2); }
-.ov-health-card--green { border-left-color: var(--aewttr-green); }
-.ov-health-card--amber { border-left-color: var(--aewttr-amber); }
-.ov-health-card--red { border-left-color: var(--aewttr-red); }
-.ov-health-card--blue { border-left-color: var(--aewttr-blue); }
-.ov-health-card--gray { border-left-color: var(--aewttr-border); }
+.ov-health-card--green { border-color: color-mix(in srgb, var(--aewttr-green) 35%, var(--aewttr-border)); }
+.ov-health-card--amber { border-color: color-mix(in srgb, var(--aewttr-amber) 45%, var(--aewttr-border)); background: color-mix(in srgb, var(--aewttr-amber) 5%, var(--aewttr-surface)); }
+.ov-health-card--red { border-color: color-mix(in srgb, var(--aewttr-red) 45%, var(--aewttr-border)); }
+.ov-health-card--blue { border-color: color-mix(in srgb, var(--aewttr-blue) 35%, var(--aewttr-border)); }
+.ov-health-card--gray { border-color: var(--aewttr-border); }
 .ov-health-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .ov-health-card-name { font-size: 12.5px; font-weight: 600; color: var(--aewttr-text); line-height: 1.3; flex: 1; }
 .ov-health-card-meta { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 11px; color: var(--aewttr-muted); }
@@ -2328,6 +2310,18 @@ a.btn-travel-action {
 .resource-detail-link strong { font-size: 12px; }
 .resource-detail-link span { grid-column: 1; color: var(--aewttr-muted); font-size: 10px; }
 .resource-detail-link i { grid-column: 2; grid-row: 1 / span 2; color: var(--aewttr-muted); }
+/* Inline expand-in-place row detail — replaces the old click-to-open-modal
+   pattern so assignment data reads directly in the list. */
+.resource-row-wrap { border-bottom: 1px solid var(--aewttr-border); }
+.resource-row-wrap:last-child { border-bottom: none; }
+.resource-row-wrap .resource-person-row, .resource-row-wrap .resource-project-row { border-bottom: 0; }
+.resource-person-row.is-expanded, .resource-project-row.is-expanded { background: var(--aewttr-surface-2); }
+.resource-detail-inline { padding: 12px 16px 16px 58px; background: var(--aewttr-surface-2); border-top: 1px dashed var(--aewttr-border); display: flex; flex-direction: column; gap: 8px; }
+.resource-detail-inline .resource-detail-metrics { grid-template-columns: repeat(2, minmax(0, 160px)); }
+.resource-detail-inline .resource-detail-link { background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: var(--aewttr-radius-sm); padding: 8px 10px; margin-bottom: 4px; }
+.resource-detail-inline .resource-detail-link:last-child { margin-bottom: 0; }
+.resource-detail-people { display: flex; flex-direction: column; gap: 6px; }
+.resource-detail-person { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--aewttr-text); }
 @media (max-width: 720px) {
   .resource-hub-head, .resource-controls { align-items: stretch; flex-direction: column; }
   .resource-summary { justify-content: flex-start; }
@@ -7120,10 +7114,6 @@ html[data-theme="dark"] .docreview-submit-note {
   background: var(--aewttr-surface-2);
 }
 .monday-subtable--tracker td { padding: 5px 10px; }
-.monday-gantt-divider-label .monday-gantt-group-name { font-weight: 700; }
-.monday-gantt-divider-label.is-milestone {
-  background: color-mix(in srgb, var(--aewttr-amber-tint) 50%, var(--aewttr-surface-2));
-}
 
 .divider-settings-modal {
   max-width: min(640px, calc(100vw - 32px));
@@ -7786,6 +7776,17 @@ html[data-theme="dark"] .docreview-submit-note {
 .tracker-gantt-gridline.is-today { background: color-mix(in srgb, var(--aewttr-blue) 7%, transparent); }
 .tracker-gantt-bar { position: absolute; z-index: 1; top: 11px; height: 20px; display: flex; align-items: center; min-width: 12px; max-width: calc(100% - 2px); overflow: hidden; border: 0; border-radius: 3px; background: var(--aewttr-blue); color: #fff; cursor: pointer; text-align: left; padding: 0 7px; font-size: 10px; font-weight: 600; white-space: nowrap; }
 .tracker-gantt-row.is-subtask .tracker-gantt-bar { top: 8px; height: 18px; background: color-mix(in srgb, var(--aewttr-blue) 78%, var(--aewttr-text)); }
+
+/* Combined multi-project Timeline (Weekly Meeting): divider between each project's rows */
+.tracker-gantt-project-divider {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px; background: var(--aewttr-surface-2);
+  border-bottom: 1px solid var(--aewttr-border); border-top: 1px solid var(--aewttr-border);
+  min-width: calc(270px + (var(--gantt-days) * var(--gantt-day-width)));
+}
+.tracker-gantt-project-divider:first-child { border-top: none; }
+.tracker-gantt-project-name { font-size: 12.5px; font-weight: 750; color: var(--aewttr-text); }
+.tracker-gantt-project-count { font-size: 11px; color: var(--aewttr-muted); }
 .tracker-gantt-bar.is-open { width: 12px !important; border-radius: 50%; padding: 0; background: var(--aewttr-amber); }
 .tracker-gantt-bar.is-complete { background: var(--aewttr-green); }
 .tracker-gantt-empty { padding: 32px; color: var(--aewttr-muted); font-size: 13px; }
@@ -9764,6 +9765,16 @@ button.proj-spo-linked-item { width: 100%; border-top: 0; border-right: 0; borde
   overflow: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+/* The Monday-style tracker view owns its own inner scroller
+   (.monday-table-wrap, below) — it must stay the single scroll container,
+   or wheel events over the rows land on this outer box instead (its
+   scrollHeight never actually exceeds clientHeight, so the wheel has
+   nowhere to go) while the scrollbar thumb still visually belongs to the
+   inner wrap. Restore the "outer clips, inner scrolls" contract here with
+   matching specificity to the rule above. */
+.project-spo-tab-body > .tracker-shell .tracker-view-mount.tracker-view-mount--monday {
+  overflow: hidden;
 }
 .kanban-col-menu {
   margin-left: auto;
@@ -12662,422 +12673,14 @@ body.gantt-dragging iframe {
 }
 
 /* ---------- Monday.com Gantt chart ---------- */
-.monday-gantt {
-  background: var(--aewttr-surface);
-  min-height: 360px;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  overflow: hidden;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.monday-gantt-empty {
-  padding: 48px 24px;
-  text-align: center;
-  color: var(--aewttr-muted);
-  font-size: 14px;
-}
-.monday-gantt-chartbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--aewttr-border);
-  background: var(--aewttr-surface);
-  flex-shrink: 0;
-}
-.monday-gantt-quarter {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--aewttr-muted);
-}
-.monday-gantt-chartbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-.monday-gantt-chartbtn,
-.monday-gantt-zoom-select {
-  border: 1px solid var(--aewttr-border);
-  border-radius: var(--aewttr-radius-sm);
-  background: var(--aewttr-surface);
-  color: var(--aewttr-text);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 5px 10px;
-}
-.monday-gantt-chartbtn { cursor: pointer; }
-.monday-gantt-chartbtn:hover { border-color: var(--aewttr-blue); color: var(--aewttr-blue); }
-.monday-gantt-range-tabs {
-  display: inline-flex; border: 1px solid var(--aewttr-border); border-radius: var(--aewttr-radius-sm); overflow: hidden;
-}
-.monday-gantt-range-tab {
-  border: none; background: var(--aewttr-surface); color: var(--aewttr-muted);
-  font-size: 12px; font-weight: 600; padding: 5px 10px; cursor: pointer;
-  border-right: 1px solid var(--aewttr-border);
-}
-.monday-gantt-range-tab:last-child { border-right: none; }
-.monday-gantt-range-tab:hover { color: var(--aewttr-text); }
-.monday-gantt-range-tab.active { background: var(--aewttr-blue); color: #fff; }
-.monday-gantt-nav-btn {
-  width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--aewttr-border); border-radius: var(--aewttr-radius-sm);
-  background: var(--aewttr-surface); color: var(--aewttr-text); cursor: pointer; font-size: 13px;
-}
-.monday-gantt-nav-btn:hover { border-color: var(--aewttr-blue); color: var(--aewttr-blue); }
-.monday-gantt-scroll {
-  overflow: auto;
-  max-height: calc(100vh - 332px);
-  width: 100%;
-  max-width: 100%;
-  flex: 1;
-  min-height: 0;
-}
-.monday-gantt-board {
-  width: 100%;
-  min-width: max(100%, calc(var(--gantt-info-width, 300px) + var(--gantt-timeline-width, 0px)));
-  box-sizing: border-box;
-}
-.monday-gantt-head {
-  display: grid;
-  grid-template-columns: var(--gantt-info-width, 300px) minmax(var(--gantt-timeline-width, 0px), 1fr);
-  width: 100%;
-  min-width: calc(var(--gantt-info-width, 300px) + var(--gantt-timeline-width, 0px));
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  background: var(--aewttr-surface-2);
-  border-bottom: 1px solid var(--aewttr-border);
-}
-.monday-gantt-head-left {
-  border-right: 1px solid var(--aewttr-border);
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  padding: 0 14px;
-  position: relative;
-  background: var(--aewttr-surface-2);
-}
-.monday-gantt-info-resizer {
-  position: absolute;
-  right: -2px;
-  top: 0;
-  bottom: 0;
-  width: 5px;
-  cursor: col-resize;
-  z-index: 10;
-}
-.monday-gantt-info-resizer:hover {
-  background: var(--aewttr-blue);
-}
-.monday-gantt-head-title {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  color: var(--aewttr-muted);
-}
-.monday-gantt-head-timeline {
-  position: relative;
-  min-height: 58px;
-  width: 100%;
-  min-width: var(--gantt-timeline-width, 0px);
-  box-sizing: border-box;
-  overflow: hidden;
-}
-.monday-gantt-months {
-  position: relative;
-  height: 32px;
-}
-.monday-gantt-month {
-  position: absolute;
-  top: 4px;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  border-right: 1px solid var(--aewttr-border);
-}
-.monday-gantt-month span {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--aewttr-muted);
-  padding: 4px 8px;
-  border-radius: var(--aewttr-radius-sm);
-}
-.monday-gantt-month.is-current span {
-  background: var(--aewttr-blue-tint);
-  color: var(--aewttr-blue);
-}
 /* Second header row: day/hour indicators the month pills alone don't give
    you — see buildMondayGanttTicks in projects.js for what renders here per
    range mode (hour ruler for Day, day-of-week for Week, day numbers for
    Month, sparse week/month labels for Whole Project). */
-.monday-gantt-ticks {
-  position: relative;
-  height: 26px;
-  border-top: 1px solid var(--aewttr-border);
-}
-.monday-gantt-tick {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-right: 1px solid color-mix(in srgb, var(--aewttr-border) 70%, transparent);
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--aewttr-muted);
-  overflow: hidden;
-  white-space: nowrap;
-  padding: 0 2px;
-  font-variant-numeric: tabular-nums;
-}
-.monday-gantt-tick.is-today { color: var(--aewttr-blue); font-weight: 800; }
-.monday-gantt-tick.is-weekend { background: color-mix(in srgb, var(--aewttr-surface-3) 45%, transparent); }
-.monday-gantt-body {
-  display: grid;
-  grid-template-columns: var(--gantt-info-width, 300px) minmax(var(--gantt-timeline-width, 0px), 1fr);
-  width: 100%;
-  min-width: calc(var(--gantt-info-width, 300px) + var(--gantt-timeline-width, 0px));
-}
-.monday-gantt-group-label,
-.monday-gantt-task-label,
-.monday-gantt-subtask-label {
-  position: sticky;
-  left: 0;
-  z-index: 2;
-  background: var(--aewttr-surface);
-  border-right: 1px solid var(--aewttr-border);
-  border-bottom: 1px solid var(--aewttr-border);
-}
-.monday-gantt-group-label {
-  background: var(--aewttr-surface);
-  padding: 0 12px;
-  min-height: 28px;
-  display: flex;
-  align-items: center;
-}
-.monday-gantt-task-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 10px 0 6px;
-  min-height: 28px;
-  transition: background .1s ease;
-}
-.monday-gantt-task-label:hover { background: var(--aewttr-surface-2); }
-.monday-gantt-task-label:hover .monday-gantt-drag { opacity: 1; }
-.monday-gantt-subtask-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px 0 18px;
-  min-height: 28px;
-  background: var(--aewttr-surface);
-}
-.monday-gantt-subtask-label--empty { color: var(--aewttr-muted); }
-.monday-gantt-group-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 7px 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--aewttr-text);
-}
-.monday-gantt-group-toggle .monday-gantt-group-dot {
-  margin-top: 0;
-}
-.monday-gantt-group-toggle .monday-gantt-group-name {
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: default;
-}
-.monday-gantt-chevron,
-.monday-gantt-chevron-spacer {
-  width: 20px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-}
-.monday-gantt-chevron {
-  border: none;
-  background: transparent;
-  color: var(--aewttr-muted);
-  cursor: pointer;
-  padding: 0;
-  font-size: 16px;
-  line-height: 1;
-  border-radius: var(--aewttr-radius-sm);
-}
-.monday-gantt-chevron:hover { color: var(--aewttr-text); background: var(--aewttr-surface-3); }
-.monday-gantt-task-copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-}
-.monday-gantt-task-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--aewttr-text);
-  line-height: 1.35;
-  outline: none;
-  cursor: text;
-  word-break: break-word;
-}
-.monday-gantt-task-name:focus {
-  background: var(--aewttr-blue-tint);
-  border-radius: var(--aewttr-radius-sm);
-  box-shadow: 0 0 0 1px var(--aewttr-blue);
-}
-.monday-gantt-task-meta {
-  font-size: 11px;
-  color: var(--aewttr-muted);
-  border: none;
-  background: transparent;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
-  max-width: 100%;
-  font-variant-numeric: tabular-nums;
-}
-.monday-gantt-task-meta:hover {
-  color: var(--aewttr-blue);
-}
-.monday-gantt-edit {
-  opacity: 0;
-  border: none;
-  background: transparent;
-  color: var(--aewttr-muted);
-  cursor: pointer;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--aewttr-radius-sm);
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  font-size: 15px;
-}
-.monday-gantt-edit:hover {
-  background: var(--aewttr-blue-tint);
-  color: var(--aewttr-blue);
-}
-.monday-gantt-task-label:hover .monday-gantt-edit,
-.monday-gantt-subtask-label:hover .monday-gantt-edit,
-.monday-gantt-task-label:hover .monday-gantt-subtask-delete,
-.monday-gantt-subtask-label:hover .monday-gantt-subtask-delete { opacity: 1; }
-.monday-gantt-edit--sub { width: 24px; height: 24px; font-size: 14px; }
-.monday-gantt-edit--danger:hover { background: rgba(224,54,54,.1); color: var(--aewttr-red); }
-.monday-gantt-subtask-delete {
-  opacity: 0;
-  border: none;
-  background: transparent;
-  color: var(--aewttr-muted);
-  cursor: pointer;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-  margin-left: auto;
-}
-.monday-gantt-subtask-delete:hover { background: rgba(224,54,54,.1); color: var(--aewttr-red); }
-.monday-gantt-group-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-.monday-gantt-group-count {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--aewttr-muted);
-  background: var(--aewttr-surface-3);
-  padding: 2px 7px;
-  border-radius: 999px;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-.monday-gantt-drag {
-  opacity: 0;
-  border: none;
-  background: transparent;
-  color: var(--aewttr-muted);
-  cursor: grab;
-  padding: 2px;
-  flex-shrink: 0;
-}
-.monday-gantt-task-label:hover .monday-gantt-drag { opacity: 1; }
 
 /* One-click "mark done" — a satisfying filled checkmark circle, the thing
    Planner gets right and this Gantt view was missing entirely. */
-.monday-gantt-complete {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  border: 1.5px solid var(--aewttr-border-strong);
-  background: var(--aewttr-surface);
-  color: transparent;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 1;
-  transition: background .12s ease, border-color .12s ease, transform .08s ease, color .12s ease;
-}
-.monday-gantt-complete:hover {
-  border-color: var(--aewttr-green);
-  transform: scale(1.08);
-}
-.monday-gantt-complete[aria-pressed="true"] {
-  background: var(--aewttr-green);
-  border-color: var(--aewttr-green);
-  color: #fff;
-}
-.monday-gantt-complete--sub { width: 17px; height: 17px; font-size: 11px; }
 
-.monday-gantt-inline-add {
-  border: 1px dashed var(--aewttr-border);
-  background: transparent;
-  color: var(--aewttr-muted);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.monday-gantt-inline-add:hover {
-  border-color: var(--aewttr-blue);
-  color: var(--aewttr-blue);
-  background: rgba(12,102,228,.04);
-}
-.monday-gantt-subtask-label--empty {
-  padding-left: 42px;
-}
 
 .gantt-context-menu {
   position: fixed;
@@ -13106,128 +12709,11 @@ body.gantt-dragging iframe {
 .gantt-context-menu-item.is-danger { color: var(--aewttr-red); }
 .gantt-context-menu-item.is-danger:hover { background: rgba(224,54,54,.08); }
 
-.tracker-view-mount--meeting .monday-gantt-scroll {
-  max-height: none;
-  height: 100%;
-}
 .tracker-view-mount--gantt,
 .tracker-view-mount--meeting.tracker-view-mount--gantt {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-}
-.monday-gantt-task-label.is-complete .monday-gantt-task-name {
-  color: var(--aewttr-muted);
-  text-decoration: line-through;
-}
-.monday-gantt-subtask-label.is-complete .monday-gantt-subtask-name {
-  color: var(--aewttr-muted);
-  text-decoration: line-through;
-}
-.monday-gantt-group-name:focus {
-  background: var(--aewttr-blue-tint);
-  border-radius: var(--aewttr-radius-sm);
-  box-shadow: 0 0 0 1px var(--aewttr-blue);
-}
-.monday-gantt-subtask-meta {
-  font-size: 11px;
-  color: var(--aewttr-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-variant-numeric: tabular-nums;
-}
-.monday-gantt-subtask-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-  border: none;
-  background: transparent;
-  text-align: left;
-  padding: 0;
-  cursor: pointer;
-}
-.monday-gantt-subtask-name {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--aewttr-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.monday-gantt-rail,
-.monday-gantt-subtask-rail {
-  position: relative;
-  min-height: 44px;
-  width: 100%;
-  min-width: var(--gantt-timeline-width, 0px);
-  box-sizing: border-box;
-  overflow: hidden;
-  border-bottom: 1px solid var(--aewttr-border);
-  background-color: var(--aewttr-surface);
-  background-image: repeating-linear-gradient(
-    90deg,
-    transparent,
-    transparent calc(var(--gantt-day, 20px) - 1px),
-    color-mix(in srgb, var(--aewttr-border) 70%, transparent) calc(var(--gantt-day, 20px) - 1px),
-    color-mix(in srgb, var(--aewttr-border) 70%, transparent) var(--gantt-day, 20px)
-  );
-}
-.monday-gantt-group-rail {
-  min-height: 36px;
-  overflow: visible;
-  background-color: var(--aewttr-surface-2);
-  background-image: repeating-linear-gradient(
-    90deg,
-    transparent,
-    transparent calc(var(--gantt-day, 20px) - 1px),
-    color-mix(in srgb, var(--aewttr-border) 55%, transparent) calc(var(--gantt-day, 20px) - 1px),
-    color-mix(in srgb, var(--aewttr-border) 55%, transparent) var(--gantt-day, 20px)
-  );
-}
-.monday-gantt-subtask-rail {
-  min-height: 36px;
-  background-color: color-mix(in srgb, var(--aewttr-surface-2) 55%, var(--aewttr-surface));
-}
-.monday-gantt-today {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--aewttr-amber);
-  z-index: 1;
-  pointer-events: none;
-}
-.monday-gantt-due {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 0;
-  border-left: 2px dashed var(--aewttr-red);
-  z-index: 1;
-  pointer-events: none;
-}
-.monday-gantt-parent-line {
-  position: absolute;
-  top: 26px;
-  height: 3px;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--aewttr-blue) 22%, var(--aewttr-surface-3));
-}
-.monday-gantt-bar {
-  top: 10px !important;
-  height: 24px !important;
-  border-radius: 6px !important;
-  border: none !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,.12) !important;
-  font-size: 0 !important;
-  opacity: 1 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  background: #8590A2 !important;
-  cursor: grab;
 }
 .monday-gantt-bar.status-Not-Started,
 .monday-bar--planned { background: #8590A2 !important; }
@@ -13241,97 +12727,8 @@ body.gantt-dragging iframe {
 .monday-gantt-bar.status-Done,
 .monday-bar--done,
 .monday-bar--green { background: var(--aewttr-green) !important; }
-.monday-gantt-bar:hover { filter: brightness(1.08); box-shadow: 0 2px 6px rgba(0,0,0,.18) !important; cursor: grab; }
-.monday-gantt-bar:active { cursor: grabbing; }
-.monday-gantt-bar-copy {
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: max-content;
-  pointer-events: none;
-}
-.monday-gantt-bar-title {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--aewttr-text);
-}
-.monday-gantt-bar-meta {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--aewttr-muted);
-  background: var(--aewttr-surface);
-  border: 1px solid var(--aewttr-border);
-  border-radius: var(--aewttr-radius-sm);
-  padding: 2px 6px;
-}
-.monday-gantt-bar .monday-gantt-bar-progress {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, rgba(255,255,255,.22), rgba(255,255,255,.08));
-  pointer-events: none;
-}
-.monday-gantt-subbar {
-  top: 11px;
-  height: 14px;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--aewttr-blue) 30%, var(--aewttr-border));
-  background: var(--aewttr-blue-tint);
-  color: var(--aewttr-blue-dark);
-  box-shadow: none;
-  padding: 0;
-  cursor: grab;
-}
-.monday-gantt-subbar:active { cursor: grabbing; }
-.monday-gantt-subbar.done {
-  background: var(--aewttr-green-tint);
-  color: var(--aewttr-green);
-  border-color: color-mix(in srgb, var(--aewttr-green) 28%, var(--aewttr-border));
-}
-.monday-gantt-subbar.overdue {
-  background: var(--aewttr-red-tint);
-  color: var(--aewttr-red);
-  border-color: color-mix(in srgb, var(--aewttr-red) 28%, var(--aewttr-border));
-}
-.monday-gantt-subbar--untimed {
-  background: var(--aewttr-surface-3);
-  color: var(--aewttr-muted);
-  border-color: var(--aewttr-border);
-}
-.monday-gantt-subbar-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.monday-gantt-task-label.dragging { opacity: .45; }
-.monday-gantt-task-label.drag-over { box-shadow: inset 0 2px 0 var(--aewttr-blue); }
 
-.monday-gantt--meeting {
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  background: transparent;
-  min-height: 280px;
-}
-.monday-gantt--meeting .monday-gantt-chartbar {
-  padding: 8px 10px;
-  background: var(--aewttr-surface);
-}
 
-.monday-gantt-drawer {
-  grid-column: 1 / -1;
-  background: var(--aewttr-surface-2);
-  border-bottom: 1px solid var(--aewttr-border);
-  padding: 10px 14px 10px 42px;
-}
 
 /* This whole Gantt block was built with fixed light-only colors (white
    toolbars, near-black text on near-white rails), so the timeline stayed a
@@ -13339,49 +12736,6 @@ body.gantt-dragging iframe {
    every fixed background/text color here instead of touching the base
    rules above, to keep this diff isolated and match the dark-override
    pattern already used for Document Review elsewhere in this file. */
-html[data-theme="dark"] .monday-gantt { background: var(--aewttr-surface); }
-html[data-theme="dark"] .monday-gantt-chartbar { background: var(--aewttr-surface-2); border-bottom-color: var(--aewttr-border); }
-html[data-theme="dark"] .monday-gantt-quarter,
-html[data-theme="dark"] .monday-gantt-head-title,
-html[data-theme="dark"] .monday-gantt-month span,
-html[data-theme="dark"] .monday-gantt-task-meta,
-html[data-theme="dark"] .monday-gantt-subtask-meta,
-html[data-theme="dark"] .monday-gantt-bar-meta,
-html[data-theme="dark"] .monday-gantt-tick { color: var(--aewttr-muted); }
-html[data-theme="dark"] .monday-gantt-head { background: var(--aewttr-surface-2); border-bottom-color: var(--aewttr-border); }
-html[data-theme="dark"] .monday-gantt-head-left { border-right-color: var(--aewttr-border); }
-html[data-theme="dark"] .monday-gantt-month { border-right-color: var(--aewttr-border); }
-html[data-theme="dark"] .monday-gantt-ticks { border-top-color: var(--aewttr-border); }
-html[data-theme="dark"] .monday-gantt-tick { border-right-color: var(--aewttr-border); }
-html[data-theme="dark"] .monday-gantt-tick.is-today { color: var(--aewttr-blue); }
-html[data-theme="dark"] .monday-gantt-tick.is-weekend { background: rgba(255,255,255,.03); }
-html[data-theme="dark"] .monday-gantt-group-label,
-html[data-theme="dark"] .monday-gantt-task-label,
-html[data-theme="dark"] .monday-gantt-subtask-label { border-right-color: var(--aewttr-border); border-bottom-color: var(--aewttr-border); }
-html[data-theme="dark"] .monday-gantt-group-label,
-html[data-theme="dark"] .monday-gantt-group-rail { background-color: var(--aewttr-surface-2); }
-html[data-theme="dark"] .monday-gantt-subtask-rail { background-color: var(--aewttr-surface); }
-html[data-theme="dark"] .monday-gantt-rail,
-html[data-theme="dark"] .monday-gantt-subtask-rail,
-html[data-theme="dark"] .monday-gantt-group-rail { border-bottom-color: var(--aewttr-border); }
-html[data-theme="dark"] .monday-gantt-rail,
-html[data-theme="dark"] .monday-gantt-group-rail {
-  background-image: repeating-linear-gradient(
-    90deg,
-    transparent,
-    transparent calc(var(--gantt-day, 20px) - 1px),
-    rgba(255,255,255,.05) calc(var(--gantt-day, 20px) - 1px),
-    rgba(255,255,255,.05) var(--gantt-day, 20px)
-  );
-}
-html[data-theme="dark"] .monday-gantt-parent-line { background: color-mix(in srgb, var(--aewttr-blue) 25%, var(--aewttr-surface)); }
-html[data-theme="dark"] .monday-gantt-bar-title { color: var(--aewttr-text); }
-html[data-theme="dark"] .monday-gantt-bar-meta { background: rgba(0,0,0,.35); border-color: var(--aewttr-border); }
-html[data-theme="dark"] .monday-gantt-subbar { background: #2b3a5c; color: #b9cdff; border-color: var(--aewttr-border); }
-html[data-theme="dark"] .monday-gantt-subbar.done { background: #17352a; color: #6fd6a8; }
-html[data-theme="dark"] .monday-gantt-subbar.overdue { background: #3a1f22; color: #f2938a; }
-html[data-theme="dark"] .monday-gantt-subbar--untimed { background: var(--aewttr-surface-3); color: var(--aewttr-muted); }
-html[data-theme="dark"] .monday-gantt-drawer { background: var(--aewttr-surface-2); border-bottom-color: var(--aewttr-border); }
 
 /* ── MS-Project–style Gantt overrides ── */
 
@@ -13410,28 +12764,11 @@ html[data-theme="dark"] .monday-gantt-drawer { background: var(--aewttr-surface-
 .msp-gantt-gridline.is-weekend-start {
   background: color-mix(in srgb, var(--aewttr-amber) 35%, var(--aewttr-border));
 }
-.monday-gantt-rail > .monday-gantt-bar,
-.monday-gantt-rail > .monday-gantt-subbar,
-.monday-gantt-rail > .gantt-subbar,
-.monday-gantt-rail > .mgp-summary-bar {
-  z-index: 2;
-}
 .msp-gantt-indent {
   width: calc((var(--msp-depth, 1) - 1) * 16px);
   flex-shrink: 0;
 }
 /* Outline indent: project (0) → divider (1) → task (2) → subtask (3+) */
-.msp-gantt .monday-gantt-task-label,
-.msp-gantt .monday-gantt-summary-label,
-.msp-gantt .monday-gantt-project-label {
-  padding-left: calc(4px + var(--msp-depth, 0) * 14px) !important;
-}
-.msp-gantt .monday-gantt-subtask-label {
-  padding-left: calc(4px + var(--msp-depth, 2) * 14px) !important;
-}
-.monday-gantt-subtask-label {
-  padding-left: calc(10px + (var(--msp-depth, 2) - 1) * 14px) !important;
-}
 .msp-gantt-project-rail {
   width: 3px;
   align-self: stretch;
@@ -13441,103 +12778,12 @@ html[data-theme="dark"] .monday-gantt-drawer { background: var(--aewttr-surface-
   background: var(--aewttr-blue);
   flex-shrink: 0;
 }
-.msp-gantt .monday-gantt-project-label {
-  background: color-mix(in srgb, var(--aewttr-blue) 8%, var(--aewttr-surface-2));
-  border-bottom: 1px solid var(--aewttr-border);
-  font-weight: 750;
-}
-.msp-gantt .monday-gantt-project-name {
-  font-weight: 750;
-  font-size: 12.5px;
-}
-.msp-gantt .monday-gantt-project-rail-row {
-  background: color-mix(in srgb, var(--aewttr-blue) 5%, var(--aewttr-surface));
-}
-.monday-gantt-group-label[data-row-kind="divider"],
-.monday-gantt-group-label[data-row-kind="group"] {
-  background: color-mix(in srgb, var(--aewttr-blue) 7%, var(--aewttr-surface-2));
-  border-bottom: 1px solid var(--aewttr-border);
-}
-.msp-gantt .monday-gantt-head-left {
-  box-shadow: 2px 0 0 color-mix(in srgb, var(--aewttr-border) 80%, transparent);
-}
-.msp-gantt .monday-gantt-group-label,
-.msp-gantt .monday-gantt-task-label,
-.msp-gantt .monday-gantt-subtask-label {
-  box-shadow: 2px 0 0 color-mix(in srgb, var(--aewttr-border) 80%, transparent);
-}
-.msp-gantt[data-gantt-scale="day"] .monday-gantt-range-tab[data-gantt-range="day"],
-.msp-gantt[data-gantt-scale="week"] .monday-gantt-range-tab[data-gantt-range="week"],
-.msp-gantt[data-gantt-scale="month"] .monday-gantt-range-tab[data-gantt-range="month"],
-.msp-gantt[data-gantt-scale="whole"] .monday-gantt-range-tab[data-gantt-range="whole"] {
-  /* active state already handled; keep attribute hook for theming */
-}
 
 /* Today line: bright red like MS Project */
-.monday-gantt-today { background: #CC0000 !important; width: 1.5px !important; z-index: 3; }
 
 /* Tighter, denser rows — uniform height like MS Project (summary = task = subtask) */
 .msp-gantt {
   --msp-row-h: 28px;
-}
-.msp-gantt .monday-gantt-group-label,
-.msp-gantt .monday-gantt-task-label,
-.msp-gantt .monday-gantt-subtask-label,
-.msp-gantt .monday-gantt-project-label,
-.msp-gantt .monday-gantt-group-rail,
-.msp-gantt .monday-gantt-task-rail,
-.msp-gantt .monday-gantt-subtask-rail,
-.msp-gantt .monday-gantt-project-rail-row {
-  min-height: var(--msp-row-h) !important;
-  height: var(--msp-row-h);
-  box-sizing: border-box;
-}
-.msp-gantt .monday-gantt-task-label,
-.msp-gantt .monday-gantt-subtask-label,
-.msp-gantt .monday-gantt-group-label {
-  padding-top: 0;
-  padding-bottom: 0;
-  align-items: center;
-}
-.msp-gantt .monday-gantt-task-copy {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.msp-gantt .monday-gantt-task-meta,
-.msp-gantt .monday-gantt-subtask-meta {
-  display: none;
-}
-.msp-gantt .monday-gantt-task-name,
-.msp-gantt .monday-gantt-summary-name,
-.msp-gantt .monday-gantt-subtask-name {
-  font-size: 12px;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-break: normal;
-}
-.msp-gantt .monday-gantt-summary-name {
-  font-weight: 750;
-}
-.msp-gantt .monday-gantt-summary-label {
-  background: var(--aewttr-surface);
-  font-weight: 700;
-}
-.msp-gantt .monday-gantt-subtask-label {
-  background: var(--aewttr-surface);
-}
-.msp-gantt .monday-gantt-bar {
-  top: 6px !important;
-  height: 16px !important;
-  border-radius: 3px !important;
-}
-.msp-gantt .monday-gantt-subbar {
-  top: 7px;
-  height: 14px;
-  border-radius: 2px;
 }
 .msp-gantt .mgp-summary-bar {
   top: 7px;
@@ -13550,32 +12796,13 @@ html[data-theme="dark"] .monday-gantt-drawer { background: var(--aewttr-surface-
   border-right-width: 6px;
   border-top-width: 6px;
 }
-.monday-gantt-drag-spacer {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
 .mtf-combined-gantt {
   min-height: 360px;
 }
-.mtf-combined-gantt .monday-gantt {
-  border: 1px solid var(--aewttr-border);
-  border-radius: var(--aewttr-radius-md);
-  overflow: hidden;
-}
 
 /* Legacy non-msp denser defaults kept for older charts */
-.monday-gantt-task-label,
-.monday-gantt-task-rail { min-height: 28px; }
-.monday-gantt-subtask-label,
-.monday-gantt-subtask-rail { min-height: 28px; }
-.monday-gantt-group-label,
-.monday-gantt-group-rail { min-height: 28px; }
 
 /* Task bars — fit 28px rows */
-.monday-gantt-bar { top: 6px !important; height: 16px !important; border-radius: 3px !important; }
-.monday-gantt-subbar { top: 7px; height: 14px; border-radius: 2px; }
-.monday-gantt-bar-progress { border-radius: inherit; }
 
 /* Row number chip */
 .mgp-rownum {
@@ -13593,7 +12820,6 @@ html[data-theme="dark"] .monday-gantt-drawer { background: var(--aewttr-surface-
 }
 
 /* MS Project–style head: narrow "#" column + "Task Name" */
-.monday-gantt-head-left { gap: 0; padding: 0; }
 .mgp-head-id {
   font-size: 10px;
   font-weight: 800;
@@ -13610,7 +12836,6 @@ html[data-theme="dark"] .monday-gantt-drawer { background: var(--aewttr-surface-
   display: flex;
   align-items: center;
 }
-.monday-gantt-head-title { padding-left: 10px; }
 
 /* Group summary bar — MS Project "parent task" thick band */
 .mgp-summary-bar {
@@ -13640,16 +12865,8 @@ html[data-theme="dark"] .mgp-summary-bar::before,
 html[data-theme="dark"] .mgp-summary-bar::after { border-top-color: #4472C4; }
 
 /* Group header label — bold, slightly tinted like MS Project summary row */
-.monday-gantt-group-label { background: color-mix(in srgb, var(--aewttr-blue) 6%, var(--aewttr-surface-2)); }
-.monday-gantt-group-toggle { font-size: 12px; font-weight: 700; color: #1F4E79; }
-html[data-theme="dark"] .monday-gantt-group-toggle { color: #8ab4f8; }
-html[data-theme="dark"] .monday-gantt-group-label { background: color-mix(in srgb, var(--aewttr-blue) 8%, var(--aewttr-surface-2)); }
 
 /* Alternating row stripes */
-.monday-gantt-body > .monday-gantt-task-label:nth-of-type(4n+3),
-.monday-gantt-body > .monday-gantt-task-rail:nth-of-type(4n+4) {
-  background-color: color-mix(in srgb, var(--aewttr-surface-2) 55%, var(--aewttr-surface));
-}
 
 /* ── MS-Project–style list view ── */
 
@@ -14085,10 +13302,6 @@ html[data-theme="dark"] .monday-gantt-group-label { background: color-mix(in srg
   flex: 1;
   min-height: 0;
   overflow: auto;
-}
-.tracker-view-mount--meeting .monday-gantt {
-  flex: 1;
-  min-height: 0;
 }
 
 /* legacy meeting center styles */
@@ -16084,6 +15297,11 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 }
 .proj-notes-overview-item .proj-notes-card.mine { align-self: flex-end; }
 .proj-notes-overview-item:hover .proj-notes-card { border-color: var(--aewttr-blue); }
+/* Task-thread view: each note is wrapped in a plain [data-jump-folder] div
+   (for edit/delete owner-resolution) that isn't itself a .proj-notes-card, so
+   it needs its own flex-column treatment for .mine's align-self to apply. */
+#proj-notes-main-body > [data-jump-folder] { display: flex; flex-direction: column; }
+#proj-notes-main-body > [data-jump-folder] .proj-notes-card.mine { align-self: flex-end; }
 
 @media (max-width: 900px) {
   .proj-notes-shell {
@@ -16452,46 +15670,6 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .pgroup-list-head { margin-bottom: 14px; }
 .pgroup-list-title { font-size: 20px; font-weight: 600; color: var(--aewttr-text); margin: 0; }
 
-.pgroup-card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
-}
-.pgroup-card {
-  background: var(--aewttr-surface);
-  border: 1px solid var(--aewttr-border);
-  border-radius: 10px;
-  padding: 18px 20px;
-  text-align: left;
-  cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s;
-}
-.pgroup-card:hover {
-  border-color: var(--aewttr-blue);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-  transform: translateY(-1px);
-}
-.pgroup-card-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--aewttr-text);
-  margin-bottom: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.pgroup-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--aewttr-muted);
-}
-.pgroup-card-risk-badge {
-  color: var(--aewttr-red, #c0392b);
-  font-weight: 600;
-}
-
 /* Detail view */
 .pgroup-detail-header {
   display: flex;
@@ -16713,30 +15891,42 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .projects-catalog-summary .is-risk b { color: var(--aewttr-red); }
 .projects-catalog-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--aewttr-border); border-bottom: 1px solid var(--aewttr-border); }
 .projects-catalog-filters { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
-.projects-catalog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
-.projects-catalog-card { display: flex; min-width: 0; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--aewttr-border); border-top: 3px solid var(--aewttr-border); border-radius: 10px; background: var(--aewttr-surface); color: var(--aewttr-text); cursor: pointer; text-align: left; transition: border-color .16s ease-out, box-shadow .16s ease-out, transform .16s ease-out; }
-.projects-catalog-card--green { border-top-color: var(--aewttr-green); }
-.projects-catalog-card--amber { border-top-color: var(--aewttr-amber); }
-.projects-catalog-card--red { border-top-color: var(--aewttr-red); }
-.projects-catalog-card:hover { border-color: var(--aewttr-blue); box-shadow: 0 4px 8px rgba(21, 38, 64, .12); transform: translateY(-1px); }
-.projects-catalog-card:focus-visible { outline: 3px solid rgba(16, 88, 180, .35); outline-offset: 2px; }
-.projects-catalog-card-head, .projects-catalog-foot, .projects-catalog-signals, .projects-catalog-meta { display: flex; align-items: center; min-width: 0; }
-.projects-catalog-card-head { justify-content: space-between; gap: 8px; }
-.projects-catalog-health { display: inline-flex; align-items: center; gap: 6px; min-width: 0; color: var(--aewttr-muted); font-size: 11px; font-weight: 700; }
-.projects-catalog-name { overflow: hidden; color: var(--aewttr-text); font-size: 16px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.projects-catalog-meta { gap: 8px; color: var(--aewttr-muted); font-size: 11px; }
-.projects-catalog-meta span + span { padding-left: 8px; border-left: 1px solid var(--aewttr-border); }
-.projects-catalog-signals { flex-wrap: wrap; gap: 6px; }
-.projects-catalog-signals span { border-radius: 999px; background: var(--aewttr-surface-2); color: var(--aewttr-muted); font-size: 11px; font-weight: 600; padding: 3px 7px; }
-.projects-catalog-signals .is-risk { background: var(--aewttr-red-tint); color: var(--aewttr-red); }
-.projects-catalog-foot { justify-content: space-between; margin-top: auto; padding-top: 9px; border-top: 1px solid var(--aewttr-border); color: var(--aewttr-muted); font-size: 11px; }
-.projects-catalog-foot i { color: var(--aewttr-blue); font-size: 18px; }
-.projects-catalog-empty { grid-column: 1 / -1; }
 @media (max-width: 800px) {
   .projects-catalog-head, .projects-catalog-controls { align-items: flex-start; flex-direction: column; }
   .projects-catalog-summary, .projects-catalog-filters { justify-content: flex-start; }
   .projects-catalog-filters { width: 100%; }
   .projects-catalog-filters .search-box { flex: 1 1 200px; }
+}
+
+/* Shared searchable-list row pattern: All Projects, Portfolios, Programs,
+   End Item Configs. Replaces the earlier card-grid layouts for these pages
+   so entries scan like a real list instead of a wall of tiles. */
+.proj-list { border: 1px solid var(--aewttr-border); border-radius: 10px; background: var(--aewttr-surface); overflow: hidden; }
+.proj-list-head, .proj-list-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; }
+.proj-list-head {
+  border-bottom: 1px solid var(--aewttr-border); background: var(--aewttr-surface-2);
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--aewttr-muted);
+}
+.proj-list-row {
+  width: 100%; border: 0; border-bottom: 1px solid var(--aewttr-border); background: transparent;
+  color: var(--aewttr-text); text-align: left; cursor: pointer; transition: background .12s;
+}
+.proj-list-row:last-child { border-bottom: none; }
+.proj-list-row:hover { background: var(--aewttr-surface-2); }
+.proj-list-row:focus-visible { outline: 3px solid rgba(16, 88, 180, .35); outline-offset: -2px; }
+.proj-list-health, .proj-list-head-health { flex: 0 0 150px; display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; font-weight: 600; color: var(--aewttr-muted); }
+.proj-list-name, .proj-list-head-name { flex: 1 1 auto; min-width: 0; font-size: 13.5px; font-weight: 700; color: var(--aewttr-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proj-list-badges, .proj-list-head-badges { flex: 0 0 auto; }
+.proj-list-meta, .proj-list-head-meta { flex: 0 0 140px; font-size: 12px; color: var(--aewttr-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proj-list-signal, .proj-list-head-signal { flex: 0 0 110px; font-size: 12px; color: var(--aewttr-muted); text-align: right; }
+.proj-list-date, .proj-list-head-date { flex: 0 0 130px; font-size: 12px; color: var(--aewttr-muted); text-align: right; }
+.proj-list-chevron { flex: 0 0 16px; color: var(--aewttr-muted); font-size: 16px; }
+.proj-list-alert { display: inline-flex; align-items: center; gap: 4px; color: var(--aewttr-red); font-size: 11.5px; font-weight: 600; }
+.proj-list-empty { padding: 32px; text-align: center; color: var(--aewttr-muted); }
+@media (max-width: 800px) {
+  .proj-list-head { display: none; }
+  .proj-list-row { flex-wrap: wrap; }
+  .proj-list-meta, .proj-list-date { flex: 0 0 auto; }
 }
 .pgroup-workspace { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 590px; background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 28px rgba(21, 38, 64, .07); }
 .pgroup-workspace-sidebar { display: flex; flex-direction: column; gap: 18px; padding: 20px 14px; background: var(--aewttr-surface-2); border-right: 1px solid var(--aewttr-border); }
@@ -16881,138 +16071,64 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 }
 
 /* ===== Group reporting: sidebar+editor layout ===== */
-/* Reporting tab fills the workspace when active */
+/* Reporting tab fills the workspace when active. This is the ONE scroll
+   container for the whole tab (topbar + milestones + two-pane workspace) —
+   previously this clipped overflow (overflow:hidden) while forcing every
+   descendant to flex:1 1 0/min-height:0 to "fit," so a milestone table or
+   embedded project editor taller than the viewport had nowhere to go and was
+   silently cut off instead of becoming scrollable. Letting content flow
+   naturally and scrolling here instead fixes that. */
 .pgroup-reporting-full {
   padding: 0 !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   flex: 1 1 0 !important;
   min-height: 0 !important;
 }
-/* The #pgroup-reporting-mount wrapper div between content and grp-rep-root */
-.pgroup-reporting-full > * {
-  flex: 1 1 0 !important;
-  min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-.pgroup-reporting-full .grp-rep-root { flex: 1 1 0 !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; }
-.pgroup-reporting-full .grp-rep-workspace { flex: 1 1 0 !important; min-height: 0 !important; }
 
-.grp-rep-root { display: flex; flex-direction: column; gap: 0; min-height: 600px; }
+.grp-rep-root { display: flex; flex-direction: column; gap: 16px; min-height: 600px; padding: 16px; }
 
-/* Hide the project-level export action bar when embedded inside group reporting editor */
-.grp-rep-proj-editor .rep-bar { display: none !important; }
+/* ── Summary card: what the deck contains + Generate button. Everything
+   else that used to live here (Output/Slide layout/Include toggles,
+   Milestone marker checklist, a separate "Projects in deck" list) got
+   folded into the Milestones-across table below instead — one place to
+   pick projects and see their dates side by side, not two. ── */
+.grp-rep-summary-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 16px 18px;
+}
+.grp-rep-b3-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14.5px; font-weight: 700; color: var(--aewttr-text); }
+.grp-rep-b3-title i { color: var(--aewttr-blue); font-size: 17px; }
+.grp-rep-b3-sub { margin: 3px 0 0; font-size: 12px; color: var(--aewttr-muted); max-width: 52ch; }
+.grp-rep-b3-summary { margin: 6px 0 0; font-size: 12px; font-weight: 600; color: var(--aewttr-text); }
+.grp-rep-summary-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.grp-rep-b3-gen-btn { white-space: nowrap; }
 
-/* Top export bar */
-.grp-rep-topbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--aewttr-border);
-  background: var(--aewttr-surface-2);
-  flex-shrink: 0;
-}
-.grp-rep-topbar-modes { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-.grp-rep-mode-pill {
-  display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px;
-  border: 1.5px solid var(--aewttr-border); border-radius: 99px;
-  font-size: 12px; font-weight: 600; color: var(--aewttr-muted); cursor: pointer;
-  transition: border-color .12s, background .12s;
-}
-.grp-rep-mode-pill input { display: none; }
-.grp-rep-mode-pill.is-active { border-color: var(--aewttr-blue); color: var(--aewttr-blue); background: rgba(16,88,180,.08); }
-
-.grp-rep-topbar-scope { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; overflow: hidden; }
-.grp-rep-topbar-scope-label { font-size: 11px; font-weight: 600; color: var(--aewttr-muted); white-space: nowrap; flex-shrink: 0; }
-.grp-exp-proj-list { display: flex; flex-wrap: wrap; gap: 4px; overflow: hidden; max-height: 52px; }
-.grp-exp-proj-row {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 9px; border-radius: 99px;
-  border: 1.5px solid var(--aewttr-border); background: var(--aewttr-surface);
-  font-size: 11.5px; color: var(--aewttr-text); cursor: pointer;
-  transition: border-color .12s;
-}
-.grp-exp-proj-row input { display: none; }
-.grp-exp-proj-row.is-checked { border-color: var(--aewttr-blue); background: rgba(16,88,180,.07); color: var(--aewttr-blue); }
-.grp-exp-scope-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.grp-rep-topbar-opts { display: flex; align-items: center; gap: 10px; flex-shrink: 0; font-size: 12px; color: var(--aewttr-muted); }
-.grp-rep-topbar-opts label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
-.grp-rep-topbar-opts label.is-disabled { opacity: .5; cursor: default; }
-.grp-rep-topbar-action { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: auto; }
-
-/* Two-panel workspace */
-.grp-rep-workspace {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
-}
-.grp-rep-proj-sidebar {
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--aewttr-border);
-  overflow: hidden;
-}
-.grp-rep-proj-sidebar-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 12px 9px;
-  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--aewttr-muted);
-  border-bottom: 1px solid var(--aewttr-border);
-  flex-shrink: 0;
-}
-.grp-sb-count {
-  padding: 1px 6px; border-radius: 99px;
-  background: var(--aewttr-surface-2); font-size: 10px; font-weight: 700; color: var(--aewttr-muted);
-}
-.grp-rep-proj-sidebar-list {
-  flex: 1 1 0; overflow-y: auto; display: flex; flex-direction: column;
-}
-.grp-sb-item {
-  display: flex; align-items: baseline; gap: 7px;
-  padding: 9px 12px;
-  border: 0; background: transparent; text-align: left; cursor: pointer;
-  border-bottom: 1px solid var(--aewttr-border);
-  transition: background .1s;
-  flex-wrap: wrap;
-}
-.grp-sb-item:hover { background: var(--aewttr-surface-2); }
-.grp-sb-item.is-focused { background: rgba(16,88,180,.07); border-left: 3px solid var(--aewttr-blue); padding-left: 9px; }
-.grp-sb-dot { font-size: 10px; flex-shrink: 0; line-height: 1.7; }
-.grp-sb-dot--green { color: var(--aewttr-green, #2a9d5c); }
-.grp-sb-dot--amber { color: var(--aewttr-amber, #d97706); }
-.grp-sb-dot--red   { color: var(--aewttr-red,   #c0392b); }
-.grp-sb-dot--none  { color: var(--aewttr-muted); }
-.grp-sb-name { font-size: 12.5px; font-weight: 600; color: var(--aewttr-text); flex: 1 1 auto; min-width: 0; word-break: break-word; }
-.grp-sb-meta { font-size: 10px; color: var(--aewttr-muted); flex-basis: 100%; padding-left: 17px; }
-
-/* Right editor panel */
-.grp-rep-proj-editor {
-  flex: 1 1 0; overflow-y: auto; min-height: 0;
-}
-.grp-rep-editor-empty {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  height: 100%; gap: 10px; color: var(--aewttr-muted);
-}
-.grp-rep-editor-empty i { font-size: 28px; }
-.grp-rep-editor-empty p { font-size: 14px; text-align: center; margin: 0; }
+/* Milestones-across table's leading Include column */
+.rep-mt-th--include, .rep-mt-td--include { width: 30px; text-align: center; padding-left: 12px; }
+.rep-mt-include-ctrl { accent-color: var(--aewttr-blue); width: 16px; height: 16px; cursor: pointer; }
 
 /* Keep old card classes working (may be referenced elsewhere) */
 .grp-rep-rag--none { color: var(--aewttr-muted); }
 
-@media (max-width: 900px) {
-  .grp-rep-workspace { grid-template-columns: 160px 1fr; }
-  .grp-rep-topbar-scope { display: none; }
+/* Compact rich-text box for group-level Description — Bold/Italic/Bullet
+   list/Clear formatting only, deliberately lighter than the full OneNote
+   ribbon (weekly.js) since this is a short slide caption, not a document. */
+.rep-rich-shell { border: 1px solid var(--aewttr-border); border-radius: 8px; overflow: hidden; background: var(--aewttr-surface); }
+.rep-rich-toolbar { display: flex; gap: 2px; padding: 5px 6px; border-bottom: 1px solid var(--aewttr-border); background: var(--aewttr-surface-2); }
+.rep-rich-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 24px; border: 0; border-radius: 5px;
+  background: transparent; color: var(--aewttr-text); font-size: 12.5px; cursor: pointer;
 }
-@media (max-width: 680px) {
-  .grp-rep-workspace { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .grp-rep-proj-sidebar { border-right: 0; border-bottom: 1px solid var(--aewttr-border); max-height: 180px; }
+.rep-rich-btn:hover { background: var(--aewttr-surface); }
+.rep-rich-editor {
+  min-height: 120px; max-height: 220px; overflow-y: auto;
+  padding: 10px 12px; font-size: 13px; line-height: 1.5; color: var(--aewttr-text);
+  outline: none;
 }
+.rep-rich-editor:empty::before { content: attr(data-placeholder); color: var(--aewttr-muted); }
+.rep-rich-editor ul { margin: 4px 0; padding-left: 20px; }
 
 /* ===== PM dashboard refresh: health dots, progress bars, rich cards ===== */
 
@@ -17079,48 +16195,6 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
   border-color: var(--aewttr-amber);
   color: var(--aewttr-amber);
   font-weight: 600;
-}
-
-/* Rich group cards */
-.pgroup-card-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
-.pgroup-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-top: 3px solid var(--aewttr-border);
-}
-.pgroup-card--green { border-top-color: var(--aewttr-green); }
-.pgroup-card--amber { border-top-color: var(--aewttr-amber); }
-.pgroup-card--red { border-top-color: var(--aewttr-red); }
-.pgroup-card-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.pgroup-card-head .pgroup-card-name {
-  margin-bottom: 0;
-  flex: 1;
-  min-width: 0;
-}
-.pgroup-card-alert {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--aewttr-red);
-}
-.pgroup-card-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.pgroup-card-foot {
-  font-size: 11px;
-  color: var(--aewttr-muted);
-  border-top: 1px solid var(--aewttr-border);
-  padding-top: 8px;
 }
 
 /* Needs-attention callout */
@@ -17797,6 +16871,11 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .rep-qcard-hint { font-size: 12px; color: var(--aewttr-muted); margin: 0 0 10px; line-height: 1.4; }
 .rep-qcard-rule { height: 1px; background: var(--aewttr-border); margin: 14px 0; }
 
+/* TR: Technical Status — 3 distinct sub-groups instead of one continuous block */
+.rep-qcard-bd--tech { padding: 0; }
+.rep-tech-block { padding: 12px 14px; border-bottom: 1px solid var(--aewttr-border); }
+.rep-tech-block--last { border-bottom: none; }
+
 /* TL: photos info */
 .rep-photo-info { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
 .rep-photo-info i { font-size: 22px; color: var(--aewttr-muted); flex-shrink: 0; margin-top: 2px; }
@@ -17805,6 +16884,42 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .rep-photo-thumbs { display: flex; flex-wrap: wrap; gap: 6px; }
 .rep-photo-thumb  { width: 52px; height: 40px; border-radius: 4px; object-fit: cover; border: 1px solid var(--aewttr-border); }
 .rep-photo-empty  { font-size: 12px; color: var(--aewttr-muted); font-style: italic; }
+
+/* EIC combined-slide photo picker: compact preview + Choose/Clear, and the
+   cross-project modal it opens (one section per project, fetched lazily). */
+.grp-photo-pick { display: flex; flex-direction: column; gap: 10px; }
+.grp-photo-pick-preview { display: flex; align-items: center; gap: 10px; }
+.grp-photo-pick-img { width: 72px; height: 54px; border-radius: 6px; object-fit: cover; border: 1px solid var(--aewttr-border); flex-shrink: 0; }
+.grp-photo-pick-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.grp-photo-pick-name { font-size: 12.5px; font-weight: 600; color: var(--aewttr-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grp-photo-pick-source { font-size: 11px; color: var(--aewttr-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grp-photo-pick-empty { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--aewttr-muted); font-style: italic; }
+.grp-photo-pick-empty i { font-size: 16px; }
+.grp-photo-pick-actions { display: flex; gap: 6px; }
+
+.grp-photo-modal-sections { display: flex; flex-direction: column; gap: 18px; max-height: 60vh; overflow-y: auto; }
+.grp-photo-modal-section-head { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--aewttr-muted); margin-bottom: 8px; }
+.grp-photo-modal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.grp-photo-modal-thumb-btn {
+  position: relative;
+  border: 1.5px solid var(--aewttr-border);
+  border-radius: 8px;
+  background: var(--aewttr-surface-2);
+  padding: 0;
+  cursor: pointer;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  transition: border-color .12s;
+}
+.grp-photo-modal-thumb-btn:hover { border-color: var(--aewttr-muted); }
+.grp-photo-modal-thumb-btn.is-picked { border-color: var(--aewttr-blue); box-shadow: 0 0 0 1px var(--aewttr-blue); }
+.grp-photo-modal-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+.grp-photo-modal-picked {
+  position: absolute; top: 5px; right: 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--aewttr-blue); color: #fff; font-size: 13px;
+}
 
 /* BL: description */
 .rep-desc-from { font-size: 12px; color: var(--aewttr-muted); margin: 0 0 10px; }
@@ -17824,7 +16939,7 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .rep-risk-note { width: 100%; font-size: 12px; }
 
 /* Risk checklist for export slide selection */
-.rep-risk-checklist { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 6px; }
+.rep-risk-checklist { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 6px; max-height: 220px; overflow-y: auto; }
 .rep-risk-check-row {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 10px; border-radius: 6px;
@@ -17888,6 +17003,35 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 }
 .rep-mt-date:focus { outline: none; border-color: var(--mc, var(--aewttr-blue)); }
 .rep-mt-date--set { border-color: var(--mc, var(--aewttr-blue)); background: rgba(0,0,0,.02); }
+
+/* Portfolio/Program/EIS group Reporting tab — cross-project milestone table.
+   Header typography matches the single-project Reporting tab's
+   .rep-qcard-sub/.rep-qcard-hint convention for visual consistency. */
+.grp-rep-milestones { margin-bottom: 0; }
+.grp-rep-milestones-head { padding: 14px 14px 8px; }
+.grp-rep-milestones-title { margin: 0 0 2px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--aewttr-muted); }
+.grp-rep-milestones-sub { margin: 0; font-size: 12px; color: var(--aewttr-muted); line-height: 1.4; }
+.rep-grp-mt-tbl { min-width: 640px; }
+.rep-grp-mt-tbl th, .rep-grp-mt-tbl td { padding: 6px 12px; }
+
+/* Project-level milestone fields (single date per category, no task list) */
+.rep-ms-fields {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px; padding: 0 14px;
+}
+.rep-ms-field { display: flex; flex-direction: column; gap: 4px; }
+.rep-ms-field-label {
+  font-size: 11px; font-weight: 700; color: var(--aewttr-muted);
+  text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center;
+}
+.rep-ms-date {
+  width: 100%; font-size: 12px; padding: 6px 8px;
+  border: 1px solid var(--aewttr-border); border-radius: 4px;
+  background: var(--aewttr-surface); color: var(--aewttr-text);
+  transition: border-color .12s;
+}
+.rep-ms-date:focus { outline: none; border-color: var(--mc, var(--aewttr-blue)); }
+.rep-ms-date--set { border-color: var(--mc, var(--aewttr-blue)); background: rgba(0,0,0,.02); }
 
 /* Timeline */
 .rep-tl-empty {
@@ -18212,6 +17356,24 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .rep-tb-del:hover { color: #ef4444; background: #fef2f2; }
 .rep-tb-add { background: none; border: 1px dashed var(--aewttr-border); border-radius: 6px; width: 100%; padding: 7px 12px; font-size: 12px; color: var(--aewttr-muted); cursor: pointer; text-align: left; margin-top: 2px; display: flex; align-items: center; gap: 4px; }
 .rep-tb-add:hover { border-color: var(--aewttr-blue); color: var(--aewttr-blue); }
+
+/* Other-Milestones editor: same list/add-row language as the bullet editor
+   above, with a label input + date input per row instead of one text field. */
+.rep-om-list { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; }
+.rep-om-item { display: flex; align-items: center; gap: 6px; }
+.rep-om-label { flex: 1 1 auto; min-width: 0; font-size: 13px; }
+.rep-om-date { flex: 0 0 150px; font-size: 12.5px; }
+.rep-om-del { background: none; border: none; padding: 2px 5px; cursor: pointer; color: var(--aewttr-muted); border-radius: 4px; font-size: 15px; line-height: 1; flex-shrink: 0; }
+.rep-om-del:hover { color: #ef4444; background: #fef2f2; }
+
+/* Compact per-group Other-Milestones cards stacked below the project
+   Reporting tab's 4-quadrant grid — one per Portfolio/Program/EIC the
+   project belongs to. */
+.rep-om-groups { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.rep-om-group-card { background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: 8px; overflow: hidden; }
+.rep-om-group-hd { display: flex; align-items: baseline; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--aewttr-border); background: var(--aewttr-surface-2); }
+.rep-om-group-kind { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--aewttr-muted); }
+.rep-om-group-name { font-size: 13px; font-weight: 600; color: var(--aewttr-text); }
 
 /* ── Risk inline expand ── */
 .risk-expand-td { width: 24px; text-align: center; }

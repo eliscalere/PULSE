@@ -62,6 +62,20 @@ PAGE_RENDERERS.overview = function () {
     }).length;
   }
 
+  function projectCriticalRiskCount(projId) {
+    const extra = (db.projectExtra && db.projectExtra[projId]) || {};
+    return (extra.risks || []).filter(r => {
+      if (isPlaceholderRisk(r)) return false;
+      const s = String(r.status || "").toLowerCase();
+      if (s === "closed" || s === "resolved" || s === "accepted") return false;
+      return ["high", "critical"].some(k =>
+        String(r.likelihood || "").toLowerCase().includes(k) ||
+        String(r.impact || "").toLowerCase().includes(k) ||
+        String(r.severity || "").toLowerCase().includes(k)
+      );
+    }).length;
+  }
+
   function parentProjectName(proj) {
     if (!proj.parentProjectId) return "";
     const parent = (db.projects || []).find(p => p.id === proj.parentProjectId);
@@ -390,6 +404,7 @@ PAGE_RENDERERS.overview = function () {
     const docsInReview = docs.filter(d => !d.isArchived && !["Review Complete", "Signed", "Archived"].includes(d._column || ""));
     const pendingTravel = (db.travelRequests || []).filter(r => r.status === "Pending" || r.status === "Submitted");
     const totalRisks = projects.reduce((sum, p) => sum + projectRiskCount(p.id), 0);
+    const criticalRisks = projects.reduce((sum, p) => sum + projectCriticalRiskCount(p.id), 0);
     const totalFunded = projects.reduce((sum, p) => sum + (parseFloat(p.fundedOnContractAmount) || 0), 0);
     const totalReimb = projects.reduce((sum, p) => sum + (parseFloat(p.reimbursableAmount) || 0), 0);
     const totalTravelCost = (db.travelRequests || []).reduce((sum, r) => sum + (parseFloat(r.estimatedCost || r.totalCost) || 0), 0);
@@ -407,6 +422,7 @@ PAGE_RENDERERS.overview = function () {
       activeTasks: openTasks,
       completedTasks: doneTasks,
       openRisks: totalRisks,
+      criticalRisks,
       docsInReview: docsInReview.length,
       pendingTravel: pendingTravel.length,
       totalFunded,
@@ -449,7 +465,7 @@ PAGE_RENDERERS.overview = function () {
           <strong>${metrics.completedTasks}</strong><span>Completed tasks</span>
         </div>
         <div class="ov-team-stat${metrics.openRisks > 0 ? " ov-stat-warn" : ""}" ${tip("Open risks across all projects (not Closed/Resolved/New)")}>
-          <strong>${metrics.openRisks}</strong><span>Open risks</span>
+          <strong>${metrics.openRisks}</strong><span>Open risks</span>${metrics.criticalRisks ? `<small style="color:var(--aewttr-red);">${metrics.criticalRisks} critical</small>` : ""}
         </div>
         <div class="ov-team-stat" ${tip("Total funded amount on contract across active portfolio")}>
           <strong style="color:var(--aewttr-success,#27ae60);">$${metrics.totalFunded ? (metrics.totalFunded / 1000).toFixed(0) + "K" : "0"}</strong><span>Contract Funding</span><small>$${(metrics.totalReimb / 1000).toFixed(0)}K reimb</small>
@@ -560,36 +576,9 @@ PAGE_RENDERERS.overview = function () {
       return { proj, open, done, openRisks, criticalRisks, risks: openRisks.length, health, pctDone };
     });
 
-    // Aggregate KPIs
-    const allOpen = projectHealth.reduce((s, p) => s + p.open.length, 0);
-    const allDone = projectHealth.reduce((s, p) => s + p.done.length, 0);
+    // Aggregate KPIs (the shared stats bar above the tabs already covers
+    // projects/tasks/risks/funding totals — only track what's unique here).
     const allCritical = projectHealth.flatMap(p => p.criticalRisks);
-    const allRisksTotal = projectHealth.reduce((s, p) => s + p.risks, 0);
-    const totalFunded = projects.reduce((s, p) => s + (parseFloat(p.fundedOnContractAmount) || 0), 0);
-    const activeCount = projectHealth.filter(p => p.open.length > 0).length;
-    const pctComplete = (allOpen + allDone) > 0
-      ? Math.round((allDone / (allOpen + allDone)) * 100) : 0;
-
-    const kpiHtml = `<div class="ov-dash-kpi-strip">
-      <div class="ov-dash-kpi">
-        <strong>${activeCount}</strong><span>Active Projects</span><small>${projects.length} total in portfolio</small>
-      </div>
-      <div class="ov-dash-kpi">
-        <strong>${allOpen}</strong><span>Open Tasks</span><small>across all projects</small>
-      </div>
-      <div class="ov-dash-kpi ov-dash-kpi--green">
-        <strong>${allDone}</strong><span>Completed Tasks</span><small>${pctComplete}% of all tasks done</small>
-      </div>
-      <div class="ov-dash-kpi${allCritical.length ? " ov-dash-kpi--amber" : ""}">
-        <strong>${allCritical.length}</strong><span>Critical Risks</span><small>${allRisksTotal} total open</small>
-      </div>
-      <div class="ov-dash-kpi">
-        <strong>${docsNeedingAction}</strong><span>Docs Pending</span><small>${pendingTravel} travel request${pendingTravel !== 1 ? "s" : ""}</small>
-      </div>
-      ${totalFunded ? `<div class="ov-dash-kpi ov-dash-kpi--green">
-        <strong>$${totalFunded >= 1000000 ? (totalFunded / 1000000).toFixed(1) + "M" : (totalFunded / 1000).toFixed(0) + "K"}</strong><span>Funded</span><small>on contract</small>
-      </div>` : ""}
-    </div>`;
 
     // Project health cards sorted: attention → active → complete → inactive
     const healthOrder = { attention: 0, active: 1, complete: 2, inactive: 3 };
@@ -641,6 +630,15 @@ PAGE_RENDERERS.overview = function () {
       });
     }
 
+    const healthCounts = { attention: 0, active: 0, complete: 0, inactive: 0 };
+    projectHealth.forEach(p => { healthCounts[p.health] = (healthCounts[p.health] || 0) + 1; });
+    const healthDonut = donutChartSvg([
+      { value: healthCounts.attention, color: "var(--aewttr-amber)" },
+      { value: healthCounts.active, color: "var(--aewttr-green)" },
+      { value: healthCounts.complete, color: "var(--aewttr-blue)" },
+      { value: healthCounts.inactive, color: "var(--aewttr-muted)" }
+    ], { size: 92, strokeW: 14, centerLabel: String(projects.length), centerSub: "projects" });
+
     const escalationHtml = groups.length
       ? groups.map(g => `<div class="ov-dash-escalation-group">
           <div class="ov-dash-escalation-head"><i class="bx ${g.icon}" style="color:${g.color}"></i><strong>${escapeHtml(g.label)}</strong><span class="ov-queue-count">${g.items.length}</span></div>
@@ -651,13 +649,21 @@ PAGE_RENDERERS.overview = function () {
         </div>`).join("")
       : `<div class="empty-state" style="padding:20px 8px;text-align:center;"><i class="bx bx-check-circle" style="font-size:26px;color:var(--aewttr-green);display:block;margin-bottom:8px;"></i>Everything looks good.</div>`;
 
-    return `${kpiHtml}
-    <div class="ov-dash-layout">
+    return `<div class="ov-dash-layout">
       <div class="ov-dash-main">
         <div class="ov-dash-section-head">
           <div>
             <div class="side-panel-title" style="margin-bottom:2px;">Portfolio Health</div>
             <div class="overview-panel-sub">${projects.length} project${projects.length !== 1 ? "s" : ""} · sorted by status · click any card to open workspace</div>
+          </div>
+          <div class="ov-dash-health-donut">
+            ${healthDonut}
+            <div class="ov-dash-health-donut-legend">
+              <span><i style="background:var(--aewttr-amber)"></i>${healthCounts.attention} at risk</span>
+              <span><i style="background:var(--aewttr-green)"></i>${healthCounts.active} active</span>
+              <span><i style="background:var(--aewttr-blue)"></i>${healthCounts.complete} complete</span>
+              <span><i style="background:var(--aewttr-muted)"></i>${healthCounts.inactive} inactive</span>
+            </div>
           </div>
         </div>
         <div class="ov-health-grid">${cardsHtml}</div>
@@ -911,10 +917,22 @@ PAGE_RENDERERS.overview = function () {
     const ensurePerson = (name) => {
       if (!personMap[name]) {
         const member = members.find(m => m.name === name) || { name, id: "" };
-        personMap[name] = { member, activeTasks: 0, completedTasks: 0, projects: new Set(), endItems: new Set(), roles: new Set(), teams: new Set(), nextDue: null };
+        personMap[name] = { member, activeTasks: 0, completedTasks: 0, docsPending: 0, projects: new Set(), endItems: new Set(), roles: new Set(), teams: new Set(), nextDue: null };
       }
       return personMap[name];
     };
+    const docs = typeof getAllDocReviewRecords === "function" ? getAllDocReviewRecords() : [];
+    docs.forEach(doc => {
+      if (doc.isArchived || ["Review Complete", "Signed", "Archived"].includes(doc._column || "")) return;
+      (doc.reviewers || []).forEach(reviewer => {
+        if ((reviewer.decision || "Pending") !== "Pending") return;
+        const member = members.find(m => typeof memberMatchesAssignee === "function" && memberMatchesAssignee(m, reviewer.name))
+          || (reviewer.email ? members.find(m => (m.email || "").toLowerCase() === reviewer.email.toLowerCase()) : null);
+        const name = (member && member.name) || reviewer.name;
+        if (!name) return;
+        ensurePerson(name).docsPending += 1;
+      });
+    });
     allTasks.forEach(task => {
       const assignee = task.assignee;
       if (!assignee || assignee === "Unassigned") return;
@@ -943,7 +961,7 @@ PAGE_RENDERERS.overview = function () {
       });
     });
     return Object.values(personMap)
-      .filter(e => e.activeTasks > 0 || e.projects.size > 0)
+      .filter(e => e.activeTasks > 0 || e.projects.size > 0 || e.docsPending > 0)
       .sort((a, b) => {
         if (sortKey === "active") return b.activeTasks - a.activeTasks;
         if (sortKey === "projects") return b.projects.size - a.projects.size;
@@ -974,7 +992,7 @@ PAGE_RENDERERS.overview = function () {
       ${rows.length ? `
       <div class="overview-table-shell">
         <table class="aewttr-table">
-          <thead><tr><th>Person</th><th>Open Tasks</th><th>Completed</th><th>Projects</th><th>Roles</th><th>Team</th><th>Next Due</th></tr></thead>
+          <thead><tr><th>Person</th><th>Open Tasks</th><th>Completed</th><th>Doc Reviews</th><th>Projects</th><th>Roles</th><th>Team</th><th>Next Due</th></tr></thead>
           <tbody>
             ${rows.map(entry => {
               const m = members.find(mbr => mbr.name === entry.member.name);
@@ -989,6 +1007,7 @@ PAGE_RENDERERS.overview = function () {
                 </td>
                 <td>${entry.activeTasks || "—"}</td>
                 <td>${entry.completedTasks ? `${entry.completedTasks}${pct !== null ? ` <span style="color:var(--aewttr-muted);font-size:11px;">(${pct}%)</span>` : ""}` : "—"}</td>
+                <td>${entry.docsPending ? `<span style="color:var(--aewttr-amber);font-weight:600;">${entry.docsPending}</span> pending` : "—"}</td>
                 <td>${entry.projects.size || "—"}</td>
                 <td>${escapeHtml([...entry.roles].join(", ") || "—")}</td>
                 <td>${escapeHtml([...entry.teams].join(", ") || "—")}</td>
@@ -1136,7 +1155,8 @@ PAGE_RENDERERS.overview = function () {
 
   function renderTeamResourcesHub(projects) {
     const activeTasks = getAllTasksFlat().filter(taskIsActive);
-    const state = window.AEWTTR.state.teamResources || { view: "people", query: "" };
+    const state = window.AEWTTR.state.teamResources || { view: "people", query: "", expanded: {} };
+    if (!state.expanded) state.expanded = {};
     window.AEWTTR.state.teamResources = state;
     const people = new Map();
     const projectIndex = new Map(projects.map((project) => [project.id, project]));
@@ -1172,16 +1192,47 @@ PAGE_RENDERERS.overview = function () {
     const matchesProject = (row) => !query || [row.name, ...row.people].join(" ").toLowerCase().includes(query);
     const personList = peopleRows.filter(matchesPerson);
     const projectList = projectRows.filter(matchesProject);
-    const peopleHtml = personList.map((row) => `<button type="button" class="resource-person-row" data-resource-person="${escapeHtml(row.name)}">
-      ${userAvatarHtml(row.name, "", 32)}<span class="resource-row-copy"><strong>${escapeHtml(row.name)}</strong><small>${row.tasks} active · ${row.projects.size} project${row.projects.size === 1 ? "" : "s"}</small></span>
-      <span class="resource-row-projects">${[...row.projects].slice(0, 3).map((id) => `<em>${escapeHtml((projectIndex.get(id) || {}).name || id)}</em>`).join("")}</span>
-      <i class="bx bx-chevron-right"></i>
-    </button>`).join("") || `<div class="empty-state">No people match this search.</div>`;
-    const projectsHtml = projectList.map((row) => `<button type="button" class="resource-project-row" data-resource-project="${escapeHtml(row.id)}">
-      <span class="resource-project-mark"></span><span class="resource-row-copy"><strong>${escapeHtml(row.name)}</strong><small>${row.people.size} assigned · ${row.tasks} active</small></span>
-      <span class="resource-avatar-stack">${[...row.people].slice(0, 4).map((name) => userAvatarHtml(name, "", 22)).join("")}</span>
-      <i class="bx bx-chevron-right"></i>
-    </button>`).join("") || `<div class="empty-state">No projects match this search.</div>`;
+    function personDetailHtml(row) {
+      const links = [...row.projects].map((id) => {
+        const project = projectIndex.get(id);
+        return `<button type="button" class="resource-detail-link" data-route="projects/${escapeHtml(id)}/workspace"><strong>${escapeHtml((project && project.name) || id)}</strong><span>Open project workspace</span><i class="bx bx-chevron-right"></i></button>`;
+      }).join("");
+      return `<div class="resource-detail-inline">
+        <div class="resource-detail-metrics"><span><b>${row.tasks}</b> active tasks</span><span><b>${row.projects.size}</b> projects</span></div>
+        <h4>Project assignments</h4>${links || `<div class="empty-state">No assignments yet.</div>`}
+      </div>`;
+    }
+    function projectDetailHtml(row) {
+      const names = [...row.people].map((name) => `<div class="resource-detail-person"><span>${userAvatarHtml(name, "", 24)}</span>${escapeHtml(name)}</div>`).join("");
+      return `<div class="resource-detail-inline">
+        <div class="resource-detail-metrics"><span><b>${row.tasks}</b> active tasks</span><span><b>${row.people.size}</b> assigned</span></div>
+        <h4>Assigned people</h4><div class="resource-detail-people">${names || `<div class="empty-state">No assignments yet.</div>`}</div>
+      </div>`;
+    }
+    const peopleHtml = personList.map((row) => {
+      const key = `person:${row.name}`;
+      const open = !!state.expanded[key];
+      return `<div class="resource-row-wrap">
+        <button type="button" class="resource-person-row${open ? " is-expanded" : ""}" data-resource-toggle="${escapeHtml(key)}">
+          ${userAvatarHtml(row.name, "", 32)}<span class="resource-row-copy"><strong>${escapeHtml(row.name)}</strong><small>${row.tasks} active · ${row.projects.size} project${row.projects.size === 1 ? "" : "s"}</small></span>
+          <span class="resource-row-projects">${[...row.projects].slice(0, 3).map((id) => `<em>${escapeHtml((projectIndex.get(id) || {}).name || id)}</em>`).join("")}</span>
+          <i class="bx bx-chevron-${open ? "up" : "right"}"></i>
+        </button>
+        ${open ? personDetailHtml(row) : ""}
+      </div>`;
+    }).join("") || `<div class="empty-state">No people match this search.</div>`;
+    const projectsHtml = projectList.map((row) => {
+      const key = `project:${row.id}`;
+      const open = !!state.expanded[key];
+      return `<div class="resource-row-wrap">
+        <button type="button" class="resource-project-row${open ? " is-expanded" : ""}" data-resource-toggle="${escapeHtml(key)}">
+          <span class="resource-project-mark"></span><span class="resource-row-copy"><strong>${escapeHtml(row.name)}</strong><small>${row.people.size} assigned · ${row.tasks} active</small></span>
+          <span class="resource-avatar-stack">${[...row.people].slice(0, 4).map((name) => userAvatarHtml(name, "", 22)).join("")}</span>
+          <i class="bx bx-chevron-${open ? "up" : "right"}"></i>
+        </button>
+        ${open ? projectDetailHtml(row) : ""}
+      </div>`;
+    }).join("") || `<div class="empty-state">No projects match this search.</div>`;
     const PROJ_COLORS = ["#3b6bcc","#e05f2b","#2b9e6a","#9b59b6","#c0392b","#16a085","#d35400","#2980b9","#8e44ad","#27ae60","#e74c3c","#1abc9c","#f39c12","#6c5ce7","#00b894"];
     const projColorMap = {};
     projectList.forEach((row, i) => { projColorMap[row.id] = PROJ_COLORS[i % PROJ_COLORS.length]; });
@@ -1746,7 +1797,7 @@ PAGE_RENDERERS.overview = function () {
           ${views.map(v => `<button class="filter-pill${v.key === view ? " active" : ""}" data-overview-view="${v.key}">${v.label}</button>`).join("")}
         </div>
         <div class="overview-toolbar-actions">
-          <button class="btn-aewttr overview-report-button" id="overview-generate-pptx" ${tip("Export this view as a comprehensive PowerPoint briefing deck")}><i class="bx bx-slideshow"></i> Export PPTX Briefing</button>
+          <button class="btn-aewttr overview-report-button" id="overview-generate-pptx" ${tip("Export this view as a comprehensive PowerPoint briefing deck")}><i class="bx bxs-slideshow"></i> Export PPTX Briefing</button>
           <button class="btn-aewttr-outline" id="overview-export-xlsx" ${tip("Export project metrics as a themed Excel workbook")}><i class="bx bx-spreadsheet"></i> Export Excel</button>
         </div>
       </div>
@@ -1798,26 +1849,17 @@ PAGE_RENDERERS.overview = function () {
       window.AEWTTR.state.teamResources.query = resourceSearch.value;
       render();
     });
-    function openResourcePopup(kind, value) {
-      const directory = window.AEWTTR.state.resourceDirectory || {};
-      const isPerson = kind === "person";
-      const item = (isPerson ? directory.people : directory.projects || []).find((row) => (isPerson ? row.name : row.id) === value);
-      if (!item) return;
-      const links = isPerson
-        ? [...item.projects].map((id) => {
-          const project = directory.projectIndex && directory.projectIndex.get(id);
-          return `<button type="button" class="resource-detail-link" data-route="projects/${escapeHtml(id)}/workspace"><strong>${escapeHtml((project && project.name) || id)}</strong><span>Open project workspace</span><i class="bx bx-chevron-right"></i></button>`;
-        }).join("")
-        : [...item.people].map((name) => `<button type="button" class="resource-detail-link" data-resource-person="${escapeHtml(name)}"><strong>${escapeHtml(name)}</strong><span>Assigned team member</span><i class="bx bx-chevron-right"></i></button>`).join("");
-      const modal = openModal(`<div class="aewttr-modal-head"><h3>${escapeHtml(item.name)}</h3><button class="aewttr-modal-close" type="button">&times;</button></div>
-        <div class="aewttr-modal-body resource-detail"><div class="resource-detail-metrics"><span><b>${item.tasks}</b> active tasks</span><span><b>${isPerson ? item.projects.size : item.people.size}</b> ${isPerson ? "projects" : "assigned"}</span></div>
-        <h4>${isPerson ? "Project assignments" : "Assigned people"}</h4>${links || `<div class="empty-state">No assignments yet.</div>`}</div>`, { className: "resource-detail-modal" });
-      $(".aewttr-modal-close", modal).addEventListener("click", closeModal);
-      $all("[data-route]", modal).forEach((button) => button.addEventListener("click", () => { closeModal(); navigate(button.dataset.route); }));
-      $all("[data-resource-person]", modal).forEach((button) => button.addEventListener("click", () => { closeModal(); openResourcePopup("person", button.dataset.resourcePerson); }));
-    }
-    $all("[data-resource-person]", $("#page-content")).forEach((button) => button.addEventListener("click", () => openResourcePopup("person", button.dataset.resourcePerson)));
-    $all("[data-resource-project]", $("#page-content")).forEach((button) => button.addEventListener("click", () => openResourcePopup("project", button.dataset.resourceProject)));
+    /* Expand/collapse the row inline instead of opening a modal — assignment
+       detail (project links / assigned people) reads directly in the list. */
+    $all("[data-resource-toggle]", $("#page-content")).forEach((button) => button.addEventListener("click", () => {
+      const key = button.dataset.resourceToggle;
+      window.AEWTTR.state.teamResources.expanded[key] = !window.AEWTTR.state.teamResources.expanded[key];
+      render();
+    }));
+    $all(".resource-detail-inline [data-route]", $("#page-content")).forEach((button) => button.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigate(button.dataset.route);
+    }));
 
     /* Portfolio filters */
     const sysSearch = $("#ov-sys-search");
@@ -1886,62 +1928,293 @@ PAGE_RENDERERS.overview = function () {
       };
     }
 
-    /* Themed Excel workbook export */
+    /* Themed, multi-tab Excel workbook export: Brand (logo/wordmark), Summary
+       (KPIs + rendered chart images), Projects (full inventory). The KPI/chart
+       numbers reuse the same model the PPTX briefing builds from, so the two
+       export formats always agree. */
     const xlsxBtn = $("#overview-export-xlsx");
     if (xlsxBtn) {
       xlsxBtn.onclick = async () => {
-        const columns = ["Project", "End Item", "Portfolio", "PM", "Team", "Derived Status", "Active Tasks", "Open Risks", "Funding Type", "Fiscal Year", "Task Order", "Config End Item", "Start Date", "Due Date"];
-        const dataRows = projects.map(proj => {
-          const tasks = allProjectTasks(proj.id);
-          return [
-            proj.name || "Untitled project",
-            projectEndItem(proj),
-            (proj.portfolios && proj.portfolios[0]) || "",
-            projectPMDisplayName(proj),
-            proj.team || "",
-            derivedProjectStatus(proj),
-            tasks.filter(taskIsActive).length,
-            projectRiskCount(proj.id),
-            proj.fundingType || "",
-            proj.fiscalYear || "",
-            proj.taskOrder || "",
-            proj.configEndItem || "",
-            proj.startDate || "",
-            proj.dueDate || ""
-          ];
-        });
         const exportService = window.AEWTTR && window.AEWTTR.ExportService;
-        if (!exportService || typeof exportService.exportXlsx !== "function") {
+        const pptxService = window.AEWTTR && window.AEWTTR.OverviewPptxService;
+        if (!exportService || typeof exportService.exportMultiSheetXlsx !== "function") {
           toast("Excel export is unavailable in this package.", "error");
           return;
         }
         const isTeamExport = view === "Team" && canSeeTeamOverview;
         const fileName = isTeamExport ? "PULSE-team-overview.xlsx" : "PULSE-my-overview.xlsx";
         const workbookTitle = isTeamExport ? "PULSE Team Overview" : "PULSE My Overview";
+        const subtitle = `Project metrics and status | Reporting as of ${asOfLabel()}`;
         const popup = typeof exportService.reserveOpen === "function"
           ? exportService.reserveOpen(fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
           : null;
+        const originalHtml = xlsxBtn.innerHTML;
         xlsxBtn.disabled = true;
+        xlsxBtn.innerHTML = `<i class="bx bx-loader-alt bx-spin"></i> Building workbook…`;
         try {
-          const result = await exportService.exportXlsx(
-            fileName,
-            columns,
-            dataRows,
+          const model = pptxService && typeof pptxService.buildModel === "function"
+            ? pptxService.buildModel(isTeamExport, window.AEWTTR.db, projects)
+            : null;
+          const metrics = (model && model.metrics) || {};
+
+          const totalTasksForChart = metrics.totalTasks || 0;
+          const openTasksForChart = metrics.activeTasks || 0;
+          const closedTasksForChart = isTeamExport ? (metrics.closedTasks || 0) : (metrics.completedTasks || 0);
+          const statusGroups = (isTeamExport && model && model.statusGroups) || {};
+
+          const summaryRows = isTeamExport
+            ? [
+                ["Total Projects", metrics.totalProjects || 0],
+                ["Active Projects", metrics.activeProjects || 0],
+                ["Total Tasks", totalTasksForChart],
+                ["Open Tasks", openTasksForChart],
+                ["Closed Tasks", closedTasksForChart],
+                ["On Track Projects", statusGroups["On Track"] || 0],
+                ["At Risk Projects", statusGroups["At Risk"] || 0],
+                ["Blocked Projects", statusGroups["Blocked"] || 0],
+                ["Open Risks", metrics.openRisks || 0],
+                ["Team Size", metrics.teamSize || 0],
+                ["Documents In Review", metrics.documentsInReview || 0],
+                ["Pending Travel", metrics.pendingTravel || 0]
+              ]
+            : [
+                ["Total Projects", metrics.totalProjects || 0],
+                ["Total Tasks", totalTasksForChart],
+                ["Open Tasks", openTasksForChart],
+                ["Closed Tasks", closedTasksForChart],
+                ["Documents Reviewed", metrics.documentsReviewed || 0],
+                ["Documents Signed", metrics.documentsSigned || 0],
+                ["Travel Requests", metrics.travelRequests || 0]
+              ];
+
+          const summaryCharts = [{
+            type: "bar",
+            title: "Task Breakdown",
+            categories: ["Total", "Open", "Closed"],
+            series: [{ name: "Tasks", values: [totalTasksForChart, openTasksForChart, closedTasksForChart] }],
+            pointColors: ["2F66FF", "C77800", "2B7A5E"],
+            pxW: 480, pxH: 300
+          }];
+          if (isTeamExport) {
+            summaryCharts.push({
+              type: "doughnut",
+              title: "Project Health",
+              categories: ["On Track", "At Risk", "Blocked"],
+              series: [{ name: "Projects", values: [statusGroups["On Track"] || 0, statusGroups["At Risk"] || 0, statusGroups["Blocked"] || 0] }],
+              colors: ["2B7A5E", "C77800", "B42318"],
+              pxW: 480, pxH: 300
+            });
+          }
+
+          const projectColumns = ["Project", "End Item", "Portfolio", "PM", "Team", "Derived Status", "Total Tasks", "Open Tasks", "Closed Tasks", "Open Risks", "Funding Type", "Fiscal Year", "Task Order", "Start Date", "Due Date"];
+          const projectRows = projects.map(proj => {
+            const tasks = allProjectTasks(proj.id);
+            const closedCount = tasks.filter(taskIsDone).length;
+            return [
+              proj.name || "Untitled project",
+              projectEndItem(proj),
+              (proj.portfolios && proj.portfolios[0]) || "",
+              projectPMDisplayName(proj),
+              proj.team || "",
+              derivedProjectStatus(proj),
+              tasks.length,
+              tasks.length - closedCount,
+              closedCount,
+              projectRiskCount(proj.id),
+              proj.fundingType || "",
+              proj.fiscalYear || "",
+              proj.taskOrder || "",
+              proj.startDate || "",
+              proj.dueDate || ""
+            ];
+          });
+
+          const sheetDefs = [
             {
-              popup,
-              folderName: "Overview",
+              name: "Summary",
               title: workbookTitle,
-              subtitle: `Project metrics and status | Reporting as of ${asOfLabel()}`,
-              sectionLabel: isTeamExport ? "TEAM PROJECT INVENTORY" : "MY PROJECT INVENTORY",
+              subtitle,
+              sectionLabel: isTeamExport ? "TEAM SUMMARY" : "MY SUMMARY",
               footerLabel: workbookTitle,
-              sheetName: isTeamExport ? "Team Overview" : "My Overview"
+              columns: ["Metric", "Value"],
+              rows: summaryRows,
+              charts: summaryCharts,
+              tabColor: "2F66FF"
             }
-          );
+          ];
+
+          if (isTeamExport) {
+            const portfolioMap = new Map();
+            projects.forEach(proj => {
+              const names = (Array.isArray(proj.portfolios) && proj.portfolios.length) ? proj.portfolios : ["Unassigned"];
+              const tasks = allProjectTasks(proj.id);
+              const open = tasks.filter(taskIsActive).length;
+              const closed = tasks.filter(taskIsDone).length;
+              const risks = projectRiskCount(proj.id);
+              names.forEach(name => {
+                if (!portfolioMap.has(name)) portfolioMap.set(name, { name, projects: 0, open: 0, closed: 0, risks: 0 });
+                const row = portfolioMap.get(name);
+                row.projects += 1;
+                row.open += open;
+                row.closed += closed;
+                row.risks += risks;
+              });
+            });
+            const portfolioRows = [...portfolioMap.values()].sort((a, b) => b.open - a.open);
+            sheetDefs.push({
+              name: "Portfolios",
+              title: workbookTitle,
+              subtitle,
+              sectionLabel: "PORTFOLIO ROLLUP",
+              footerLabel: workbookTitle,
+              columns: ["Portfolio", "Projects", "Open Tasks", "Closed Tasks", "Open Risks"],
+              rows: portfolioRows.map(row => [row.name, row.projects, row.open, row.closed, row.risks]),
+              charts: portfolioRows.length ? [{
+                type: "bar",
+                title: "Open Tasks by Portfolio",
+                categories: portfolioRows.slice(0, 8).map(row => row.name),
+                series: [{ name: "Open Tasks", values: portfolioRows.slice(0, 8).map(row => row.open) }],
+                pxW: 560, pxH: 320
+              }] : [],
+              tabColor: "7030A0"
+            });
+
+            const workloadRows = buildTeamWorkloadRows(projects);
+            sheetDefs.push({
+              name: "Workload",
+              title: workbookTitle,
+              subtitle,
+              sectionLabel: "TEAM WORKLOAD",
+              footerLabel: workbookTitle,
+              columns: ["Person", "Open Tasks", "Completed Tasks", "Doc Reviews Pending", "Projects", "Roles", "Team", "Next Due"],
+              rows: workloadRows.map(entry => [
+                entry.member.name,
+                entry.activeTasks,
+                entry.completedTasks,
+                entry.docsPending,
+                entry.projects.size,
+                [...entry.roles].join(", "),
+                [...entry.teams].join(", "),
+                entry.nextDue || ""
+              ]),
+              charts: workloadRows.length ? [{
+                type: "bar",
+                horizontal: true,
+                title: "Top Open Workload",
+                categories: workloadRows.slice(0, 8).map(entry => entry.member.name),
+                series: [{ name: "Open Tasks", values: workloadRows.slice(0, 8).map(entry => entry.activeTasks) }],
+                pxW: 560, pxH: 320
+              }] : [],
+              tabColor: "C77800"
+            });
+
+            const allRisks = [];
+            projects.forEach(proj => {
+              (typeof projectRisks === "function" ? projectRisks(proj.id) : []).forEach(risk => {
+                if (typeof isPlaceholderRisk === "function" && isPlaceholderRisk(risk)) return;
+                const status = String(risk.status || "").toLowerCase();
+                if (["closed", "resolved", "accepted"].includes(status)) return;
+                allRisks.push({ project: proj.name || "Untitled project", ...risk });
+              });
+            });
+            const ratingCounts = { Red: 0, Amber: 0, Green: 0 };
+            allRisks.forEach(risk => { ratingCounts[risk.rating] = (ratingCounts[risk.rating] || 0) + 1; });
+            sheetDefs.push({
+              name: "Risks",
+              title: workbookTitle,
+              subtitle,
+              sectionLabel: "OPEN RISKS",
+              footerLabel: workbookTitle,
+              columns: ["Project", "Risk", "Category", "Rating", "Likelihood", "Impact", "Status", "Due", "Owner"],
+              rows: allRisks.map(risk => [risk.project, risk.name, risk.category, risk.rating, risk.likelihood, risk.impact, risk.status, risk.due || "", risk.owner || ""]),
+              emptyMessage: "No open risks.",
+              charts: allRisks.length ? [{
+                type: "doughnut",
+                title: "Risks by Rating",
+                categories: ["Red", "Amber", "Green"],
+                series: [{ name: "Risks", values: [ratingCounts.Red, ratingCounts.Amber, ratingCounts.Green] }],
+                colors: ["B42318", "C77800", "2B7A5E"],
+                pxW: 480, pxH: 300
+              }] : [],
+              tabColor: "B42318"
+            });
+          } else {
+            const myData = getMyData();
+            const taskColumns = ["Task", "Project", "Status", "Priority", "Due"];
+            const taskRows = myData.allMyTasks.map(task => [
+              task.name || task.title || "Untitled task",
+              task.projectName || "",
+              task.status || (taskIsDone(task) ? "Done" : "Open"),
+              task.priority || "",
+              task.end || ""
+            ]);
+            const priorityCounts = {};
+            myData.allMyTasks.filter(taskIsActive).forEach(task => {
+              const key = task.priority || "None";
+              priorityCounts[key] = (priorityCounts[key] || 0) + 1;
+            });
+            const priorityEntries = Object.entries(priorityCounts).sort((a, b) => b[1] - a[1]);
+            sheetDefs.push({
+              name: "My Tasks",
+              title: workbookTitle,
+              subtitle,
+              sectionLabel: "MY TASKS",
+              footerLabel: workbookTitle,
+              columns: taskColumns,
+              rows: taskRows,
+              emptyMessage: "No tasks assigned.",
+              charts: priorityEntries.length ? [{
+                type: "bar",
+                title: "Open Tasks by Priority",
+                categories: priorityEntries.map(([name]) => name),
+                series: [{ name: "Open Tasks", values: priorityEntries.map(([, count]) => count) }],
+                pxW: 480, pxH: 300
+              }] : [],
+              tabColor: "C77800"
+            });
+
+            const docsAndTravelRows = [
+              ...myData.docsNeedingMe.map(doc => ["Document", doc.title || "Untitled", doc._column || "Pending", doc.submitter || "", doc.updatedAt || ""]),
+              ...myData.myTravel.map(req => ["Travel", req.destination || req.id || "Request", req.status || "Pending", req.requester || "", req.startDate || ""])
+            ];
+            sheetDefs.push({
+              name: "Documents & Travel",
+              title: workbookTitle,
+              subtitle,
+              sectionLabel: "DOCUMENTS & TRAVEL",
+              footerLabel: workbookTitle,
+              columns: ["Type", "Item", "Status", "Owner", "Date"],
+              rows: docsAndTravelRows,
+              emptyMessage: "No documents or travel requests need attention.",
+              tabColor: "7030A0"
+            });
+          }
+
+          sheetDefs.push({
+            name: "Projects",
+            title: workbookTitle,
+            subtitle,
+            sectionLabel: isTeamExport ? "TEAM PROJECT INVENTORY" : "MY PROJECT INVENTORY",
+            footerLabel: workbookTitle,
+            columns: projectColumns,
+            rows: projectRows,
+            tabColor: "2B7A5E"
+          });
+
+          const result = await exportService.exportMultiSheetXlsx(fileName, sheetDefs, {
+            popup,
+            folderName: "Overview",
+            title: workbookTitle
+          });
           if (result.mode === "sharepoint") toast("Excel workbook saved and opened in SharePoint.", "success");
           else if (result.uploadError) toast("SharePoint upload failed — downloaded a local copy instead.", "warn");
           else toast("Excel workbook downloaded.", "success");
+        } catch (error) {
+          const message = (error && (error.friendly || error.message)) || "Could not build the Excel workbook.";
+          toast(message, "error");
         } finally {
           xlsxBtn.disabled = false;
+          xlsxBtn.innerHTML = originalHtml;
         }
       };
     }

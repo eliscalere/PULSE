@@ -69,13 +69,7 @@ function getAppSettings() {
 
 function cuiMarkingBarHtml(position) {
   if (!getAppSettings().cuiMarkingEnabled) return "";
-  return `
-    <div class="pulse-cui-marking pulse-cui-marking--${position || "top"}" data-cui-marking="${position || "top"}" role="note" aria-label="CUI marking active">
-      <span class="pulse-cui-rule" aria-hidden="true"></span>
-      <span class="pulse-cui-label"><i class="bx bx-shield-quarter" aria-hidden="true"></i><strong>CUI</strong></span>
-      <span class="pulse-cui-rule" aria-hidden="true"></span>
-    </div>
-  `;
+  return `<div class="cui-bar" data-cui-marking="${position || "top"}" role="note" aria-label="CUI marking active">CUI</div>`;
 }
 
 function applyCuiMarking() {

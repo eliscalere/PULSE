@@ -2704,7 +2704,7 @@ const sharePointAdapter = (function () {
       const roleInfo = {
         role,
         isAdmin: role === "Admin",
-        isMeetingAdmin: role === "Admin" || role === "Meeting Admin",
+        isMeetingAdmin: role === "Admin" || role === "Meeting Admin" || role === "PM Admin",
         isFinanceAdmin: role === "Admin" || role === "Finance Admin",
         isDocAdmin: role === "Admin" || role === "Document Admin",
         roleRecordId: match.record.Id,

@@ -31,6 +31,7 @@ function buildEmptyStore(currentUser) {
     },
     docReviewerGroups: [],
     groups: [],
+    groupReportConfigs: {},
     checklistBoards: [],
     checklistTasks: {},
     tickets: [],
@@ -58,6 +59,48 @@ function ensureProjectExtra(pid) {
   if (db.projectExtra[pid].meetingNotes == null) db.projectExtra[pid].meetingNotes = "";
   if (!Array.isArray(db.projectExtra[pid].notes)) db.projectExtra[pid].notes = [];
   return db.projectExtra[pid];
+}
+
+/* Portfolios/Programs/End Item Configs are just name tags shared across
+   projects — not their own SharePoint record — so their Reporting-tab slide
+   content (Technical Status bullets, Description, which projects' milestones
+   to show) lives in its own keyed store, persisted via
+   Repo.save("groupReportConfig", cfg). */
+function groupReportConfigKey(groupType, groupName) {
+  return `${groupType}:${groupName}`;
+}
+
+function ensureGroupReportConfig(groupType, groupName) {
+  const db = window.AEWTTR.db;
+  if (!db.groupReportConfigs) db.groupReportConfigs = {};
+  const key = groupReportConfigKey(groupType, groupName);
+  if (!db.groupReportConfigs[key]) {
+    db.groupReportConfigs[key] = {
+      groupKey: key,
+      groupType,
+      groupName,
+      techBullets: [],
+      description: "",
+      otherMilestones: [],
+      photoProjectId: "",
+      photoUrl: "",
+      photoName: "",
+      includedProjectIds: [],
+      riskRows: [{ cat: "Schedule", rag: "", notes: "" }, { cat: "Budget", rag: "", notes: "" }, { cat: "Technical", rag: "", notes: "" }]
+    };
+  }
+  const cfg = db.groupReportConfigs[key];
+  if (!Array.isArray(cfg.techBullets)) cfg.techBullets = [];
+  if (cfg.description == null) cfg.description = "";
+  if (!Array.isArray(cfg.otherMilestones)) cfg.otherMilestones = [];
+  if (cfg.photoProjectId == null) cfg.photoProjectId = "";
+  if (cfg.photoUrl == null) cfg.photoUrl = "";
+  if (cfg.photoName == null) cfg.photoName = "";
+  if (!Array.isArray(cfg.includedProjectIds)) cfg.includedProjectIds = [];
+  if (!Array.isArray(cfg.riskRows) || !cfg.riskRows.length) {
+    cfg.riskRows = [{ cat: "Schedule", rag: "", notes: "" }, { cat: "Budget", rag: "", notes: "" }, { cat: "Technical", rag: "", notes: "" }];
+  }
+  return cfg;
 }
 
 /* ---------- shared reporting milestones ----------
@@ -91,6 +134,39 @@ function updateProjectReportingMilestone(projectOrId, taskId, patch) {
     }));
   }
   return next;
+}
+
+/* ---------- project-level milestone dates (single set per project) ----------
+   Replaces the per-task taskMilestones picker above for the single-project
+   Reporting tab: one Contract/FAT/SAT/ADD/Fielding/Complete date directly on
+   the project, not attached to any tracker task. Portfolio/Program/EIS group
+   views read this same store to build a cross-project milestone table. */
+const PROJECT_MILESTONE_KEYS = ["contractAwarded", "fat", "sat", "add", "fielding", "complete"];
+
+function getProjectMilestones(projectOrId) {
+  const projectId = typeof projectOrId === "string" ? projectOrId : (projectOrId && projectOrId.id);
+  if (!projectId) return {};
+  const extra = ensureProjectExtra(projectId);
+  if (!extra.reportConfig || typeof extra.reportConfig !== "object") extra.reportConfig = {};
+  let milestones = extra.reportConfig.projectMilestones;
+  if (!milestones || typeof milestones !== "object" || Array.isArray(milestones)) {
+    milestones = extra.reportConfig.projectMilestones = {};
+  }
+  PROJECT_MILESTONE_KEYS.forEach((key) => { if (milestones[key] == null) milestones[key] = ""; });
+  return milestones;
+}
+
+function updateProjectMilestone(projectOrId, key, value) {
+  const projectId = typeof projectOrId === "string" ? projectOrId : (projectOrId && projectOrId.id);
+  if (!projectId || !PROJECT_MILESTONE_KEYS.includes(key)) return null;
+  const milestones = getProjectMilestones(projectId);
+  milestones[key] = value || "";
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function" && typeof CustomEvent === "function") {
+    window.dispatchEvent(new CustomEvent("pulse:project-milestones-changed", {
+      detail: { projectId: projectId, key: key, milestones: milestones }
+    }));
+  }
+  return milestones;
 }
 
 function normalizeRelatedDocs(list) {

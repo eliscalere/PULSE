@@ -35,33 +35,39 @@ PAGE_RENDERERS["notification-settings"] = function () {
         delivery: current.documents.delivery,
         digestFrequency: current.documents.digestFrequency
       },
-      digest: { ...current.digest }
+      digest: { ...current.digest },
+      actionItemDigest: { ...current.actionItemDigest }
     };
+  }
+
+  async function flushPrefsNow() {
+    unregisterAutosaveFlusher(flushPrefsNow);
+    if (!saveTimer) return;
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    setSaveStatus("Saving…");
+    const payload = prefsPayload();
+    const liveDb = window.AEWTTR.db;
+    liveDb.user.notificationPrefs = payload;
+    const member = typeof currentUserMember === "function" ? currentUserMember() : null;
+    if (member) member.notificationPrefs = payload;
+    if (isSharePointMode()) {
+      try {
+        await sharePointAdapter.saveCurrentUserNotificationPrefs(window.AEWTTR.siteUrl, window.AEWTTR.currentSpUser, payload);
+      } catch (e) {
+        setSaveStatus("Couldn't save — check your connection", true);
+        toast((e && e.friendly) || "Could not save notification preferences.", "error");
+        return;
+      }
+    }
+    setSaveStatus("All changes saved");
   }
 
   function persistPrefs() {
     setSaveStatus("Saving soon…");
     if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(async () => {
-      setSaveStatus("Saving…");
-      const payload = prefsPayload();
-      // Always write into the live store — a background refresh may have
-      // replaced window.AEWTTR.db while this page was open.
-      const liveDb = window.AEWTTR.db;
-      liveDb.user.notificationPrefs = payload;
-      const member = typeof currentUserMember === "function" ? currentUserMember() : null;
-      if (member) member.notificationPrefs = payload;
-      if (isSharePointMode()) {
-        try {
-          await sharePointAdapter.saveCurrentUserNotificationPrefs(window.AEWTTR.siteUrl, window.AEWTTR.currentSpUser, payload);
-        } catch (e) {
-          setSaveStatus("Couldn't save — check your connection", true);
-          toast((e && e.friendly) || "Could not save notification preferences.", "error");
-          return;
-        }
-      }
-      setSaveStatus("All changes saved");
-    }, 400);
+    registerAutosaveFlusher(flushPrefsNow);
+    saveTimer = setTimeout(flushPrefsNow, 400);
   }
 
   function documentsAreaOn() {
@@ -206,6 +212,15 @@ PAGE_RENDERERS["notification-settings"] = function () {
               </label>
               <button class="btn-aewttr-outline" id="notif-digest-preview" style="margin-top:4px;"><i class="bx bx-list-check"></i> Preview Digest Now</button>
             </div>
+            <div class="notif-digest-row">
+              <label class="notif-toggle-row">
+                <span class="notif-toggle-label">Email &amp; Teams delivery</span>
+                <span class="aewttr-switch"><input type="checkbox" id="notif-actionitem-digest-enabled" ${current.actionItemDigest.enabled ? "checked" : ""}><span class="aewttr-switch-track"></span></span>
+              </label>
+              <p class="notif-settings-note notif-settings-note--inline">
+                When on (default), you'll get a daily email and Teams message listing your own open action items — sent automatically once a day, independent of the in-app popup above.
+              </p>
+            </div>
           </section>
 
           <section class="notif-panel notif-panel--test">
@@ -287,6 +302,11 @@ PAGE_RENDERERS["notification-settings"] = function () {
         else toast("Digest not available — refresh the app.", "error");
       });
     }
+
+    $("#notif-actionitem-digest-enabled").addEventListener("change", (e) => {
+      current.actionItemDigest.enabled = e.target.checked;
+      persistPrefs();
+    });
 
     $("#notif-send-test").addEventListener("click", async () => {
       const btn = $("#notif-send-test");

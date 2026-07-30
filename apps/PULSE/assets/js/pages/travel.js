@@ -2170,6 +2170,19 @@ function openTravelExportByPolicy(result, fallbackFileName, popup) {
   return true;
 }
 
+/* Hand a generated Blob to the browser as a download. Object URLs are revoked on
+   a later tick; revoking synchronously cancels the download in some browsers. */
+function downloadBlobAsFile(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
 async function saveTravelExportToSharePoint(request, opts) {
   opts = opts || {};
   if (!isSharePointMode()) {
@@ -3188,10 +3201,12 @@ async function submitTravelRequest(body, formMode, travelers, db, editing) {
           <a href="data:text/calendar;charset=utf-8,${encodeURIComponent(buildTravelIcsContent(req))}" download="${escapeHtml(req.id)}.ics" class="btn-aewttr btn-aewttr-secondary travel-confirm-teams-btn">
             <i class="bx bx-calendar-plus"></i>&ensp;Add to Calendar
           </a>
-          <button class="btn-aewttr" onclick="navigate('travel/mine')">View My Travel</button>
+          <button type="button" class="btn-aewttr" id="travel-confirm-view-mine">View My Travel</button>
         </div>
       </div>
     </div>`;
+    const viewMineBtn = $("#travel-confirm-view-mine", body);
+    if (viewMineBtn) viewMineBtn.addEventListener("click", () => navigate("travel/mine"));
   }
 }
 
@@ -3734,7 +3749,8 @@ function openTravelDetailModal(trId) {
         ${r._docGenFailed ? travelActionBtn("export", { elementId: "td-retry-doc", label: "Retry Document", tone: "primary", tip: "Retry generating the travel document" }) : ""}
         ${canCancel && !canWithdraw ? travelActionBtn("cancel", { elementId: "td-cancel-travel", tip: canAdminCancelTravel(r) ? "Cancel this travel request" : "Cancel this travel request", tone: "danger" }) : ""}
         ${travelDebriefRowButtons(r)}
-        ${r.exportFileUrl ? travelActionBtn("open-export", { elementId: "td-open-export", label: "Open Document", icon: "bx-desktop", tip: "Open travel document in Word" }) : ""}
+        ${travelActionBtn("export", { elementId: "td-download-docx", label: "Download DOCX", icon: "bx-download", tip: "Generate and download the travel request document — available at any stage" })}
+        ${r.exportFileUrl ? travelActionBtn("open-export", { elementId: "td-open-export", label: "Open Document", icon: "bx-desktop", tip: "Open the filed travel document in Word" }) : ""}
       </div>
       <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="td-close">Close</button>
     </div>
@@ -3773,6 +3789,34 @@ function openTravelDetailModal(trId) {
       retryDocBtn.disabled = false;
     }
   });
+  /* A requester needs their own copy of the form long before finance assigns a
+     charge object, which is when the filed document is generated. This builds
+     the same DOCX from the same template client-side and hands it straight to
+     the browser: no SharePoint write, no revision, no effect on the document
+     review. The filed copy is still what the review tracks. */
+  const downloadDocxBtn = $("#td-download-docx", modal);
+  if (downloadDocxBtn) downloadDocxBtn.addEventListener("click", async () => {
+    if (typeof window.createTravelDocxBlob !== "function") {
+      toast("The travel document generator is not loaded on this page.", "error");
+      return;
+    }
+    const original = downloadDocxBtn.innerHTML;
+    downloadDocxBtn.disabled = true;
+    try {
+      const blob = await window.createTravelDocxBlob(r);
+      const baseId = String(r.id || "travel-request").replace(/[^A-Za-z0-9._-]+/g, "-");
+      const mode = String(r.formMode || "Standard").toLowerCase().replace(/\s+/g, "-");
+      downloadBlobAsFile(blob, `${baseId}-${mode}-travel-request.docx`);
+      toast("Travel request document downloaded.", "success");
+    } catch (e) {
+      console.error("PULSE: travel DOCX download failed.", e);
+      toast("Could not generate the travel document. Report an issue if this continues.", "error");
+    } finally {
+      downloadDocxBtn.disabled = false;
+      downloadDocxBtn.innerHTML = original;
+    }
+  });
+
   const openDocBtn = $("#td-open-export", modal);
   if (openDocBtn) openDocBtn.addEventListener("click", () => openTravelDocByPolicy(r));
   const cancelBtn = $("#td-cancel-travel", modal);

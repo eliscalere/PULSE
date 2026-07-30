@@ -31,7 +31,7 @@
 <link rel="stylesheet" href="vendor/boxicons/css/boxicons.min.css">
 <link rel="stylesheet" href="vendor/fullcalendar/css/main.min.css">
 <link rel="stylesheet" href="vendor/flatpickr/flatpickr.min.css">
-<link rel="stylesheet" href="assets/css/style.css?v=20260727a">
+<link rel="stylesheet" href="assets/css/style.css?v=20260731e">
 <link rel="stylesheet" href="assets/css/dropdowns.css">
 <link rel="stylesheet" href="assets/css/pulse-system.css?v=20260727d">
 </head>
@@ -60,13 +60,32 @@
 <script>
   window.PULSELoader = {
     finish: function () {
+      var el = document.getElementById('pulse-boot-loader');
+      if (!el) return;
+      /* The app is ready the moment finish() is called - never let the
+         loader intercept clicks past this point, even while it fades. */
+      el.style.pointerEvents = 'none';
+      var removed = false;
+      function removeLoader() {
+        if (removed) return;
+        removed = true;
+        el.remove();
+      }
       setTimeout(function () {
-        var el = document.getElementById('pulse-boot-loader');
-        if (!el) return;
-        el.animate(
-          [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.985)' }],
-          { duration: 360, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }
-        ).onfinish = function () { el.remove(); };
+        try {
+          var anim = el.animate(
+            [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.985)' }],
+            { duration: 360, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }
+          );
+          anim.onfinish = removeLoader;
+          anim.oncancel = removeLoader;
+        } catch (e) {
+          removeLoader();
+        }
+        /* Web Animations never progress while the tab is hidden, so
+           onfinish alone can leave the overlay in the DOM forever
+           (silently blocking every click under it). Hard fallback. */
+        setTimeout(removeLoader, 1200);
       }, 1000);
     }
   };
@@ -81,37 +100,37 @@
 
 <script src="assets/js/app-config.js"></script>
 <script src="assets/js/sharepoint-adapter.js?v=20260722b"></script>
-<script src="assets/js/sharepoint-schema.js?v=20260727a"></script>
-  <script src="assets/js/sharepoint-repo.js?v=20260727a"></script>
-<script src="assets/js/data.js?v=20260727a"></script>
+<script src="assets/js/sharepoint-schema.js?v=20260731e"></script>
+  <script src="assets/js/sharepoint-repo.js?v=20260731e"></script>
+<script src="assets/js/data.js?v=20260731d"></script>
   <script src="assets/js/issue-reporting.js?v=20260724a"></script>
-<script src="assets/js/export.js?v=20260725b"></script>
+<script src="assets/js/export.js?v=20260731a"></script>
 <script src="vendor/pptxgenjs/pptxgen.browser.js"></script>
 <script src="assets/js/office-desktop.js?v=20260726d"></script>
-<script src="assets/js/project-pptx-export.js?v=20260727a"></script>
-<script src="assets/js/app.js?v=20260727a"></script>
+<script src="assets/js/project-pptx-export.js?v=20260731d"></script>
+<script src="assets/js/app.js?v=20260731e"></script>
 <script src="assets/js/audit-log.js"></script>
-<script src="assets/js/notify.js"></script>
-<script src="assets/js/pages/dashboard.js?v=20260724c"></script>
+<script src="assets/js/notify.js?v=20260731a"></script>
+<script src="assets/js/pages/dashboard.js?v=20260731a"></script>
 <script src="assets/js/overview-report.js?v=20260725a"></script>
 <script src="assets/js/overview-pptx-template.js?v=20260725b"></script>
     <script src="assets/js/overview-pptx-export.js?v=20260725e"></script>
-<script src="assets/js/pages/overview.js?v=20260727a"></script>
+<script src="assets/js/pages/overview.js?v=20260731e"></script>
 <script src="assets/js/pages/people.js"></script>
-<script src="assets/js/pages/projects.js?v=20260727b"></script>
+<script src="assets/js/pages/projects.js?v=20260731d"></script>
 <script src="assets/js/pages/project-documents.js?v=20260725a"></script>
 <script src="assets/js/pages/project-photos.js?v=20260725a"></script>
-<script src="assets/js/pages/weekly.js?v=20260727b"></script>
+<script src="assets/js/pages/weekly.js?v=20260731d"></script>
 <script src="assets/js/travel-docx-template.js?v=20260726a"></script>
-<script src="assets/js/pages/travel.js?v=20260726j"></script>
-<script src="assets/js/pages/docreview.js?v=20260726b"></script>
+<script src="assets/js/pages/travel.js?v=20260731a"></script>
+<script src="assets/js/pages/docreview.js?v=20260731a"></script>
 <script src="assets/js/pages/checklists.js"></script>
-<script src="assets/js/pages/tickets.js?v=20260727a"></script>
+<script src="assets/js/pages/tickets.js?v=20260731d"></script>
 <script src="assets/js/pages/notification-settings.js"></script>
 <script src="assets/js/pages/users.js"></script>
 <script src="assets/js/pages/workload.js"></script>
 <script src="assets/js/pages/logs.js?v=20260726b"></script>
 <script src="assets/js/sample-project-seed.js"></script>
-<script src="assets/js/pages/admin.js?v=20260727a"></script>
+<script src="assets/js/pages/admin.js?v=20260731d"></script>
 </body>
 </html>

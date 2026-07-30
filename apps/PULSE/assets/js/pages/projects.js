@@ -1,3 +1,15 @@
+/* Shared by the single-project Reporting tab and the Portfolio/Program/EIS
+   group Reporting tab's cross-project milestone table — keep one definition
+   so labels/colors/symbols can't drift between the two. */
+const PROJECT_MILESTONE_CATEGORIES = [
+  { key: "contractAwarded", label: "Contract Award",      short: "Contract", color: "#7f7f7f", sym: "★" },
+  { key: "fat",             label: "First Article Test",  short: "FAT",      color: "#70d6c8", sym: "△" },
+  { key: "sat",             label: "Site Acceptance Test", short: "SAT",     color: "#bdd7ee", sym: "△" },
+  { key: "add",             label: "ADD / MFR",           short: "ADD",      color: "#c55a11", sym: "△" },
+  { key: "fielding",        label: "Fielding",            short: "Field",    color: "#7030a0", sym: "△" },
+  { key: "complete",        label: "Project Completion",  short: "Complete", color: "#ff0000", sym: "★" }
+];
+
 function ganttParseDate(d) { return new Date(d + "T00:00:00"); }
 function ganttAddDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
 function ganttIsoDate(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
@@ -11,6 +23,27 @@ async function persistProjectCoverImage(proj, coverPreview, coverFile) {
   }
   if (coverPreview && String(coverPreview).startsWith("http")) return coverPreview;
   return coverPreview || proj.coverImage || "";
+}
+
+/* Members/Viewers get a real view of project settings/tracker/people, but
+   can't mutate them (canEditProject is Admin/PM Admin globally, or
+   per-project-delegated for Manager/Meeting/Finance/Doc Admin — see
+   app.js:1632). This is a blanket "lock the form controls" pass rather than
+   a parallel read-only template — safer than duplicating every tab's markup,
+   since it can't drift from the editable version as fields are added later.
+   Callers additionally hide/disable any buttons not covered by the generic
+   selectors (e.g. Delete, Add Person) via `extraSelectors`. */
+function applyProjectReadOnlyMode(container, extraSelectors) {
+  if (!container) return;
+  $all("input, textarea, select", container).forEach((el) => { el.disabled = true; });
+  $all('[contenteditable="true"]', container).forEach((el) => {
+    el.setAttribute("contenteditable", "false");
+    el.tabIndex = -1;
+  });
+  (extraSelectors || []).forEach((sel) => {
+    $all(sel, container).forEach((el) => { el.style.display = "none"; });
+  });
+  container.classList.add("project-readonly");
 }
 
 PAGE_RENDERERS.projects = function (parts) {
@@ -85,23 +118,35 @@ function renderProjectGallery() {
           <div class="projects-catalog-filters"><div class="search-box"><i class="bx bx-search"></i><input id="proj-search" placeholder="Search projects..." value="${escapeHtml(st.search)}"></div>
           <select class="select-aewttr" id="priority-filter" style="max-width:170px;">${["All", "Immediate", "High", "Medium", "Lower", "Stretch", "Exploratory", "Ongoing", "Document"].map(p => `<option value="${p}" ${st.priority === p ? "selected" : ""}>${p === "All" ? "All Priorities" : p}</option>`).join("")}</select></div>
         </div>
-        <div class="projects-catalog-grid">
+        <div class="proj-list">
+          ${rows.length ? `
+          <div class="proj-list-head">
+            <span class="proj-list-head-health">Health</span>
+            <span class="proj-list-head-name">Project</span>
+            <span class="proj-list-head-badges">Priority</span>
+            <span class="proj-list-head-meta">Lifecycle</span>
+            <span class="proj-list-head-signal">Open risks</span>
+            <span class="proj-list-head-date">Updated</span>
+          </div>` : ""}
           ${rows.length ? rows.map(p => {
             const stats = pGroupRichStats([p]);
             const healthLabel = stats.worstHealth === "red" ? "Needs attention" : stats.worstHealth === "amber" ? "Watch" : "On track";
             const lifecycle = p.lifecycleStatus || p.status || "Active";
-            return `<button type="button" class="projects-catalog-card projects-catalog-card--${stats.worstHealth}" data-id="${escapeHtml(p.id)}">
-              <div class="projects-catalog-card-head"><span class="projects-catalog-health">${pgroupHealthDotHtml(stats.worstHealth, healthLabel)}${healthLabel}</span>${priorityTag(p.priority)}</div>
-              <div class="projects-catalog-name">${escapeHtml(p.name)}</div><div class="projects-catalog-meta"><span>${escapeHtml(lifecycle)}</span></div>
-              <div class="projects-catalog-signals"><span>${stats.openRisks} open risk${stats.openRisks === 1 ? "" : "s"}</span></div>
-              <div class="projects-catalog-foot"><span>Updated ${p.updated ? fmtDate(p.updated) : "—"}</span><i class="bx bx-chevron-right"></i></div>
+            return `<button type="button" class="proj-list-row" data-id="${escapeHtml(p.id)}">
+              <span class="proj-list-health">${pgroupHealthDotHtml(stats.worstHealth, healthLabel)}${escapeHtml(healthLabel)}</span>
+              <span class="proj-list-name">${escapeHtml(p.name)}</span>
+              <span class="proj-list-badges">${priorityTag(p.priority)}</span>
+              <span class="proj-list-meta">${escapeHtml(lifecycle)}</span>
+              <span class="proj-list-signal">${stats.openRisks} risk${stats.openRisks === 1 ? "" : "s"}</span>
+              <span class="proj-list-date">${p.updated ? fmtDate(p.updated) : "—"}</span>
+              <i class="bx bx-chevron-right proj-list-chevron"></i>
             </button>`;
-          }).join("") : `<div class="empty-state projects-catalog-empty">${st.scope === "mine" ? "No projects you're a member of match your filters." : "No projects match your filters."}</div>`}
+          }).join("") : `<div class="empty-state proj-list-empty">${st.scope === "mine" ? "No projects you're a member of match your filters." : "No projects match your filters."}</div>`}
         </div>
       </section>
     `;
     wirePGroupTopNav();
-    $all(".projects-catalog-card[data-id]", $("#page-content")).forEach(r => r.addEventListener("click", () => navigate("projects/" + r.dataset.id)));
+    $all(".proj-list-row[data-id]", $("#page-content")).forEach(r => r.addEventListener("click", () => navigate("projects/" + r.dataset.id)));
     $("#proj-search").addEventListener("input", (e) => {
       const cursor = e.target.selectionStart;
       st.search = e.target.value;
@@ -204,27 +249,61 @@ function projectsInProgramGroup(name) {
   return (window.AEWTTR.db.projects || []).filter(p => p.program === name);
 }
 
+if (!window.AEWTTR.state.pGroupListSearch) window.AEWTTR.state.pGroupListSearch = {};
+
+/* Shared searchable-list page for Portfolios/Programs/End Item Configs —
+   same list+search chrome as the All Projects page, one entry per group. */
+function renderPGroupListPage(opts) {
+  const searchState = window.AEWTTR.state.pGroupListSearch;
+  const all = opts.allNames();
+  function draw() {
+    const search = searchState[opts.groupType] || "";
+    $("#page-content").innerHTML = `
+      ${pGroupTopNavHtml(opts.navKey)}
+      <section class="pgroup-catalog">
+        <div class="pgroup-catalog-head">
+          <div><span class="pgroup-kicker">Project system</span><h2 class="pgroup-list-title">${escapeHtml(opts.title)}</h2><p>${escapeHtml(opts.description)}</p></div>
+          <span class="pgroup-catalog-count">${all.length} ${opts.noun}${all.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="projects-catalog-filters" style="padding:10px 0;">
+          <div class="search-box"><i class="bx bx-search"></i><input id="pgroup-list-search" placeholder="Search ${escapeHtml(opts.noun)}s..." value="${escapeHtml(search)}"></div>
+        </div>
+        <div class="pgroup-catalog-content">${renderGroupList(all, opts.groupType, search)}</div>
+      </section>`;
+    wirePGroupTopNav();
+    $all(".proj-list-row[data-group-name]", $("#page-content")).forEach(btn => {
+      btn.addEventListener("click", () => navigate(`${opts.navigatePrefix}/${encodeURIComponent(btn.dataset.groupName)}`));
+    });
+    const searchInput = $("#pgroup-list-search");
+    if (searchInput) {
+      searchInput.addEventListener("input", (e) => {
+        const cursor = e.target.selectionStart;
+        searchState[opts.groupType] = e.target.value;
+        draw();
+        const el = $("#pgroup-list-search");
+        if (el) { el.focus(); try { el.setSelectionRange(cursor, cursor); } catch (_) {} }
+      });
+    }
+    const nb = $("#btn-new-project"); if (nb) nb.addEventListener("click", () => openNewProjectModal());
+  }
+  draw();
+}
+
 function renderProgramView(programName) {
   setTopbar("Programs", "Projects grouped by program — tasks, risks, and exports aggregated.", `<button class="btn-aewttr" id="btn-new-project"><i class="bx bx-plus"></i> New Project</button>`);
   if (programName) {
     renderGroupDetail(programName, "program", projectsInProgramGroup(programName));
     return;
   }
-  const all = allKnownProgramNames();
-  $("#page-content").innerHTML = `
-    ${pGroupTopNavHtml("program")}
-    <section class="pgroup-catalog">
-      <div class="pgroup-catalog-head">
-        <div><span class="pgroup-kicker">Project system</span><h2 class="pgroup-list-title">Program workspaces</h2><p>Open a program to review its projects, workload, people, risks, and reporting tools.</p></div>
-        <span class="pgroup-catalog-count">${all.length} program${all.length === 1 ? "" : "s"}</span>
-      </div>
-      <div class="pgroup-catalog-content">${all.length ? renderGroupCardGrid(all, "program") : '<div class="empty-state" style="padding:40px;text-align:center;color:var(--aewttr-muted);">No programs set yet — assign a Program in Project Settings to group projects here.</div>'}</div>
-    </section>`;
-  wirePGroupTopNav();
-  $all(".pgroup-card", $("#page-content")).forEach(btn => {
-    btn.addEventListener("click", () => navigate(`projects/~program/${encodeURIComponent(btn.dataset.groupName)}`));
+  renderPGroupListPage({
+    groupType: "program",
+    navKey: "program",
+    navigatePrefix: "projects/~program",
+    noun: "program",
+    title: "Program workspaces",
+    description: "Open a program to review its projects, workload, people, risks, and reporting tools.",
+    allNames: allKnownProgramNames
   });
-  const nb = $("#btn-new-project"); if (nb) nb.addEventListener("click", () => openNewProjectModal());
 }
 
 function pGroupStats(projects) {
@@ -345,6 +424,23 @@ function pGroupRichStats(projects) {
   };
 }
 
+function computeOverallRiskRag(riskRows) {
+  const rags = (riskRows || []).map(function(r) { return r.rag === "Yellow" ? "Amber" : r.rag; });
+  if (rags.indexOf("Red") >= 0) return "Red";
+  if (rags.indexOf("Amber") >= 0) return "Amber";
+  if (rags.indexOf("Green") >= 0) return "Green";
+  return "";
+}
+
+// Shared RAG-cycle pill helpers — used by both the single-project and
+// group-level (Portfolio/Program/EIC) Risk Summary editors.
+const RISK_RAG_CYCLE = ["", "Green", "Yellow", "Red"];
+const RISK_RAG_BG = { Green: "#22c55e", Yellow: "#f59e0b", Red: "#ef4444" };
+function riskRagPillStyle(rag) {
+  const bg = RISK_RAG_BG[rag];
+  return bg ? ' style="background:' + bg + ';color:#fff;"' : "";
+}
+
 function pgroupHealthDotHtml(health, label) {
   const text = label || (health === "red" ? "Needs attention" : health === "amber" ? "Watch" : "On track");
   return `<span class="pgroup-health-dot pgroup-health-dot--${health}" title="${escapeHtml(text)}"></span>`;
@@ -381,6 +477,7 @@ function pgroupHealthStripHtml(healthCounts, total) {
 function defaultPGroupExportConfig() {
   return {
     exportMode: "fullDeck",
+    exportGroupBy: "project",
     includeTasks: false,
     includeRisks: false,
     includePhotos: true,
@@ -398,6 +495,7 @@ function pGroupExportConfig(type, slug) {
   /* Migrate the earlier three-option exporter into the two outputs people
      actually need: a single project update, or a complete briefing deck. */
   if (!cfg.exportMode) cfg.exportMode = cfg.reportLayout === "onePage" ? "projectSlide" : "fullDeck";
+  if (cfg.exportGroupBy !== "eic") cfg.exportGroupBy = "project";
   if (cfg.includeTasks === undefined) cfg.includeTasks = false;
   if (cfg.includeRisks === undefined) cfg.includeRisks = false;
   if (cfg.includePhotos === undefined) cfg.includePhotos = true;
@@ -406,29 +504,42 @@ function pGroupExportConfig(type, slug) {
   return cfg;
 }
 
-function renderGroupCardGrid(groupNames, groupType) {
+function groupTypeNoun(groupType) {
+  return groupType === "portfolio" ? "Portfolio" : groupType === "program" ? "Program" : "End item configuration";
+}
+
+function renderGroupList(groupNames, groupType, search) {
+  const noun = groupType === "portfolio" ? "portfolios" : groupType === "program" ? "programs" : "end item configurations";
   if (!groupNames.length) {
-    const noun = groupType === "portfolio" ? "portfolios" : groupType === "program" ? "programs" : "end item configurations";
-    return `<div class="empty-state" style="margin-top:32px;">No ${noun} found. Add them via Project Settings on individual projects.</div>`;
+    return `<div class="empty-state proj-list-empty">No ${noun} found. Add them via Project Settings on individual projects.</div>`;
+  }
+  const q = (search || "").trim().toLowerCase();
+  const rows = q ? groupNames.filter(n => n.toLowerCase().includes(q)) : groupNames;
+  if (!rows.length) {
+    return `<div class="empty-state proj-list-empty">No ${noun} match "${escapeHtml(search)}".</div>`;
   }
   return `
-    <div class="pgroup-card-grid">
-      ${groupNames.map(name => {
+    <div class="proj-list">
+      <div class="proj-list-head">
+        <span class="proj-list-head-health">Health</span>
+        <span class="proj-list-head-name">${escapeHtml(groupTypeNoun(groupType))}</span>
+        <span class="proj-list-head-meta">Projects</span>
+        <span class="proj-list-head-signal">Open risks</span>
+        <span class="proj-list-head-date">Last activity</span>
+      </div>
+      ${rows.map(name => {
         const projs = groupType === "portfolio" ? projectsInPortfolioGroup(name) : groupType === "program" ? projectsInProgramGroup(name) : projectsInEicGroup(name);
         const rs = pGroupRichStats(projs);
         const healthLabel = rs.worstHealth === "red" ? "Needs attention" : rs.worstHealth === "amber" ? "Watch" : "On track";
         return `
-          <button type="button" class="pgroup-card pgroup-card--${rs.worstHealth}" data-group-name="${escapeHtml(name)}" data-group-type="${escapeHtml(groupType)}">
-            <div class="pgroup-card-head">
-              ${pgroupHealthDotHtml(rs.worstHealth, healthLabel)}
-              <span class="pgroup-card-name">${escapeHtml(name)}</span>
-              <span class="pgroup-chip">${projs.length} project${projs.length !== 1 ? "s" : ""}</span>
-            </div>
-            ${rs.redRisks ? `<div class="pgroup-card-alert"><i class="bx bx-error-circle"></i> ${rs.redRisks} high risk${rs.redRisks !== 1 ? "s" : ""} · ${healthLabel}</div>` : ""}
-            <div class="pgroup-card-chips">
-              <span class="pgroup-chip">${rs.openRisks} open risk${rs.openRisks !== 1 ? "s" : ""}</span>
-            </div>
-            ${rs.lastActivity ? `<div class="pgroup-card-foot">Last activity ${pGroupFmtDate(rs.lastActivity)}</div>` : ""}
+          <button type="button" class="proj-list-row" data-group-name="${escapeHtml(name)}" data-group-type="${escapeHtml(groupType)}">
+            <span class="proj-list-health">${pgroupHealthDotHtml(rs.worstHealth, healthLabel)}${escapeHtml(healthLabel)}</span>
+            <span class="proj-list-name">${escapeHtml(name)}</span>
+            <span class="proj-list-badges">${rs.redRisks ? `<span class="proj-list-alert"><i class="bx bx-error-circle"></i> ${rs.redRisks} high</span>` : ""}</span>
+            <span class="proj-list-meta">${projs.length} project${projs.length !== 1 ? "s" : ""}</span>
+            <span class="proj-list-signal">${rs.openRisks} risk${rs.openRisks !== 1 ? "s" : ""}</span>
+            <span class="proj-list-date">${rs.lastActivity ? pGroupFmtDate(rs.lastActivity) : "—"}</span>
+            <i class="bx bx-chevron-right proj-list-chevron"></i>
           </button>`;
       }).join("")}
     </div>`;
@@ -440,20 +551,15 @@ function renderPortfoliosView(portfolioName) {
     renderGroupDetail(portfolioName, "portfolio", projectsInPortfolioGroup(portfolioName));
     return;
   }
-  $("#page-content").innerHTML = `
-    ${pGroupTopNavHtml("portfolios")}
-    <section class="pgroup-catalog">
-      <div class="pgroup-catalog-head">
-        <div><span class="pgroup-kicker">Project system</span><h2 class="pgroup-list-title">Portfolio workspaces</h2><p>Open a portfolio to review its delivery health, workload, people, risks, and reporting tools.</p></div>
-        <span class="pgroup-catalog-count">${allKnownPortfolios().length} portfolio${allKnownPortfolios().length === 1 ? "" : "s"}</span>
-      </div>
-      <div class="pgroup-catalog-content">${renderGroupCardGrid(allKnownPortfolios(), "portfolio")}</div>
-    </section>`;
-  wirePGroupTopNav();
-  $all(".pgroup-card", $("#page-content")).forEach(btn => {
-    btn.addEventListener("click", () => navigate(`projects/~portfolios/${encodeURIComponent(btn.dataset.groupName)}`));
+  renderPGroupListPage({
+    groupType: "portfolio",
+    navKey: "portfolios",
+    navigatePrefix: "projects/~portfolios",
+    noun: "portfolio",
+    title: "Portfolio workspaces",
+    description: "Open a portfolio to review its delivery health, workload, people, risks, and reporting tools.",
+    allNames: allKnownPortfolios
   });
-  const nb = $("#btn-new-project"); if (nb) nb.addEventListener("click", () => openNewProjectModal());
 }
 
 function renderEicView(eicName) {
@@ -462,20 +568,15 @@ function renderEicView(eicName) {
     renderGroupDetail(eicName, "eic", projectsInEicGroup(eicName));
     return;
   }
-  $("#page-content").innerHTML = `
-    ${pGroupTopNavHtml("eic")}
-    <section class="pgroup-catalog">
-      <div class="pgroup-catalog-head">
-        <div><span class="pgroup-kicker">Project system</span><h2 class="pgroup-list-title">End item configuration workspaces</h2><p>Review the projects, workload, people, risks, and reports tied to each configuration.</p></div>
-        <span class="pgroup-catalog-count">${allKnownEicNames().length} configuration${allKnownEicNames().length === 1 ? "" : "s"}</span>
-      </div>
-      <div class="pgroup-catalog-content">${renderGroupCardGrid(allKnownEicNames(), "eic")}</div>
-    </section>`;
-  wirePGroupTopNav();
-  $all(".pgroup-card", $("#page-content")).forEach(btn => {
-    btn.addEventListener("click", () => navigate(`projects/~eic/${encodeURIComponent(btn.dataset.groupName)}`));
+  renderPGroupListPage({
+    groupType: "eic",
+    navKey: "eic",
+    navigatePrefix: "projects/~eic",
+    noun: "configuration",
+    title: "End item configuration workspaces",
+    description: "Review the projects, workload, people, risks, and reports tied to each configuration.",
+    allNames: allKnownEicNames
   });
-  const nb = $("#btn-new-project"); if (nb) nb.addEventListener("click", () => openNewProjectModal());
 }
 
 function renderGroupDetail(groupName, groupType, projects) {
@@ -666,171 +767,385 @@ function renderGroupDetail(groupName, groupType, projects) {
   function drawGroupReportingTab(mount) {
     const groupLabel = groupType === "portfolio" ? "Portfolio" : groupType === "program" ? "Program Office" : "End item configuration";
 
-    // focusedProjId = which project is shown in the editor (tracked separately from export scope)
-    if (!exportCfg.focusedProjId || !projects.some(function(p) { return p.id === exportCfg.focusedProjId; })) {
-      exportCfg.focusedProjId = (projects[0] && projects[0].id) || null;
+    // Group-level slide content (Technical Status, Risk Summary, Description,
+    // Other Milestones, photo) for the combined End Item Config slide, AND
+    // which member projects are currently included in the export deck — both
+    // persist on the same groupReportConfig record so a PM's choices are
+    // remembered next time this page is opened, for every group type.
+    const groupCfg = ensureGroupReportConfig(groupType, groupName);
+    function saveGroupCfg() {
+      if (typeof Repo !== "undefined" && Repo && typeof Repo.save === "function") Repo.save("groupReportConfig", groupCfg);
     }
-    const focusedProjId = exportCfg.focusedProjId;
-
-    function selectedProjectIds() {
-      if (exportCfg.exportMode === "projectSlide") return focusedProjId ? [focusedProjId] : [];
-      // Full deck: empty selectedProjects means "all"
-      return exportCfg.selectedProjects.length ? exportCfg.selectedProjects : projects.map(function(p) { return p.id; });
+    function includedIds() {
+      return groupCfg.includedProjectIds.length ? groupCfg.includedProjectIds : projects.map(function(p) { return p.id; });
     }
 
-    const isProjectSlide = exportCfg.exportMode === "projectSlide";
-    const richStats = pGroupRichStats(projects);
-
-    const sidebarItemsHtml = projects.map(function(proj) {
-      const extra = (window.AEWTTR.db.projectExtra && window.AEWTTR.db.projectExtra[proj.id]) || {};
-      const sc = (extra.reportConfig && extra.reportConfig.slideContent) || {};
-      const rag = sc.overallRag || "";
-      const ragDotCls = rag === "Green" ? "grp-sb-dot--green" : rag === "Amber" ? "grp-sb-dot--amber" : rag === "Red" ? "grp-sb-dot--red" : "grp-sb-dot--none";
-      const isExportSelected = selectedProjectIds().includes(proj.id);
-      const isFocused = proj.id === focusedProjId;
-      const rollup = richStats.projectRollups.find(function(r) { return r.id === proj.id; }) || {};
-      return `<button type="button" class="grp-sb-item${isFocused ? " is-focused" : ""}${isExportSelected ? " is-export-selected" : ""}" data-sb-proj-id="${escapeHtml(proj.id)}" title="${escapeHtml(proj.name || "Untitled project")}">
-        <span class="grp-sb-dot ${ragDotCls}">●</span>
-        <span class="grp-sb-name">${escapeHtml(proj.name || "Untitled project")}</span>
-        <span class="grp-sb-meta">${rollup.openRisks || 0} risks</span>
-      </button>`;
-    }).join("");
-
-    const exportProjectsHtml = projects.map(function(proj) {
-      const ids = selectedProjectIds();
-      const checked = ids.includes(proj.id);
-      const ctrl = isProjectSlide
-        ? `<input type="radio" name="grp-exp-proj" class="grp-exp-proj-ctrl" data-proj-id="${escapeHtml(proj.id)}" ${checked ? "checked" : ""}>`
-        : `<input type="checkbox" class="grp-exp-proj-ctrl" data-proj-id="${escapeHtml(proj.id)}" ${checked ? "checked" : ""}>`;
-      return `<label class="grp-exp-proj-row${checked ? " is-checked" : ""}">${ctrl}<span>${escapeHtml(proj.name || "Untitled project")}</span></label>`;
-    }).join("");
+    // The full slide-content editor only makes sense on an End Item Config's
+    // own page — a Portfolio/Program can span several distinct configs, each
+    // needing its own content — so it only shows there; every project in the
+    // group always appears as its own row on the combined slide regardless.
+    const showEicSlideEditor = groupType === "eic";
+    const includedCount = includedIds().length;
 
     mount.innerHTML = `
       <div class="grp-rep-root">
-        <div class="grp-rep-topbar">
-          <div class="grp-rep-topbar-modes">
-            <label class="grp-rep-mode-pill${!isProjectSlide ? " is-active" : ""}">
-              <input type="radio" name="grp-rep-mode" value="fullDeck" ${!isProjectSlide ? "checked" : ""}>
-              <i class="bx bxs-slideshow"></i> Full deck
-            </label>
-            <label class="grp-rep-mode-pill${isProjectSlide ? " is-active" : ""}">
-              <input type="radio" name="grp-rep-mode" value="projectSlide" ${isProjectSlide ? "checked" : ""}>
-              <i class="bx bx-file"></i> Single slide
-            </label>
+        <div class="aewttr-card grp-rep-summary-card">
+          <div>
+            <h3 class="grp-rep-b3-title"><i class="bx bxs-slideshow"></i> PowerPoint briefing</h3>
+            <p class="grp-rep-b3-sub">Cover slide + one combined slide per End Item Config. Choose which projects to include in the table below, then generate.</p>
+            <p class="grp-rep-b3-summary">${includedCount} of ${projects.length} project${projects.length === 1 ? "" : "s"} included</p>
           </div>
-          <div class="grp-rep-topbar-scope">
-            <span class="grp-rep-topbar-scope-label">Export scope:</span>
-            <div class="grp-exp-proj-list">
-              ${exportProjectsHtml || '<span class="grp-rep-topbar-scope-label">No projects</span>'}
-            </div>
-            ${!isProjectSlide ? `<div class="grp-exp-scope-actions"><button type="button" class="pgroup-export-link" data-select-projects="all">All</button><button type="button" class="pgroup-export-link" data-select-projects="none">Clear</button></div>` : ""}
-          </div>
-          <div class="grp-rep-topbar-opts">
-            <label><input type="checkbox" id="exp-photos" ${exportCfg.includePhotos ? "checked" : ""}> Photos</label>
-            <label class="${isProjectSlide ? "is-disabled" : ""}"><input type="checkbox" id="exp-risks" ${exportCfg.includeRisks ? "checked" : ""} ${isProjectSlide ? "disabled" : ""}> Risks</label>
-            <label class="${isProjectSlide ? "is-disabled" : ""}"><input type="checkbox" id="exp-tasks" ${exportCfg.includeTasks ? "checked" : ""} ${isProjectSlide ? "disabled" : ""}> Work</label>
-          </div>
-          <div class="grp-rep-topbar-action">
+          <div class="grp-rep-summary-actions">
             <span class="pgroup-export-save-status" id="pgroup-exp-status" aria-live="polite"></span>
-            <button class="btn-aewttr" id="btn-gen-pptx" ${projects.length ? "" : "disabled"}>
+            <button class="btn-aewttr grp-rep-b3-gen-btn" id="btn-gen-pptx" ${projects.length ? "" : "disabled"}>
               <i class="bx bxs-slideshow"></i> Generate PowerPoint
             </button>
           </div>
         </div>
 
-        <div class="grp-rep-workspace">
-          <aside class="grp-rep-proj-sidebar">
-            <div class="grp-rep-proj-sidebar-head">
-              <span>${escapeHtml(groupLabel)}</span>
-              <span class="grp-sb-count">${projects.length}</span>
+        ${groupType !== "eic" ? `
+        <div class="aewttr-card" style="padding:14px 16px;">
+          <p class="rep-qcard-hint" style="margin:0;">This ${escapeHtml(groupLabel)} may span more than one End Item Config, so each combined slide's Technical Status, Risk Summary, Description, and Photo are edited from that config's own page — open <strong>End Item Configs</strong> and pick the specific config to customize its slide.</p>
+        </div>` : ""}
+
+        ${showEicSlideEditor ? `
+        <div class="rep-cards-only grp-rep-slide-content">
+          <div class="rep-qcard">
+            <div class="rep-qcard-hd rep-qcard-hd--tl">
+              <span class="rep-qcard-pos">↖ Top Left</span>
+              <span class="rep-qcard-name">Photos</span>
             </div>
-            <div class="grp-rep-proj-sidebar-list">
-              ${sidebarItemsHtml || '<div class="empty-state">No projects.</div>'}
+            <div class="rep-qcard-bd">
+              <p class="rep-qcard-hint">Pick one photo from any project in this ${escapeHtml(groupLabel)} to represent it on the combined slide.</p>
+              <div id="grp-rep-photo-wrap"></div>
             </div>
-          </aside>
-          <div class="grp-rep-proj-editor" id="grp-rep-proj-editor"></div>
+          </div>
+          <div class="rep-qcard">
+            <div class="rep-qcard-hd rep-qcard-hd--tr">
+              <span class="rep-qcard-pos">↗ Top Right</span>
+              <span class="rep-qcard-name">Technical Status</span>
+            </div>
+            <div class="rep-qcard-bd rep-qcard-bd--tech">
+              <div class="rep-tech-block">
+                <p class="rep-qcard-sub">Status Bullets</p>
+                <p class="rep-qcard-hint">Bullet points shown on the combined ${escapeHtml(groupLabel)} slide.</p>
+                <div id="grp-rep-tb-wrap"></div>
+              </div>
+              <div class="rep-tech-block rep-tech-block--last">
+                <p class="rep-qcard-sub">Risk Summary</p>
+                <p class="rep-qcard-hint">Click the badge to cycle Green → Yellow → Red</p>
+                <div class="rep-risk-rows" id="grp-rep-risk-wrap"></div>
+              </div>
+            </div>
+          </div>
+          <div class="rep-qcard">
+            <div class="rep-qcard-hd rep-qcard-hd--bl">
+              <span class="rep-qcard-pos">↙ Bottom Left</span>
+              <span class="rep-qcard-name">Description</span>
+            </div>
+            <div class="rep-qcard-bd">
+              <div class="rep-rich-shell" id="grp-rep-desc-wrap"></div>
+            </div>
+          </div>
+          <div class="rep-qcard">
+            <div class="rep-qcard-hd rep-qcard-hd--br">
+              <span class="rep-qcard-pos">↘ Bottom Right</span>
+              <span class="rep-qcard-name">Milestones</span>
+            </div>
+            <div class="rep-qcard-bd">
+              <p class="rep-qcard-hint">Every included project always appears as its own row on the combined slide, using each project's own Contract/FAT/SAT/etc. dates (edit those in the table below or on the project's own Reporting tab). Add extra named milestones that belong to the ${escapeHtml(groupLabel)} itself — not to any one project — and they'll show as additional rows on the slide.</p>
+              <div id="grp-rep-om-wrap"></div>
+            </div>
+          </div>
+        </div>` : ""}
+
+        <div class="aewttr-card grp-rep-milestones">
+          <div class="grp-rep-milestones-head">
+            <h3 class="grp-rep-milestones-title">Milestones across ${escapeHtml(groupLabel)}</h3>
+            <p class="grp-rep-milestones-sub">Each project's own Contract/FAT/SAT/ADD/Fielding/Completion dates — editing here updates that project directly. A category column only appears on the slide once a date is entered. The Include column controls which projects go into the PowerPoint export.</p>
+          </div>
+          <div class="rep-mt-scroll">
+            <table class="aewttr-table rep-grp-mt-tbl">
+              <thead>
+                <tr>
+                  <th class="rep-mt-th--include">Include</th>
+                  <th>Project</th>
+                  ${PROJECT_MILESTONE_CATEGORIES.map(function(c) {
+                    return `<th class="rep-mt-th--date" style="--mc:${c.color}"><span class="rep-mt-sym" style="color:${c.color}">${c.sym}</span>${c.short}</th>`;
+                  }).join("")}
+                </tr>
+              </thead>
+              <tbody>
+                ${projects.length ? projects.map(function(proj) {
+                  const pm = typeof getProjectMilestones === "function" ? getProjectMilestones(proj) : {};
+                  const canEditThis = typeof canEditProject === "function" ? canEditProject(proj) : true;
+                  const isIncluded = includedIds().includes(proj.id);
+                  return `<tr data-proj-id="${escapeHtml(proj.id)}">
+                    <td class="rep-mt-td--include"><input type="checkbox" class="rep-mt-include-ctrl" data-proj-id="${escapeHtml(proj.id)}" ${isIncluded ? "checked" : ""}${tip("Include this project in the PowerPoint export")}></td>
+                    <td><strong>${escapeHtml(proj.name || "Untitled project")}</strong></td>
+                    ${PROJECT_MILESTONE_CATEGORIES.map(function(c) {
+                      const val = pm[c.key] || "";
+                      return `<td>
+                        <input type="date" class="rep-mt-date rep-grp-mt-date${val ? " rep-mt-date--set" : ""}"
+                          data-proj-id="${escapeHtml(proj.id)}" data-col="${c.key}"
+                          value="${escapeHtml(val)}" style="--mc:${c.color}"${canEditThis ? "" : " disabled"}>
+                      </td>`;
+                    }).join("")}
+                  </tr>`;
+                }).join("") : `<tr><td colspan="${PROJECT_MILESTONE_CATEGORIES.length + 2}"><div class="empty-state">No projects in this group.</div></td></tr>`}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>`;
 
-    // Load focused project into right panel
-    const editorPanel = mount.querySelector("#grp-rep-proj-editor");
-    function loadEditorProject(pid) {
-      const proj = projects.find(function(p) { return p.id === pid; });
-      if (!proj || !editorPanel) return;
-      drawProjectReporting(editorPanel, proj);
-      // Scroll editor to top
-      editorPanel.scrollTop = 0;
-    }
-    if (focusedProjId) {
-      loadEditorProject(focusedProjId);
-    } else if (projects.length && editorPanel) {
-      editorPanel.innerHTML = '<div class="grp-rep-editor-empty"><i class="bx bx-arrow-back"></i><p>Select a project from the list to edit its reporting content.</p></div>';
-    }
-
-    // Wire sidebar clicks — only updates which project is shown in the editor
-    mount.querySelectorAll("[data-sb-proj-id]").forEach(function(btn) {
-      btn.addEventListener("click", function() {
-        const pid = btn.dataset.sbProjId;
-        exportCfg.focusedProjId = pid;
-        // Update active states
-        mount.querySelectorAll("[data-sb-proj-id]").forEach(function(b) {
-          b.classList.toggle("is-focused", b.dataset.sbProjId === pid);
+    // Slide-content editor (combined End Item Config slide only)
+    function renderGroupBullets() {
+      const wrap = mount.querySelector("#grp-rep-tb-wrap");
+      if (!wrap) return;
+      const bullets = groupCfg.techBullets;
+      wrap.innerHTML = '<div class="rep-tb-list">' +
+        bullets.map(function(b, i) {
+          return '<div class="rep-tb-item">' +
+            '<span class="rep-tb-dot">•</span>' +
+            '<input type="text" class="input-aewttr rep-tb-inp" data-bidx="' + i + '" value="' + escapeHtml(b) + '" placeholder="Bullet text…">' +
+            '<button type="button" class="rep-tb-del" data-bidx="' + i + '" title="Remove"><i class="bx bx-x"></i></button>' +
+            '</div>';
+        }).join("") +
+        '<button type="button" class="rep-tb-add" id="grp-rep-tb-add"><i class="bx bx-plus"></i> Add bullet</button>' +
+        '</div>';
+      let dt = null;
+      mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-inp").forEach(function(inp) {
+        inp.addEventListener("input", function() {
+          const idx = parseInt(inp.dataset.bidx, 10);
+          groupCfg.techBullets[idx] = inp.value;
+          clearTimeout(dt);
+          dt = setTimeout(saveGroupCfg, 200);
         });
-        loadEditorProject(pid);
       });
-    });
+      mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-del").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          const idx = parseInt(btn.dataset.bidx, 10);
+          groupCfg.techBullets.splice(idx, 1);
+          saveGroupCfg();
+          renderGroupBullets();
+        });
+      });
+      const addBtn = mount.querySelector("#grp-rep-tb-add");
+      if (addBtn) {
+        addBtn.addEventListener("click", function() {
+          groupCfg.techBullets.push("");
+          saveGroupCfg();
+          renderGroupBullets();
+          const inputs = mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-inp");
+          if (inputs.length) inputs[inputs.length - 1].focus();
+        });
+      }
+    }
+    // Photo picker: lets a PM pick one photo — from any project in this End
+    // Item Config — to represent the whole config on its combined slide.
+    // Photos live only in each project's own SharePoint "_photos" folder
+    // (there's no cached photo list in db), so the picker fetches each
+    // project's folder on demand rather than up front for every render.
+    function projectNameById(pid) {
+      const p = projects.find(function(x) { return x.id === pid; });
+      return (p && p.name) || "";
+    }
+    function renderGroupPhotoWrap() {
+      const wrap = mount.querySelector("#grp-rep-photo-wrap");
+      if (!wrap) return;
+      const hasPhoto = !!groupCfg.photoUrl;
+      wrap.innerHTML = `
+        <div class="grp-photo-pick">
+          ${hasPhoto
+            ? `<div class="grp-photo-pick-preview">
+                <img src="${escapeHtml(groupCfg.photoUrl)}" alt="${escapeHtml(groupCfg.photoName || "")}" class="grp-photo-pick-img">
+                <div class="grp-photo-pick-meta">
+                  <span class="grp-photo-pick-name">${escapeHtml(groupCfg.photoName || "Selected photo")}</span>
+                  <span class="grp-photo-pick-source">from ${escapeHtml(projectNameById(groupCfg.photoProjectId) || "a project in this group")}</span>
+                </div>
+              </div>`
+            : `<div class="grp-photo-pick-empty"><i class="bx bx-image"></i> No photo selected yet.</div>`}
+          <div class="grp-photo-pick-actions">
+            <button type="button" class="btn-aewttr-outline btn-aewttr-sm" id="grp-rep-photo-choose"><i class="bx bx-images"></i> ${hasPhoto ? "Change photo" : "Choose photo"}</button>
+            ${hasPhoto ? `<button type="button" class="btn-aewttr-ghost btn-aewttr-sm" id="grp-rep-photo-clear">Clear</button>` : ""}
+          </div>
+        </div>`;
+      const chooseBtn = wrap.querySelector("#grp-rep-photo-choose");
+      if (chooseBtn) chooseBtn.addEventListener("click", openGroupPhotoPicker);
+      const clearBtn = wrap.querySelector("#grp-rep-photo-clear");
+      if (clearBtn) {
+        clearBtn.addEventListener("click", function() {
+          groupCfg.photoProjectId = "";
+          groupCfg.photoUrl = "";
+          groupCfg.photoName = "";
+          saveGroupCfg();
+          renderGroupPhotoWrap();
+        });
+      }
+    }
+    function groupPhotoThumbHtml(proj, photo) {
+      const isPicked = groupCfg.photoUrl === photo.fileUrl;
+      return `<button type="button" class="grp-photo-modal-thumb-btn${isPicked ? " is-picked" : ""}" data-proj-id="${escapeHtml(proj.id)}" data-photo-url="${escapeHtml(photo.fileUrl)}" data-photo-name="${escapeHtml(photo.name)}"${tip(photo.name)}>
+        <img class="grp-photo-modal-thumb" src="${escapeHtml(photo.fileUrl)}" alt="${escapeHtml(photo.name)}" loading="lazy">
+        ${isPicked ? `<span class="grp-photo-modal-picked"><i class="bx bx-check"></i></span>` : ""}
+      </button>`;
+    }
+    function openGroupPhotoPicker() {
+      if (typeof isSharePointMode === "function" && !isSharePointMode()) {
+        toast("Photos are stored in SharePoint — open PULSE in SharePoint mode to choose one.", "warn");
+        return;
+      }
+      if (!projects.length) {
+        toast("This group has no projects to pull photos from.", "warn");
+        return;
+      }
+      const modal = openModal(`
+        <div class="aewttr-modal-head">
+          <h3>Choose a photo</h3>
+          <button class="aewttr-modal-close">&times;</button>
+        </div>
+        <div class="aewttr-modal-body">
+          <p class="rep-qcard-hint" style="margin:0 0 14px;">Pick one photo from any project in this ${escapeHtml(groupLabel)} to represent it on the combined slide.</p>
+          <div class="grp-photo-modal-sections">
+            ${projects.map(function(proj) {
+              return `<div class="grp-photo-modal-section" data-section-proj-id="${escapeHtml(proj.id)}">
+                <div class="grp-photo-modal-section-head">${escapeHtml(proj.name || "Untitled project")}</div>
+                <div class="grp-photo-modal-grid" data-grid-proj-id="${escapeHtml(proj.id)}"><div class="project-docs-loading">Loading photos…</div></div>
+              </div>`;
+            }).join("")}
+          </div>
+        </div>
+      `, { xwide: true });
+      $(".aewttr-modal-close", modal).addEventListener("click", closeModal);
 
-    // Wire mode toggle
-    mount.querySelectorAll("input[name=\"grp-rep-mode\"]").forEach(function(inp) {
+      function wirePicks() {
+        $all(".grp-photo-modal-thumb-btn", modal).forEach(function(btn) {
+          btn.addEventListener("click", function() {
+            groupCfg.photoProjectId = btn.dataset.projId;
+            groupCfg.photoUrl = btn.dataset.photoUrl;
+            groupCfg.photoName = btn.dataset.photoName;
+            saveGroupCfg();
+            renderGroupPhotoWrap();
+            closeModal();
+          });
+        });
+      }
+
+      // Fetch every project's photo folder in parallel; render each section
+      // as its own fetch resolves instead of waiting on the slowest one.
+      projects.forEach(function(proj) {
+        const grid = modal.querySelector(`.grp-photo-modal-grid[data-grid-proj-id="${CSS.escape(proj.id)}"]`);
+        if (!grid) return;
+        Promise.resolve()
+          .then(function() { return resolveProjectPhotosFolder(proj); })
+          .then(function(res) { return sharePointAdapter.listPulseDocumentsFolder(res.siteUrl, res.folderUrl); })
+          .then(function(listing) {
+            if (!grid.isConnected) return;
+            const photos = (listing.files || []).filter(function(f) { return isPhotoFile(f.name); });
+            grid.innerHTML = photos.length
+              ? photos.map(function(photo) { return groupPhotoThumbHtml(proj, photo); }).join("")
+              : `<div class="empty-state">No photos in this project yet.</div>`;
+            wirePicks();
+          })
+          .catch(function(e) {
+            if (!grid.isConnected) return;
+            grid.innerHTML = `<div class="empty-state">Could not load photos. ${escapeHtml((e && e.friendly) || (e && e.message) || String(e))}</div>`;
+          });
+      });
+    }
+    function renderGroupRiskRows() {
+      const wrap = mount.querySelector("#grp-rep-risk-wrap");
+      if (!wrap) return;
+      wrap.innerHTML = groupCfg.riskRows.map(function(row, i) {
+        return '<div class="rep-risk-row">' +
+          '<div class="rep-risk-cat">' + escapeHtml(row.cat) + '</div>' +
+          '<button type="button" class="rep-risk-pill rep-risk-pill--' + (row.rag || "none") + ' grp-risk-rag-btn"' + riskRagPillStyle(row.rag) + ' data-risk-idx="' + i + '">' + (row.rag || "—") + '</button>' +
+          '<input type="text" class="input-aewttr rep-risk-note grp-risk-notes-inp" data-risk-idx="' + i + '" placeholder="Comment…" value="' + escapeHtml(row.notes || "") + '">' +
+        '</div>';
+      }).join("");
+      wrap.querySelectorAll(".grp-risk-rag-btn").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          const idx = parseInt(btn.dataset.riskIdx, 10);
+          const row = groupCfg.riskRows[idx];
+          if (!row) return;
+          const cur = RISK_RAG_CYCLE.indexOf(row.rag || "");
+          row.rag = RISK_RAG_CYCLE[(cur + 1) % RISK_RAG_CYCLE.length];
+          btn.className = "rep-risk-pill rep-risk-pill--" + (row.rag || "none") + " grp-risk-rag-btn";
+          btn.textContent = row.rag || "—";
+          const bg = RISK_RAG_BG[row.rag] || "";
+          btn.style.background = bg;
+          btn.style.color = bg ? "#fff" : "";
+          saveGroupCfg();
+        });
+      });
+      wrap.querySelectorAll(".grp-risk-notes-inp").forEach(function(inp) {
+        let t = null;
+        inp.addEventListener("input", function() {
+          const idx = parseInt(inp.dataset.riskIdx, 10);
+          if (groupCfg.riskRows[idx]) groupCfg.riskRows[idx].notes = inp.value;
+          clearTimeout(t);
+          t = setTimeout(saveGroupCfg, 200);
+        });
+      });
+    }
+
+    if (showEicSlideEditor) {
+      renderGroupBullets();
+      renderGroupPhotoWrap();
+      renderGroupRiskRows();
+      const descWrap = mount.querySelector("#grp-rep-desc-wrap");
+      if (descWrap) {
+        wireRichTextEditor(descWrap, groupCfg.description, `Describe this ${groupLabel}…`, function(html) {
+          groupCfg.description = html;
+          saveGroupCfg();
+        });
+      }
+      const omWrap = mount.querySelector("#grp-rep-om-wrap");
+      if (omWrap) renderOtherMilestonesEditor(omWrap, groupCfg.otherMilestones, saveGroupCfg);
+    }
+
+    // Wire the cross-project milestone table (each project's own dates)
+    mount.querySelectorAll(".rep-grp-mt-date").forEach(function(inp) {
       inp.addEventListener("change", function() {
-        if (!inp.checked) return;
-        exportCfg.exportMode = inp.value;
-        drawGroupReportingTab(mount);
+        const proj = projects.find(function(p) { return p.id === inp.dataset.projId; });
+        if (!proj || typeof updateProjectMilestone !== "function") return;
+        updateProjectMilestone(proj, inp.dataset.col, inp.value);
+        proj.updated = new Date().toISOString().slice(0, 10);
+        if (typeof Repo !== "undefined" && Repo && typeof Repo.save === "function") Repo.save("project", proj);
+        inp.classList.toggle("rep-mt-date--set", !!inp.value);
       });
     });
 
-    // Wire export scope selectors (only affects which projects are exported, not the editor)
-    mount.querySelectorAll(".grp-exp-proj-ctrl").forEach(function(ctrl) {
+    // Wire per-project Include checkboxes — persisted on groupCfg so the
+    // deck selection is remembered next time this page is opened.
+    mount.querySelectorAll(".rep-mt-include-ctrl").forEach(function(ctrl) {
       ctrl.addEventListener("change", function() {
-        if (isProjectSlide) {
-          // In single-slide mode: selecting a project also focuses it
-          exportCfg.focusedProjId = ctrl.dataset.projId;
-          drawGroupReportingTab(mount);
-        } else {
-          const checked = Array.from(mount.querySelectorAll(".grp-exp-proj-ctrl:checked")).map(function(c) { return c.dataset.projId; });
-          exportCfg.selectedProjects = checked.length === projects.length ? [] : checked;
-        }
-      });
-    });
-    mount.querySelectorAll("[data-select-projects]").forEach(function(btn) {
-      btn.addEventListener("click", function() {
-        exportCfg.selectedProjects = btn.dataset.selectProjects === "all" ? [] : projects.map(function(p) { return p.id; });
-        drawGroupReportingTab(mount);
+        const checked = Array.from(mount.querySelectorAll(".rep-mt-include-ctrl:checked")).map(function(c) { return c.dataset.projId; });
+        groupCfg.includedProjectIds = checked.length === projects.length ? [] : checked;
+        saveGroupCfg();
+        const summaryEl = mount.querySelector(".grp-rep-b3-summary");
+        if (summaryEl) summaryEl.textContent = checked.length + " of " + projects.length + " project" + (projects.length === 1 ? "" : "s") + " included";
       });
     });
 
-    // Wire content option checkboxes
-    [["exp-photos","includePhotos"],["exp-risks","includeRisks"],["exp-tasks","includeTasks"]].forEach(function(pair) {
-      const el = mount.querySelector("#" + pair[0]);
-      if (el) el.addEventListener("change", function() { exportCfg[pair[1]] = el.checked; });
-    });
-
-    // Wire Generate PowerPoint
+    // Wire Generate PowerPoint — always a full deck, one combined slide per
+    // End Item Config, using whichever projects are currently included.
     const genBtn = mount.querySelector("#btn-gen-pptx");
     if (genBtn) {
       genBtn.addEventListener("click", async function() {
         const statusEl = mount.querySelector("#pgroup-exp-status");
         const api = window.AEWTTR.ProjectPptxExport;
         if (!api || typeof api.exportGroupStatusPptx !== "function") { toast("PowerPoint group export is unavailable in this package.", "error"); return; }
-        const ids = selectedProjectIds();
+        const ids = includedIds();
         const sel = projects.filter(function(p) { return ids.includes(p.id); });
-        if (!sel.length) { toast("Select at least one project.", "warn"); return; }
+        if (!sel.length) { toast("Include at least one project.", "warn"); return; }
         genBtn.disabled = true;
         genBtn.innerHTML = `<i class="bx bx-loader-alt bx-spin"></i> Generating…`;
         if (statusEl) { statusEl.textContent = "Building…"; statusEl.dataset.state = "saving"; }
         const openTarget = reserveStatusExportOpen("PULSE-status-briefing.pptx");
         try {
-          const reportCfg = Object.assign({}, exportCfg, { groupName, groupType, exportMode: exportCfg.exportMode, popup: openTarget });
+          const reportCfg = { groupName, groupType, exportMode: "fullDeck", exportGroupBy: "eic", includeRisks: false, includeTasks: false, popup: openTarget };
           const result = await api.exportGroupStatusPptx(sel, reportCfg);
           if (result.mode === "sharepoint" && result.fileUrl) {
             toastStatusPptxSaved(result.fileUrl, result.fileName);
@@ -1534,6 +1849,7 @@ async function exportProjectXlsx(proj) {
     ? service.reserveOpen(fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     : null;
   try {
+    toast("Building Excel workbook…", "info");
     const result = await service.exportXlsx(fileName, columns, dataRows, {
       popup,
       folderName: "Project Exports",
@@ -3683,14 +3999,14 @@ function drawProjectNotes(body, proj) {
 
   function resolveFolder(folderId) {
     if (folderId === "overview") return { id: "overview", kind: "overview", label: "Overview", notes: null, parentTask: null };
-    if (folderId === "project") return { id: "project", kind: "project", label: "Project Notes", notes: extra.notes, parentTask: null, assignedTo: "Project" };
+    if (folderId === "project") return { id: "project", kind: "project", label: "Project Notes", notes: extra.notes, notesOwner: extra, parentTask: null, assignedTo: "Project" };
     if (folderId === "risks") return { id: "risks", kind: "risks", label: "Risks", notes: null, parentTask: null };
     if (String(folderId || "").startsWith("task:")) {
       const taskId = folderId.slice(5);
       const task = projectTasks().find((t) => t.id === taskId);
       if (!task) return null;
       if (!Array.isArray(task.notes)) task.notes = [];
-      return { id: folderId, kind: "task", label: task.title || "Untitled task", notes: task.notes, parentTask: task, assignedTo: `Task · ${task.title || "Untitled"}` };
+      return { id: folderId, kind: "task", label: task.title || "Untitled task", notes: task.notes, notesOwner: task, parentTask: task, assignedTo: `Task · ${task.title || "Untitled"}` };
     }
     if (String(folderId || "").startsWith("sub:")) {
       const rest = folderId.slice(4);
@@ -3709,6 +4025,7 @@ function drawProjectNotes(body, proj) {
         kind: "sub",
         label: sub.text || "Untitled subitem",
         notes: sub.notes,
+        notesOwner: sub,
         parentTask: task,
         subPath: path,
         subIndex: Number(String(path).split(".")[0]),
@@ -3840,6 +4157,7 @@ function drawProjectNotes(body, proj) {
 
   function noteBubbleHtml(n, { showAssigned } = {}) {
     const isMine = typeof isNoteAuthor === "function" ? isNoteAuthor(n) : false;
+    const canDelete = typeof canDeleteNote === "function" ? canDeleteNote(n) : isMine;
     const isEditing = editingId === n.id;
     const stamp = typeof formatNoteTimestamp === "function" ? formatNoteTimestamp(n) : `${n.date || ""}${n.time ? ` · ${n.time}` : ""}`;
     return `
@@ -3853,10 +4171,10 @@ function drawProjectNotes(body, proj) {
           <div class="proj-notes-card-meta">
             <strong>${escapeHtml(n.author || "Unknown")}</strong>
             <span>${escapeHtml(stamp)}</span>
-            ${isMine && !isEditing ? `
+            ${!isEditing && (isMine || canDelete) ? `
               <span class="task-notes-bubble-actions">
-                <button type="button" data-edit-note="${n.id}" aria-label="Edit"><i class="bx bx-pencil"></i></button>
-                <button type="button" data-del-note="${n.id}" aria-label="Delete"><i class="bx bx-trash"></i></button>
+                ${isMine ? `<button type="button" data-edit-note="${n.id}" aria-label="Edit"><i class="bx bx-pencil"></i></button>` : ""}
+                ${canDelete ? `<button type="button" data-del-note="${n.id}" aria-label="Delete"><i class="bx bx-trash"></i></button>` : ""}
               </span>` : ""}
           </div>
         </header>
@@ -3882,14 +4200,14 @@ function drawProjectNotes(body, proj) {
     }));
     $all("[data-del-note]", container).forEach((btn) => btn.addEventListener("click", async () => {
       const note = (folder.notes || []).find((n) => n.id === btn.dataset.delNote);
-      if (typeof isNoteAuthor === "function" && !isNoteAuthor(note)) {
+      if (typeof canDeleteNote === "function" && !canDeleteNote(note)) {
         toast("You can only delete your own notes.", "error");
         return;
       }
       const ok = await confirmDialog({ title: "Delete note", message: "Delete this note? This cannot be undone.", confirmLabel: "Delete", danger: true });
       if (!ok) return;
       folder.notes = (folder.notes || []).filter((n) => n.id !== btn.dataset.delNote);
-      if (folder.kind === "project") extra.notes = folder.notes;
+      if (folder.notesOwner) folder.notesOwner.notes = folder.notes;
       persistThread(folder);
       editingId = null;
       renderAll();
@@ -3967,6 +4285,11 @@ function drawProjectNotes(body, proj) {
   function renderSidebar() {
     const treeEl = $("#proj-notes-tree", body);
     if (!treeEl) return;
+    const scrollTop = treeEl.scrollTop;
+    renderSidebarImpl(treeEl);
+    treeEl.scrollTop = scrollTop;
+  }
+  function renderSidebarImpl(treeEl) {
     const q = folderFilter.trim().toLowerCase();
     const filtering = !!q;
     const allItems = projectTasks();
@@ -4037,14 +4360,26 @@ function drawProjectNotes(body, proj) {
     }));
   }
 
+  // Every branch below fully replaces #proj-notes-main-body's innerHTML, which
+  // resets its scroll to the top — snapping the view away from whatever note
+  // the user was reading/editing. Capture/restore around the real renderer
+  // (same pattern as drawProjectSettings's live-refresh handler) so posting,
+  // editing, or deleting a note doesn't move the viewport.
   function renderMain() {
+    const scroller = $("#proj-notes-main-body", body);
+    const scrollTop = scroller ? scroller.scrollTop : 0;
+    renderMainImpl();
+    const restored = $("#proj-notes-main-body", body);
+    if (restored) restored.scrollTop = scrollTop;
+  }
+  function renderMainImpl() {
     const mainEl = $("#proj-notes-main", body);
     if (!mainEl) return;
     const folder = resolveFolder(activeFolder) || resolveFolder("overview");
     if (!folder) {
       activeFolder = "overview";
       window.AEWTTR.state.projNotesFolder[stateKey] = "overview";
-      return renderMain();
+      return renderMainImpl();
     }
 
     if (folder.kind === "overview") {
@@ -4140,14 +4475,14 @@ function drawProjectNotes(body, proj) {
           if (btn.hasAttribute("data-del-note")) {
             (async () => {
               const note = owning.notes.find((n) => n.id === btn.dataset.delNote);
-              if (typeof isNoteAuthor === "function" && !isNoteAuthor(note)) {
+              if (typeof canDeleteNote === "function" && !canDeleteNote(note)) {
                 toast("You can only delete your own notes.", "error");
                 return;
               }
               const ok = await confirmDialog({ title: "Delete note", message: "Delete this note? This cannot be undone.", confirmLabel: "Delete", danger: true });
               if (!ok) return;
               owning.notes = owning.notes.filter((n) => n.id !== btn.dataset.delNote);
-              if (owning.kind === "project") extra.notes = owning.notes;
+              if (owning.notesOwner) owning.notesOwner.notes = owning.notes;
               persistThread(owning);
               renderAll();
             })();
@@ -4297,11 +4632,11 @@ function drawProjectNotes(body, proj) {
           if (btn.hasAttribute("data-del-note")) {
             (async () => {
               const note = owning.notes.find((n) => n.id === btn.dataset.delNote);
-              if (typeof isNoteAuthor === "function" && !isNoteAuthor(note)) { toast("You can only delete your own notes.", "error"); return; }
+              if (typeof canDeleteNote === "function" && !canDeleteNote(note)) { toast("You can only delete your own notes.", "error"); return; }
               const ok = await confirmDialog({ title: "Delete note", message: "Delete this note? This cannot be undone.", confirmLabel: "Delete", danger: true });
               if (!ok) return;
               owning.notes = owning.notes.filter((n) => n.id !== btn.dataset.delNote);
-              if (owning.kind === "project") extra.notes = owning.notes;
+              if (owning.notesOwner) owning.notesOwner.notes = owning.notes;
               persistThread(owning);
               editingId = null;
               renderAll();
@@ -4499,6 +4834,7 @@ function openProjectContractorModal(proj, existing, onDone) {
 
 function drawPeople(body, proj) {
   const db = window.AEWTTR.db;
+  const editable = canEditProject(proj);
   if (!db.projectPeople) db.projectPeople = {};
   if (!db.projectPeople[proj.id]) db.projectPeople[proj.id] = [];
   if (!db.projectContractors) db.projectContractors = {};
@@ -4564,6 +4900,10 @@ function drawPeople(body, proj) {
      </div>
    </div>
  `;
+
+  if (!editable) {
+    applyProjectReadOnlyMode(body, ["#btn-add-project-person", "[data-toggle-admin]", "[data-edit-person]", "[data-remove-person]"]);
+  }
 
   $("#btn-add-project-person", body).addEventListener("click", () => openProjectRosterSearchModal(proj, () => drawPeople(body, proj)));
   $all("[data-person-role]", body).forEach((wrap) => {
@@ -6009,10 +6349,22 @@ function openDividerSettingsModal(divider, proj, onDone, opts) {
     }
   }
 
+  function dividerFlusher() {
+    unregisterAutosaveFlusher(dividerFlusher);
+    if (!saveTimer) return;
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    return persistDivider().then((ok) => {
+      if (ok && typeof onDone === "function") onDone();
+    });
+  }
+
   function scheduleAutosave() {
     if (!hasMeaningfulChanges() && isNew && !persistedOnce) return;
     clearTimeout(saveTimer);
+    registerAutosaveFlusher(dividerFlusher);
     saveTimer = setTimeout(() => {
+      unregisterAutosaveFlusher(dividerFlusher);
       saveTimer = null;
       persistDivider().then((ok) => {
         if (ok && typeof onDone === "function") onDone();
@@ -6032,7 +6384,9 @@ function openDividerSettingsModal(divider, proj, onDone, opts) {
   function dismiss() {
     if (settled) return;
     settled = true;
+    unregisterAutosaveFlusher(dividerFlusher);
     clearTimeout(saveTimer);
+    saveTimer = null;
     const discarded = discardDraftIfNeeded();
     if (!discarded && hasMeaningfulChanges()) {
       // Clicked out after typing — flush one last save, then close.
@@ -6229,6 +6583,11 @@ function openDividerSettingsModal(divider, proj, onDone, opts) {
   $(".aewttr-modal-close", modal).addEventListener("click", dismiss);
   $("#div-cancel", modal).addEventListener("click", dismiss);
 
+  // Each section defaults to view mode already — hiding the per-section
+  // Edit pencil is enough to keep it there; the edit panels (inputs, tag
+  // pickers) stay display:none and unreachable.
+  if (opts.readOnly) applyProjectReadOnlyMode(modal, ["[data-ds-edit]"]);
+
   if (isNew) {
     // For new dividers, open overview for editing immediately
     requestAnimationFrame(() => {
@@ -6285,7 +6644,8 @@ function renderTrackerWorkspace(mount, config) {
   const memberOptions = (db.members || []).map((m) => `<option value="${escapeHtml(m.name)}"></option>`).join("");
   const mountId = `tracker-mount-${stateKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
   const showHint = config.showHint !== false;
-  const showAdd = config.showAddButton !== false;
+  const readOnly = !!config.readOnly;
+  const showAdd = config.showAddButton !== false && !readOnly;
   const meetingMode = !!config.meetingMode;
   const noToolbar = !!config.noToolbar;
   const hideViewTabs = !!config.hideViewTabs;
@@ -6313,6 +6673,43 @@ function renderTrackerWorkspace(mount, config) {
 
   const showRisksTab = config.showRisksTab !== false;
   const metaStrip = "";
+
+  // On the standalone project Tracker tab, .tracker-shell is allowed to
+  // grow to fit every row (its own scroller only kicks in for the Weekly
+  // Meeting embed, which stays height-capped) — the actual scrolling
+  // happens one level up, on the tab body. But .monday-table-wrap still
+  // declares its own overflow so the browser can scroll it when it DOES
+  // fit that pattern, and a mouse wheel over the rows dead-ends there
+  // instead of reaching the real scrollable ancestor. Forward it manually,
+  // but only when nothing between the cursor and the shell can actually
+  // scroll on its own — so contexts that do scroll internally (Weekly
+  // Meeting, the Timeline/Risks sub-views) are completely unaffected.
+  if (!mount.dataset.trackerWheelFallbackWired) {
+    mount.dataset.trackerWheelFallbackWired = "true";
+    mount.addEventListener("wheel", (event) => {
+      if (!event.deltaY || event.ctrlKey) return;
+      const shell = mount.querySelector(".tracker-shell");
+      if (!shell || !shell.contains(event.target)) return;
+      let el = event.target;
+      while (el && el !== shell.parentElement) {
+        if (el.scrollHeight > el.clientHeight + 1) return;
+        el = el.parentElement;
+      }
+      let scroller = shell.parentElement;
+      while (scroller && scroller.scrollHeight <= scroller.clientHeight + 1) {
+        scroller = scroller.parentElement;
+      }
+      if (!scroller) return;
+      let delta = event.deltaY;
+      if (event.deltaMode === 1) delta *= 16;
+      if (event.deltaMode === 2) delta *= scroller.clientHeight;
+      const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      const nextScrollTop = Math.max(0, Math.min(maxScrollTop, scroller.scrollTop + delta));
+      if (nextScrollTop === scroller.scrollTop) return;
+      event.preventDefault();
+      scroller.scrollTop = nextScrollTop;
+    }, { passive: false });
+  }
 
   mount.innerHTML = `
     <div class="${shellClass}">
@@ -6382,6 +6779,7 @@ function renderTrackerWorkspace(mount, config) {
   }
 
   function createInlineTrackerTask(parentDividerId, afterTaskId) {
+    if (readOnly) return null;
     const today = new Date().toISOString().slice(0, 10);
     const id = uid("g");
     const newTask = {
@@ -6439,6 +6837,7 @@ function renderTrackerWorkspace(mount, config) {
   }
 
   function createInlineDivider() {
+    if (readOnly) return null;
     const divider = createTrackerDivider({ title: "New project divider" });
     if (!divider.metadata) divider.metadata = {};
     divider.metadata.clientLocalId = divider.id;
@@ -6493,17 +6892,17 @@ function renderTrackerWorkspace(mount, config) {
       const sub = getSubtaskAtPath(task, path.includes(".") ? path : path);
       if (sub && path.includes(".")) {
         // Open nearest flat index side panel for deeply nested? Prefer path-aware editor.
-        openSubtaskSidePanel(task, allTasks, refreshContent, path);
+        openSubtaskSidePanel(task, allTasks, refreshContent, path, false, { readOnly });
         return;
       }
-      openSubtaskSidePanel(task, allTasks, refreshContent, typeof subIndex === "number" ? subIndex : Number(path));
+      openSubtaskSidePanel(task, allTasks, refreshContent, typeof subIndex === "number" ? subIndex : Number(path), false, { readOnly });
       return;
     }
     if (isTrackerDivider(task)) {
-      openDividerSettingsModal(task, proj, refreshContent);
+      openDividerSettingsModal(task, proj, refreshContent, { readOnly });
       return;
     }
-    openTaskSidePanel(task, allTasks, refreshContent);
+    openTaskSidePanel(task, allTasks, refreshContent, { readOnly });
   };
   const toggleExpand = (taskId) => { expanded[taskId] = !expanded[taskId]; renderView(); };
   const viewMount = $(`#${mountId}`, mount);
@@ -6526,7 +6925,7 @@ function renderTrackerWorkspace(mount, config) {
     const tokens = filterState.assignee.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
     let visibleTasks = allTasks.filter((t) => taskMatchesAssigneeQuery(t, tokens));
     if (typeof config.taskFilter === "function") visibleTasks = visibleTasks.filter(config.taskFilter);
-    const viewOpts = { ...ganttOpts, meetingMode, collapseGanttGroupsByDefault };
+    const viewOpts = { ...ganttOpts, meetingMode, collapseGanttGroupsByDefault, readOnly };
     if (view === "risks") { drawProjectRisks(viewMount, proj, { trackerEmbed: true }); return; }
     if (view === "timeline") { const ganttTasks = allTasks.filter((t) => !isTrackerDivider(t)); renderGanttChart(viewMount, ganttTasks, expanded, toggleExpand, openEditor, refreshContent, visibleTasks.filter((t) => !isTrackerDivider(t)), viewOpts); }
     else renderTrackerTableView(viewMount, allTasks, expanded, toggleExpand, openEditor, refreshContent, visibleTasks, proj, {
@@ -6542,7 +6941,8 @@ function renderTrackerWorkspace(mount, config) {
       onCreateTask: createInlineTrackerTask,
       dividerCollapsed,
       subitemExpanded,
-      stateKey
+      stateKey,
+      readOnly
     });
   }
 
@@ -6574,7 +6974,7 @@ function renderTrackerWorkspace(mount, config) {
 }
 
 function drawTracker(body, proj) {
-  renderTrackerWorkspace(body, { proj, stateKey: proj.id });
+  renderTrackerWorkspace(body, { proj, stateKey: proj.id, readOnly: !canEditProject(proj) });
 }
 
 function normalizeTaskSubtask(task, subtask) {
@@ -6757,729 +7157,6 @@ function resizeRange(start, end, deltaDays, mode) {
   return [nextStart, nextEnd];
 }
 
-function wireGanttBarDragging(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, dragOpts) {
-  dragOpts = dragOpts || {};
-  const saveSource = dragOpts.saveSource || "Tracker";
-  const saveProjectCode = dragOpts.projectCode || projectCodeForTaskList(tasks);
-  let dragState = null;
-
-  function beginDrag(e, payload) {
-    e.preventDefault();
-    e.stopPropagation();
-    // A truthy dragState here means a gesture is already in progress (e.g. a
-    // second touch point during multi-touch) — the window listeners from
-    // that gesture are already live, so don't attach a second set of them.
-    const alreadyDragging = !!dragState;
-    // lastDelta starts at 0 (not undefined/null) so the first pointermove —
-    // which is almost always a sub-pixel jitter that rounds to a 0-day
-    // delta — is recognized as "no actual change" and skipped below, rather
-    // than being treated as a completed drag that then blocks the
-    // subsequent click from opening the task/subtask editor.
-    // Capture the gantt range start from the board's CSS variable for in-place updates
-    const boardEl = mount.querySelector(".monday-gantt-board, .gantt-board");
-    let rangeStartMs = null;
-    if (boardEl) {
-      const style = getComputedStyle(boardEl);
-      const todayEl = mount.querySelector(".monday-gantt-today, .gantt-today");
-      if (todayEl && payload.dayWidth) {
-        const todayLeft = parseFloat(todayEl.style.left) || 0;
-        const todayDays = todayLeft / payload.dayWidth;
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        rangeStartMs = now.getTime() - todayDays * 86400000;
-      }
-    }
-    dragState = { ...payload, startX: e.clientX, lastDelta: 0, moved: false, rangeStartMs };
-    document.body.classList.add("gantt-dragging");
-    if (!alreadyDragging) {
-      window.addEventListener("pointermove", onPointerMove);
-      window.addEventListener("pointerup", onPointerUp);
-    }
-  }
-
-  function updateBarInPlace(barEl, start, end) {
-    if (!barEl || !dragState) return;
-    const rangeStartEl = mount.querySelector(".monday-gantt-board, .gantt-board");
-    const dayW = dragState.dayWidth;
-    // Calculate range start from the gantt's CSS variable or re-derive from the first dated task
-    const rangeStartMs = dragState.rangeStartMs;
-    if (!rangeStartMs) return;
-    const rangeStart = new Date(rangeStartMs);
-    const left = ganttDaysBetween(ganttIsoDate(rangeStart), start) * dayW;
-    const width = Math.max((ganttDaysBetween(start, end) + 1) * dayW, dayW * 2);
-    barEl.style.left = left + "px";
-    barEl.style.width = width + "px";
-  }
-
-  function onPointerMove(e) {
-    if (!dragState) return;
-    const deltaDays = Math.round((e.clientX - dragState.startX) / dragState.dayWidth);
-    if (deltaDays === dragState.lastDelta) return;
-    dragState.lastDelta = deltaDays;
-    dragState.moved = true;
-    const task = tasks.find(t => t.id === dragState.taskId);
-    if (!task) return;
-    if (dragState.kind === "task") {
-      const next = dragState.mode === "move"
-        ? shiftRange(dragState.originalStart, dragState.originalEnd, deltaDays)
-        : resizeRange(dragState.originalStart, dragState.originalEnd, deltaDays, dragState.mode);
-      [task.start, task.end] = next;
-      // In-place DOM update — no full redraw during drag for smoothness
-      const barEl = mount.querySelector(`[data-drag-task="${CSS.escape(task.id)}"]`);
-      updateBarInPlace(barEl, task.start, task.end);
-      return;
-    }
-    const subtask = task.subtasks && task.subtasks[dragState.subIndex];
-    if (!subtask) return;
-    const next = dragState.mode === "move"
-      ? shiftRange(dragState.originalStart, dragState.originalEnd, deltaDays)
-      : resizeRange(dragState.originalStart, dragState.originalEnd, deltaDays, dragState.mode);
-    subtask.start = next[0];
-    subtask.end = next[1];
-    // In-place DOM update for subtask bar
-    const subBarEl = mount.querySelector(`[data-drag-sub="${CSS.escape(dragState.taskId + ":" + dragState.subIndex)}"]`);
-    updateBarInPlace(subBarEl, subtask.start, subtask.end);
-  }
-
-  function onPointerUp() {
-    // Calling preventDefault() on pointerdown (above, in beginDrag — needed
-    // so a drag doesn't also select page text) makes the browser skip the
-    // compatibility "click" event it would otherwise synthesize for a mouse
-    // pointer. Since the bar/subbar elements are also the app's click-to-
-    // open targets (data-open/data-open-sub live on the same node as
-    // data-drag-task/data-drag-sub), that native click never reliably
-    // arrives — this was the actual "popups don't open" bug, not just an
-    // edge case. So a plain press-and-release (no real movement, and not a
-    // resize-handle grab) opens the editor directly here instead of relying
-    // on a click event at all.
-    if (dragState && !dragState.moved && dragState.mode === "move") {
-      if (dragState.kind === "task") onOpenEditor(dragState.taskId);
-      else onOpenEditor(dragState.taskId, dragState.subIndex);
-    } else if (dragState && dragState.moved) {
-      // Save and redraw only once on drop (not on every pixel during drag)
-      const task = tasks.find(t => t.id === dragState.taskId);
-      if (task) {
-        if (dragState.kind === "subtask") {
-          // If subtask now extends beyond parent task, expand the parent
-          const sub = task.subtasks && task.subtasks[dragState.subIndex];
-          if (sub && sub.start && sub.end && task.start && task.end) {
-            let parentChanged = false;
-            if (sub.start < task.start) { task.start = sub.start; parentChanged = true; }
-            if (sub.end > task.end) { task.end = sub.end; parentChanged = true; }
-            if (parentChanged) {
-              const parentBarEl = mount.querySelector(`[data-drag-task="${CSS.escape(task.id)}"]`);
-              updateBarInPlace(parentBarEl, task.start, task.end);
-            }
-          }
-        }
-        Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
-      }
-      redraw();
-      mount.dataset.dragJustFinished = "1";
-      setTimeout(() => { delete mount.dataset.dragJustFinished; }, 120);
-    }
-    dragState = null;
-    document.body.classList.remove("gantt-dragging");
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
-  }
-
-  $all(".gantt-bar[data-drag-task]", mount).forEach(node => node.addEventListener("pointerdown", (e) => {
-    const task = tasks.find(t => t.id === node.dataset.dragTask);
-    if (!task || !task.start || !task.end) return;
-    const handle = e.target.closest(".gantt-resize-handle");
-    beginDrag(e, {
-      kind: "task",
-      taskId: task.id,
-      mode: handle ? handle.dataset.mode : "move",
-      originalStart: task.start,
-      originalEnd: task.end,
-      originalSubtasks: (task.subtasks || []).map(s => ({ start: s.start, end: s.end })),
-      dayWidth: +node.dataset.dayWidth
-    });
-  }));
-
-  $all(".gantt-subbar[data-drag-sub]", mount).forEach(node => node.addEventListener("pointerdown", (e) => {
-    const [taskId, subIndexText] = node.dataset.dragSub.split(":");
-    const task = tasks.find(t => t.id === taskId);
-    const subIndex = +subIndexText;
-    const subtask = task && task.subtasks && task.subtasks[subIndex];
-    if (!task || !subtask || !subtask.start || !subtask.end) return;
-    const handle = e.target.closest(".gantt-resize-handle");
-    beginDrag(e, {
-      kind: "subtask",
-      taskId,
-      subIndex,
-      mode: handle ? handle.dataset.mode : "move",
-      originalStart: subtask.start,
-      originalEnd: subtask.end,
-      dayWidth: +node.dataset.dayWidth
-    });
-  }));
-}
-
-function ganttDateRangeLabel(start, end) {
-  if (!start && !end) return "No dates";
-  if (!start || !end) return fmtDate(start || end);
-  const s = new Date(start + "T00:00:00");
-  const e = new Date(end + "T00:00:00");
-  if (isNaN(s) || isNaN(e)) return `${fmtDate(start)} – ${fmtDate(end)}`;
-  const startLabel = s.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const endLabel = e.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  return `${startLabel} – ${endLabel}`;
-}
-
-const MONDAY_GANTT_GROUPS = [
-  { key: "planned", label: "Not started", dot: "#8590A2", bar: "monday-bar--planned" },
-  { key: "progress", label: "In progress", dot: "#2451C4", bar: "monday-bar--progress" },
-  { key: "blocked", label: "Blocked", dot: "#A32B22", bar: "monday-bar--blocked" },
-  { key: "done", label: "Complete", dot: "#1A7A52", bar: "monday-bar--done" }
-];
-
-function ganttGroupKeyForTask(task) {
-  const pct = taskProgressPct(task);
-  if (pct === 100) return "done";
-  if (task.health === "Off Track" || task.status === "Blocked") return "blocked";
-  if (pct > 0) return "progress";
-  return "planned";
-}
-
-function ganttGroupForTask(task) {
-  const key = ganttGroupKeyForTask(task);
-  return MONDAY_GANTT_GROUPS.find((g) => g.key === key) || MONDAY_GANTT_GROUPS[0];
-}
-
-function ganttZoomDayWidth(zoom) {
-  if (zoom === "months") return 10;
-  if (zoom === "days") return 28;
-  return 20;
-}
-
-/* Range mode ("day"/"week"/"month") constrains which window of the
-   timeline is shown, independent of the density zoom above — "whole"
-   falls back to the existing task-derived min/max range. */
-function ganttWeekStart(date) {
-  const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay());
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-function ganttMonthStart(date) {
-  const d = new Date(date.getFullYear(), date.getMonth(), 1);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-function ganttRangeWindowFor(mode, anchorIso) {
-  const anchor = anchorIso ? ganttParseDate(anchorIso) : new Date();
-  if (mode === "day") return { start: anchor, end: anchor };
-  if (mode === "week") { const start = ganttWeekStart(anchor); return { start, end: ganttAddDays(start, 6) }; }
-  if (mode === "month") { const start = ganttMonthStart(anchor); return { start, end: new Date(start.getFullYear(), start.getMonth() + 1, 0) }; }
-  return null;
-}
-function ganttRangeDayWidth(mode) {
-  // Preferred density for each range — used as a floor for Whole Project
-  // scroll density. Day/week/month windows scale up from these via
-  // ganttResolveDayWidth so the timeline always fills the mount width.
-  if (mode === "day") return 720;
-  if (mode === "week") return 64;
-  if (mode === "month") return 22;
-  return null;
-}
-
-function ganttInfoColumnWidth(projectCode) {
-  const stored = window.AEWTTR.state
-    && window.AEWTTR.state.ganttInfoWidth
-    && window.AEWTTR.state.ganttInfoWidth[projectCode];
-  return Math.max(200, Number(stored) || 300);
-}
-
-/** Usable px for the timeline column (mount width minus the sticky info lane). */
-function ganttMeasureTimelineAvail(mount, infoWidth) {
-  if (!mount) return 0;
-  const rectW = mount.getBoundingClientRect ? mount.getBoundingClientRect().width : 0;
-  const width = Math.max(mount.clientWidth || 0, Math.floor(rectW) || 0);
-  // 2px buffer for border/subpixel so the board doesn't force a 1px scrollbar.
-  return Math.max(0, width - infoWidth - 2);
-}
-
-/**
- * Scale day columns to the mount: fixed Day/Week/Month windows fill the
- * section; Whole Project stretches when it would be a stub, else keeps
- * preferred density and scrolls horizontally.
- */
-function ganttResolveDayWidth(preferred, availWidth, totalDays, fillExact) {
-  if (!totalDays || totalDays < 1) return preferred;
-  if (!(availWidth > 0)) return preferred;
-  const fill = availWidth / totalDays;
-  if (fillExact) {
-    // Keep hour/day ticks readable on very narrow Firepit panes.
-    const floor = preferred >= 100 ? 56 : preferred >= 40 ? 32 : 14;
-    return Math.max(floor, fill);
-  }
-  return Math.max(preferred, fill);
-}
-function ganttRangeLabel(mode, window) {
-  if (mode === "day") return fmtDate(ganttIsoDate(window.start));
-  if (mode === "week") return `${fmtDate(ganttIsoDate(window.start))} – ${fmtDate(ganttIsoDate(window.end))}`;
-  if (mode === "month") return window.start.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  return "Whole project";
-}
-
-function renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts) {
-  const saveSource = opts.saveSource || "Tracker";
-  const saveProjectCode = opts.projectCode || projectCodeForTaskList(tasks);
-  const meetingMode = !!opts.meetingMode;
-  visibleTasks = visibleTasks || tasks;
-  if (!tasks.length) {
-    mount.innerHTML = `<div class="monday-gantt-empty">No tasks yet. Click <strong>New task</strong> to start building your plan.</div>`;
-    return;
-  }
-  if (!visibleTasks.length) {
-    mount.innerHTML = `<div class="monday-gantt-empty">No tasks match this filter.</div>`;
-    return;
-  }
-
-  if (!window.AEWTTR.state.ganttZoom) window.AEWTTR.state.ganttZoom = {};
-  if (!window.AEWTTR.state.ganttGroupCollapsed) window.AEWTTR.state.ganttGroupCollapsed = {};
-  if (!window.AEWTTR.state.ganttRange) window.AEWTTR.state.ganttRange = {};
-  const zoomKey = saveProjectCode;
-  // Keep meeting collapse state separate from the project Tracker page so
-  // "closed by default" in Weekly Meeting doesn't fight the project Gantt.
-  const groupKey = opts.collapseGanttGroupsByDefault ? `meeting:${saveProjectCode}` : saveProjectCode;
-  // Defaults to "week" (today's week) per-project the first time its Gantt
-  // is opened; switching to Whole Project falls back to the old
-  // task-derived min/max range and density dropdown.
-  if (!window.AEWTTR.state.ganttRange[zoomKey]) window.AEWTTR.state.ganttRange[zoomKey] = { mode: "week", anchor: null };
-  const rangeState = window.AEWTTR.state.ganttRange[zoomKey];
-  const rangeMode = rangeState.mode || "week";
-  const explicitWindow = ganttRangeWindowFor(rangeMode, rangeState.anchor);
-  // Meeting / multi-project views start with every status group collapsed so
-  // the list stays scannable until the facilitator opens a section.
-  if (opts.collapseGanttGroupsByDefault && window.AEWTTR.state.ganttGroupCollapsed[groupKey] == null) {
-    const init = {};
-    (typeof MONDAY_GANTT_GROUPS !== "undefined" ? MONDAY_GANTT_GROUPS : []).forEach((group) => {
-      init[group.key] = true;
-    });
-    window.AEWTTR.state.ganttGroupCollapsed[groupKey] = init;
-  }
-  const collapsedGroups = window.AEWTTR.state.ganttGroupCollapsed[groupKey] || {};
-
-  const datedForRange = visibleTasks.filter((t) => !isTrackerDivider(t) && t.start && t.end);
-  const rangeSource = datedForRange.length ? datedForRange : visibleTasks.filter((t) => !isTrackerDivider(t));
-  let starts = rangeSource.map((t) => ganttParseDate(t.start || new Date().toISOString().slice(0, 10)).getTime());
-  let ends = rangeSource.map((t) => ganttParseDate(t.end || t.start || new Date().toISOString().slice(0, 10)).getTime());
-  if (!starts.length) {
-    const now = Date.now();
-    starts = [now];
-    ends = [now];
-  }
-  const taskRangeStart = ganttAddDays(new Date(Math.min(...starts)), -5);
-  const taskRangeEnd = ganttAddDays(new Date(Math.max(...ends)), 10);
-  const rangeStart = explicitWindow ? explicitWindow.start : taskRangeStart;
-  const rangeEnd = explicitWindow ? ganttAddDays(explicitWindow.end, 1) : taskRangeEnd;
-  const totalDays = explicitWindow
-    ? Math.max(ganttDaysBetween(ganttIsoDate(rangeStart), ganttIsoDate(rangeEnd)), 1) + 1
-    : Math.max(ganttDaysBetween(ganttIsoDate(rangeStart), ganttIsoDate(rangeEnd)), 21) + 1;
-  const zoom = window.AEWTTR.state.ganttZoom[zoomKey] || "weeks";
-  const preferredDayWidth = ganttRangeDayWidth(rangeMode) || ganttZoomDayWidth(zoom);
-  const infoWidth = ganttInfoColumnWidth(saveProjectCode);
-  const timelineAvail = ganttMeasureTimelineAvail(mount, infoWidth);
-  const dayWidth = ganttResolveDayWidth(preferredDayWidth, timelineAvail, totalDays, !!explicitWindow);
-  const timelineWidth = totalDays * dayWidth;
-  const monthPills = buildMondayGanttMonthPills(rangeStart, totalDays + 1, dayWidth);
-  const tickMode = explicitWindow ? rangeMode : "whole";
-  const ticksHtml = buildMondayGanttTicks(tickMode, rangeStart, dayWidth, totalDays + 1);
-  const quarterLabel = explicitWindow ? ganttRangeLabel(rangeMode, explicitWindow) : buildMondayGanttQuarterLabel(rangeStart, rangeEnd);
-  const todayOffset = ganttDaysBetween(ganttIsoDate(rangeStart), ganttIsoDate(new Date()));
-  const todayLine = (todayOffset >= 0 && todayOffset <= totalDays) ? `<div class="monday-gantt-today" style="left:${todayOffset * dayWidth}px;"></div>` : "";
-  const startDateOffset = opts.startDate ? ganttDaysBetween(ganttIsoDate(rangeStart), opts.startDate) : null;
-  const startDateLine = (startDateOffset != null && startDateOffset >= 0 && startDateOffset <= totalDays)
-    ? `<div class="monday-gantt-due" style="left:${startDateOffset * dayWidth}px;background:var(--aewttr-green);" title="Project start date: ${escapeHtml(fmtDate(opts.startDate))}"></div>` : "";
-  const dueDateOffset = opts.dueDate ? ganttDaysBetween(ganttIsoDate(rangeStart), opts.dueDate) : null;
-  const dueDateLine = (dueDateOffset != null && dueDateOffset >= 0 && dueDateOffset <= totalDays)
-    ? `<div class="monday-gantt-due" style="left:${dueDateOffset * dayWidth}px;" title="Project due date: ${escapeHtml(fmtDate(opts.dueDate))}"></div>` : "";
-
-  const groupedByDivider = groupTrackerItems(tasks);
-  const visibleIdSet = new Set(visibleTasks.map((t) => t.id));
-  const hasDividers = groupedByDivider.dividers.length > 0;
-  let bodyRows = "";
-
-  function renderGanttTaskRows(taskList) {
-    let html = "";
-    taskList.forEach((t) => {
-      if (isTrackerDivider(t)) return;
-      const subitems = t.subtasks || [];
-      const isOpen = !!expanded[t.id];
-      const left = ganttDaysBetween(ganttIsoDate(rangeStart), t.start) * dayWidth;
-      const width = Math.max((ganttDaysBetween(t.start, t.end) + 1) * dayWidth, dayWidth * 2);
-      const taskDone = taskIsFullyDone(t);
-      html += `
-        <div class="monday-gantt-task-label ${taskDone ? "is-complete" : ""}" data-row-id="${t.id}">
-          <button type="button" class="cl-drag-handle monday-gantt-drag"${tip("Drag to reorder")}><i class="bx bx-grid-vertical"></i></button>
-          <button type="button" class="monday-gantt-complete" data-task-complete="${t.id}" aria-pressed="${taskDone ? "true" : "false"}"${tip(taskDone ? "Mark as not done" : "Mark done (includes all subitems)")} aria-label="Mark task done"><i class="bx bx-check"></i></button>
-          ${subitems.length ? `<button type="button" class="monday-gantt-chevron" data-toggle="${t.id}"${tip(isOpen ? "Hide subitems" : "Show subitems")}><i class="bx bx-chevron-${isOpen ? "down" : "right"}"></i></button>` : `<span class="monday-gantt-chevron-spacer"></span>`}
-          <div class="monday-gantt-task-copy">
-            <span class="monday-gantt-task-name" contenteditable="true" spellcheck="false" data-gantt-field="title" data-task-id="${t.id}">${escapeHtml(t.title || "Untitled")}</span>
-            <button type="button" class="monday-gantt-task-meta" data-open="${t.id}"${tip("Edit task dates and details")}>${ganttDateRangeLabel(t.start, t.end)} · ${escapeHtml(t.assignee || "Unassigned")}</button>
-          </div>
-          <button type="button" class="monday-gantt-edit" data-add-subtask="${t.id}"${tip("Add a subitem")} aria-label="Add subitem"><i class="bx bx-list-plus"></i></button>
-          <button type="button" class="monday-gantt-edit" data-open="${t.id}"${tip("Edit task")} aria-label="Edit task"><i class="bx bx-edit"></i></button>
-          <button type="button" class="monday-gantt-edit monday-gantt-edit--danger" data-delete-task="${t.id}"${tip("Delete this task")} aria-label="Delete task"><i class="bx bx-trash"></i></button>
-        </div>
-        <div class="monday-gantt-task-rail monday-gantt-rail" style="--gantt-day:${dayWidth}px;">
-          ${todayLine}
-          ${startDateLine}
-          ${dueDateLine}
-          <button type="button" class="monday-gantt-bar ${ganttBarClassForTask(t)}" data-open="${t.id}" data-drag-task="${t.id}" data-day-width="${dayWidth}" style="left:${left}px;width:${width}px;"${typeof ganttTip === "function" ? ganttTip(ganttTaskTipText(t)) : ""}>
-            <span class="monday-gantt-bar-progress" style="width:${taskProgressPct(t)}%;"></span>
-            <span class="gantt-resize-handle left" data-drag-task="${t.id}" data-mode="start"></span>
-            <span class="gantt-resize-handle right" data-drag-task="${t.id}" data-mode="end"></span>
-          </button>
-          ${isOpen ? renderInlineSubtaskBars(t, rangeStart, dayWidth) : ""}
-        </div>`;
-      if (!isOpen) return;
-      if (!subitems.length) {
-        html += `
-          <div class="monday-gantt-subtask-label monday-gantt-subtask-label--empty">
-            <button type="button" class="monday-gantt-inline-add" data-add-subtask="${t.id}"${tip("Add a subitem")}><i class="bx bx-plus"></i> Add subitem</button>
-          </div>
-          <div class="monday-gantt-subtask-rail monday-gantt-rail monday-gantt-subtask-rail--empty" style="--gantt-day:${dayWidth}px;"></div>`;
-        return;
-      }
-      subitems.forEach((rawSubtask, si) => {
-        const subtask = normalizeTaskSubtask(t, rawSubtask);
-        const subLeft = subtask.start && subtask.end ? ganttDaysBetween(ganttIsoDate(rangeStart), subtask.start) * dayWidth : null;
-        const subWidth = subtask.start && subtask.end ? Math.max((ganttDaysBetween(subtask.start, subtask.end) + 1) * dayWidth, dayWidth * 1.5) : 120;
-        const stateClass = subtaskStateClass(subtask);
-        html += `
-          <div class="monday-gantt-subtask-label ${subtask.done ? "is-complete" : ""}">
-            <button type="button" class="monday-gantt-complete monday-gantt-complete--sub" data-subtask-complete="${t.id}:${si}" aria-pressed="${subtask.done ? "true" : "false"}"${tip(subtask.done ? "Mark as not done" : "Mark done")} aria-label="Mark subitem done"><i class="bx bx-check"></i></button>
-            <button type="button" class="monday-gantt-subtask-copy" data-open-sub="${t.id}:${si}">
-              <span class="monday-gantt-subtask-name">${escapeHtml(subtask.text || "Untitled subitem")}</span>
-              <span class="monday-gantt-subtask-meta">${subtask.start && subtask.end ? ganttDateRangeLabel(subtask.start, subtask.end) : "No dates"}</span>
-            </button>
-            <button type="button" class="monday-gantt-edit monday-gantt-edit--sub" data-open-sub="${t.id}:${si}"${tip("Edit subitem")} aria-label="Edit subitem"><i class="bx bx-edit"></i></button>
-            <button type="button" class="monday-gantt-subtask-delete" data-delete-subtask="${t.id}:${si}"${tip("Delete this subitem")} aria-label="Delete subitem"><i class="bx bx-trash"></i></button>
-          </div>
-          <div class="monday-gantt-subtask-rail monday-gantt-rail" style="--gantt-day:${dayWidth}px;">
-            ${subLeft == null ? `
-              <button type="button" class="gantt-subbar gantt-subbar-untimed ${stateClass} monday-gantt-subbar" data-open-sub="${t.id}:${si}" style="left:12px;width:${subWidth}px;"${typeof ganttTip === "function" ? ganttTip(ganttSubtaskTipText(t, subtask)) : ""}></button>` : `
-              <button type="button" class="gantt-subbar ${stateClass} monday-gantt-subbar" data-open-sub="${t.id}:${si}" data-drag-sub="${t.id}:${si}" data-day-width="${dayWidth}" style="left:${subLeft}px;width:${subWidth}px;"${typeof ganttTip === "function" ? ganttTip(ganttSubtaskTipText(t, subtask)) : ""}>
-                <span class="gantt-resize-handle left" data-drag-sub="${t.id}:${si}" data-mode="start"></span>
-                <span class="gantt-resize-handle right" data-drag-sub="${t.id}:${si}" data-mode="end"></span>
-              </button>`}
-          </div>`;
-      });
-    });
-    return html;
-  }
-
-  if (hasDividers) {
-    const dividerState = opts.dividerCollapsed || {};
-    if (opts.collapseDividersByDefault && window.AEWTTR.state._ganttDividerInit !== groupKey) {
-      groupedByDivider.dividers.forEach(({ divider }) => {
-        if (dividerState[divider.id] == null) dividerState[divider.id] = true;
-      });
-      window.AEWTTR.state._ganttDividerInit = groupKey;
-    }
-    groupedByDivider.dividers.forEach(({ divider, tasks: sectionTasks }) => {
-      const sectionVisible = sectionTasks.filter((t) => visibleIdSet.has(t.id));
-      if (!sectionVisible.length && visibleTasks.length !== trackerPlainTasks(tasks).length) return;
-      const collapsed = !!dividerState[divider.id];
-      const rag = String((divider.rag || (divider.metadata && divider.metadata.rag) || "Green")).replace(/\s+/g, "");
-      const milestoneClass = divider.isMilestone ? " is-milestone" : "";
-      bodyRows += `
-        <div class="monday-gantt-group-label monday-gantt-divider-label${milestoneClass}">
-          <button type="button" class="monday-gantt-group-toggle" data-toggle-divider="${divider.id}"${tip(collapsed ? "Expand divider" : "Collapse divider")}>
-            <i class="bx bx-chevron-${collapsed ? "right" : "down"}"></i>
-            <span class="tracker-divider-rag tracker-divider-rag--${escapeHtml(rag)}" aria-hidden="true"></span>
-            <span class="monday-gantt-group-name">${escapeHtml(divider.title || "Untitled divider")}</span>
-            ${divider.isMilestone ? `<span class="tracker-divider-milestone tracker-divider-milestone--compact"><i class="bx bxs-flag" aria-hidden="true"></i></span>` : ""}
-            <span class="monday-gantt-group-count">${sectionVisible.length}</span>
-          </button>
-        </div>
-        <div class="monday-gantt-group-rail monday-gantt-rail" style="--gantt-day:${dayWidth}px;"></div>`;
-      if (!collapsed) bodyRows += renderGanttTaskRows(sectionVisible);
-    });
-    const ungroupedVisible = groupedByDivider.ungrouped.filter((t) => visibleIdSet.has(t.id));
-    if (ungroupedVisible.length) {
-      const collapsed = !!dividerState.__ungrouped__;
-      bodyRows += `
-        <div class="monday-gantt-group-label">
-          <button type="button" class="monday-gantt-group-toggle" data-toggle-divider="__ungrouped__"${tip(collapsed ? "Expand" : "Collapse")}>
-            <i class="bx bx-chevron-${collapsed ? "right" : "down"}"></i>
-            <span class="monday-gantt-group-dot" style="background:var(--aewttr-border-strong);"></span>
-            <span class="monday-gantt-group-name">Ungrouped</span>
-            <span class="monday-gantt-group-count">${ungroupedVisible.length}</span>
-          </button>
-        </div>
-        <div class="monday-gantt-group-rail monday-gantt-rail" style="--gantt-day:${dayWidth}px;"></div>`;
-      if (!collapsed) bodyRows += renderGanttTaskRows(ungroupedVisible);
-    }
-  } else {
-  const grouped = MONDAY_GANTT_GROUPS.map((group) => ({
-    ...group,
-    tasks: visibleTasks.filter((t) => !isTrackerDivider(t) && ganttGroupKeyForTask(t) === group.key)
-  })).filter((group) => group.tasks.length);
-
-  grouped.forEach((group) => {
-    const isGroupCollapsed = !!collapsedGroups[group.key];
-    bodyRows += `
-      <div class="monday-gantt-group-label">
-        <button type="button" class="monday-gantt-group-toggle" data-status-group="${group.key}"${tip(isGroupCollapsed ? "Expand group" : "Collapse group")}>
-          <i class="bx bx-chevron-${isGroupCollapsed ? "right" : "down"}"></i>
-          <span class="monday-gantt-group-dot" style="background:${group.dot};"></span>
-          <span class="monday-gantt-group-name">${group.label}</span>
-          <span class="monday-gantt-group-count">${group.tasks.length}</span>
-        </button>
-      </div>
-      <div class="monday-gantt-group-rail monday-gantt-rail" style="--gantt-day:${dayWidth}px;"></div>`;
-
-    if (isGroupCollapsed) return;
-    bodyRows += renderGanttTaskRows(group.tasks);
-  });
-  }
-
-  // Only real tasks drive the timeline window — dividers may lack dates.
-  mount.innerHTML = `
-    <div class="monday-gantt${meetingMode ? " monday-gantt--meeting" : ""}">
-      <div class="monday-gantt-chartbar">
-        <div class="monday-gantt-chartbar-left">
-          <span class="monday-gantt-quarter">${quarterLabel}</span>
-        </div>
-        <div class="monday-gantt-chartbar-right">
-          ${explicitWindow ? `
-            <button type="button" class="monday-gantt-nav-btn" data-gantt-nav="prev" aria-label="Previous ${escapeHtml(rangeMode)}"><i class="bx bx-chevron-left"></i></button>
-            <button type="button" class="monday-gantt-chartbtn" data-gantt-nav="today">Today</button>
-            <button type="button" class="monday-gantt-nav-btn" data-gantt-nav="next" aria-label="Next ${escapeHtml(rangeMode)}"><i class="bx bx-chevron-right"></i></button>
-          ` : `
-            <button type="button" class="monday-gantt-chartbtn" data-gantt-zoom="fit"${tip("Fit timeline to tasks")}>Auto fit</button>
-            <select class="monday-gantt-zoom-select" id="gantt-zoom-select-${mount.id || "main"}" aria-label="Zoom level">
-              <option value="months" ${zoom === "months" ? "selected" : ""}>Months</option>
-              <option value="weeks" ${zoom === "weeks" ? "selected" : ""}>Weeks</option>
-              <option value="days" ${zoom === "days" ? "selected" : ""}>Days</option>
-            </select>
-          `}
-          <div class="monday-gantt-range-tabs" role="tablist">
-            ${[["day", "Day"], ["week", "Week"], ["month", "Month"], ["whole", "Whole Project"]].map(([key, label]) => `
-              <button type="button" class="monday-gantt-range-tab ${rangeMode === key ? "active" : ""}" data-gantt-range="${key}" role="tab" aria-selected="${rangeMode === key}">${label}</button>
-            `).join("")}
-          </div>
-        </div>
-      </div>
-      <div class="monday-gantt-scroll">
-        <div class="monday-gantt-board" style="--gantt-day:${dayWidth}px;--gantt-info-width:${infoWidth}px;--gantt-timeline-width:${timelineWidth}px;">
-          <div class="monday-gantt-head">
-            <div class="monday-gantt-head-left"><span class="monday-gantt-head-title">Task</span><div class="monday-gantt-info-resizer"></div></div>
-            <div class="monday-gantt-head-timeline">
-              <div class="monday-gantt-months">${monthPills}</div>
-              <div class="monday-gantt-ticks">${ticksHtml}</div>
-            </div>
-          </div>
-          <div class="monday-gantt-body">
-            ${bodyRows}
-          </div>
-        </div>
-      </div>
-    </div>`;
-
-  const zoomSelect = $(`#gantt-zoom-select-${mount.id || "main"}`, mount);
-  if (zoomSelect) {
-    zoomSelect.addEventListener("change", () => {
-      window.AEWTTR.state.ganttZoom[zoomKey] = zoomSelect.value;
-      renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-    });
-  }
-  $all("[data-gantt-range]", mount).forEach((btn) => btn.addEventListener("click", () => {
-    rangeState.mode = btn.dataset.ganttRange;
-    if (rangeState.mode === "whole") rangeState.anchor = null;
-    renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-  }));
-  $all("[data-gantt-nav]", mount).forEach((btn) => btn.addEventListener("click", () => {
-    if (btn.dataset.ganttNav === "today") {
-      rangeState.anchor = null;
-    } else {
-      const delta = btn.dataset.ganttNav === "prev" ? -1 : 1;
-      const currentAnchor = rangeState.anchor ? ganttParseDate(rangeState.anchor) : new Date();
-      let nextAnchor;
-      if (rangeMode === "month") {
-        nextAnchor = new Date(currentAnchor.getFullYear(), currentAnchor.getMonth() + delta, 1);
-      } else {
-        const stepDays = rangeMode === "day" ? 1 : 7;
-        nextAnchor = ganttAddDays(currentAnchor, delta * stepDays);
-      }
-      rangeState.anchor = ganttIsoDate(nextAnchor);
-    }
-    renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-  }));
-  const fitBtn = $("[data-gantt-zoom=fit]", mount);
-  if (fitBtn) fitBtn.addEventListener("click", () => {
-    // Whole-project + weeks density, then resolve-day-width stretches columns
-    // to fill the mount when the natural timeline would be a stub.
-    rangeState.mode = "whole";
-    rangeState.anchor = null;
-    window.AEWTTR.state.ganttZoom[zoomKey] = "weeks";
-    renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-  });
-  $all("[data-status-group]", mount).forEach((btn) => btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const key = btn.dataset.statusGroup;
-    if (!window.AEWTTR.state.ganttGroupCollapsed[groupKey]) window.AEWTTR.state.ganttGroupCollapsed[groupKey] = {};
-    window.AEWTTR.state.ganttGroupCollapsed[groupKey][key] = !window.AEWTTR.state.ganttGroupCollapsed[groupKey][key];
-    renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-  }));
-  $all("[data-toggle-divider]", mount).forEach((btn) => btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const id = btn.dataset.toggleDivider;
-    if (!opts.dividerCollapsed) opts.dividerCollapsed = {};
-    opts.dividerCollapsed[id] = !opts.dividerCollapsed[id];
-    renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-  }));
-  $all("[data-toggle]", mount).forEach((elx) => elx.addEventListener("click", (e) => { e.stopPropagation(); onToggleExpand(elx.dataset.toggle); }));
-  $all("[data-open]", mount).forEach((elx) => elx.addEventListener("click", (e) => {
-    // .monday-gantt-edit is a shared style class for the edit/add-subitem/
-    // delete icon buttons alike — it used to be in this exclusion list too,
-    // which meant the Edit button (itself styled with that class) matched
-    // its own exclusion and could never fire. Exclude by the OTHER buttons'
-    // own data-attributes instead, which actually identifies them.
-    if (e.target.closest(".gantt-resize-handle, .monday-gantt-task-name, .cl-drag-handle, .monday-gantt-chevron, .monday-gantt-complete, [data-delete-task], [data-delete-subtask], [data-add-subtask]")) return;
-    if (mount.dataset.dragJustFinished) return;
-    e.stopPropagation();
-    onOpenEditor(elx.dataset.open);
-  }));
-  $all("[data-open-sub]", mount).forEach((elx) => elx.addEventListener("click", (e) => {
-    if (mount.dataset.dragJustFinished) return;
-    e.stopPropagation();
-    const [taskId, subIndex] = elx.dataset.openSub.split(":");
-    onOpenEditor(taskId, +subIndex);
-  }));
-  $all("[data-task-complete]", mount).forEach((btn) => btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const task = tasks.find((t) => t.id === btn.dataset.taskComplete);
-    if (!task) return;
-    const wouldComplete = !taskIsFullyDone(task);
-    if (wouldComplete && task.subtasks && task.subtasks.length) {
-      const allDone = flattenTaskSubitems(task.subtasks).every(s => s.done);
-      if (!allDone) {
-        toast("Complete all subtasks before marking this task done.", "error");
-        return;
-      }
-    }
-    setTaskCompletionState(task, wouldComplete);
-    Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
-    redraw();
-  }));
-  $all("[data-subtask-complete]", mount).forEach((btn) => btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const [taskId, subIndexText] = btn.dataset.subtaskComplete.split(":");
-    const task = tasks.find((t) => t.id === taskId);
-    const subtask = task && task.subtasks && task.subtasks[+subIndexText];
-    if (!task || !subtask) return;
-    setSubtaskCompletionState(subtask, !subtask.done);
-    Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
-    redraw();
-  }));
-  $all("[data-add-subtask]", mount).forEach((btn) => btn.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    const task = tasks.find((t) => t.id === btn.dataset.addSubtask);
-    if (!task) return;
-    if (!task.subtasks) task.subtasks = [];
-    task.subtasks.push(normalizeTaskSubtask(task, { text: "", start: task.start, end: "", relatedDocs: [] }));
-    expanded[task.id] = true;
-    Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
-    onOpenEditor(task.id, task.subtasks.length - 1);
-  }));
-  $all("[data-delete-task]", mount).forEach((btn) => btn.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    const task = tasks.find((t) => t.id === btn.dataset.deleteTask);
-    if (!task) return;
-    const ok = await confirmDialog({ title: "Delete task", message: `Delete "${task.title}"? This cannot be undone.`, confirmLabel: "Delete", danger: true });
-    if (!ok) return;
-    const idx = tasks.findIndex((t) => t.id === task.id);
-    if (idx < 0) return;
-    tasks.splice(idx, 1);
-    toast("Task deleted", "success");
-    redraw();
-    Repo.remove("actionItem", task).catch(() => {
-      tasks.splice(idx, 0, task);
-      redraw();
-    });
-  }));
-  $all("[data-delete-subtask]", mount).forEach((btn) => btn.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    const [taskId, subIndexText] = btn.dataset.deleteSubtask.split(":");
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task || !task.subtasks || !task.subtasks[+subIndexText]) return;
-    const ok = await confirmDialog({ title: "Delete subitem", message: "Delete this subitem? This cannot be undone.", confirmLabel: "Delete", danger: true });
-    if (!ok) return;
-    const removed = task.subtasks.splice(+subIndexText, 1)[0];
-    toast("Subitem deleted", "success");
-    redraw();
-    Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource }).catch(() => {
-      task.subtasks.splice(+subIndexText, 0, removed);
-      redraw();
-    });
-  }));
-
-  wireMondayGanttTitleEdits(mount, tasks, redraw, onOpenEditor, opts);
-  wireGanttBarDragging(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, { saveSource, projectCode: saveProjectCode });
-  wireGanttRowReordering(mount, tasks, redraw);
-  wireTrackerTableDragDrop(mount, tasks, redraw, { saveSource, projectCode: saveProjectCode });
-  wireGanttContextMenu(mount, tasks, expanded, onOpenEditor, redraw, { saveSource, projectCode: saveProjectCode });
-
-  const resizer = $(".monday-gantt-info-resizer", mount);
-  if (resizer) {
-    const boardEl = $(".monday-gantt-board", mount);
-    const startWidthState = window.AEWTTR.state.ganttInfoWidth || {};
-    window.AEWTTR.state.ganttInfoWidth = startWidthState;
-    if (startWidthState[saveProjectCode]) {
-      boardEl.style.setProperty("--gantt-info-width", `${startWidthState[saveProjectCode]}px`);
-    }
-    resizer.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      const startX = e.clientX;
-      const computed = getComputedStyle(boardEl).getPropertyValue("--gantt-info-width");
-      const startW = parseInt(computed) || 300;
-      const onMove = (moveEv) => {
-        const nextW = Math.max(200, startW + (moveEv.clientX - startX));
-        boardEl.style.setProperty("--gantt-info-width", `${nextW}px`);
-        startWidthState[saveProjectCode] = nextW;
-      };
-      const onUp = () => {
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
-        // Re-render so day columns reflow into the new leftover timeline width.
-        renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-      };
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
-    });
-  }
-
-  wireMondayGanttFillResize(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-}
-
-function wireMondayGanttFillResize(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts) {
-  if (typeof ResizeObserver === "undefined" || !mount) return;
-  if (mount._ganttFillResizeObserver) {
-    mount._ganttFillResizeObserver.disconnect();
-    mount._ganttFillResizeObserver = null;
-  }
-  let lastW = mount.clientWidth || 0;
-  const ro = new ResizeObserver(() => {
-    const w = mount.clientWidth || 0;
-    if (Math.abs(w - lastW) < 4) return;
-    lastW = w;
-    if (mount._ganttFillResizeRaf) cancelAnimationFrame(mount._ganttFillResizeRaf);
-    mount._ganttFillResizeRaf = requestAnimationFrame(() => {
-      if (!mount.isConnected) return;
-      renderMondayGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-    });
-  });
-  ro.observe(mount);
-  mount._ganttFillResizeObserver = ro;
-}
-
 function wireTrackerContextMenu(mount, tasks, onOpenEditor, onChange, opts) {
   opts = opts || {};
   const saveSource = opts.saveSource || "Tracker";
@@ -7515,6 +7192,7 @@ function wireTrackerContextMenu(mount, tasks, onOpenEditor, onChange, opts) {
   }
 
   mount.addEventListener("contextmenu", (e) => {
+    if (opts.readOnly) return;
     const subRow = e.target.closest("tr.monday-sub-row-item[data-task-id][data-sub-path]");
     const taskRow = subRow ? null : e.target.closest("tr.monday-row--tracker[data-id]");
     if (!taskRow && !subRow) return;
@@ -7638,12 +7316,15 @@ function openTaskExpandModal(task, tasks, proj, onSave, opts) {
   const input = $("#tex-notes-input", modal);
   let editingId = null;
 
-  function renderNotes() {
+  function renderNotes(opts) {
     if (!chatBody) return;
+    const stickToBottom = !!(opts && opts.scrollToBottom);
+    const scrollTop = chatBody.scrollTop;
     const notes = ((task.notes || []).slice()).reverse();
     chatBody.innerHTML = notes.length
       ? notes.map((n) => {
           const isMine = typeof isNoteAuthor === "function" ? isNoteAuthor(n) : false;
+          const canDelete = typeof canDeleteNote === "function" ? canDeleteNote(n) : isMine;
           const isEditing = editingId === n.id;
           return `
             <div class="task-notes-bubble-row ${isMine ? "mine" : ""}">
@@ -7651,9 +7332,9 @@ function openTaskExpandModal(task, tasks, proj, onSave, opts) {
                 <div class="task-notes-bubble-meta">
                   <strong>${escapeHtml(n.author || "Unknown")}</strong>
                   <span>${typeof formatNoteTimestamp === "function" ? escapeHtml(formatNoteTimestamp(n)) : escapeHtml(n.date || "")}</span>
-                  ${isMine && !isEditing ? `<span class="task-notes-bubble-actions">
-                    <button type="button" data-tex-edit-note="${n.id}"><i class="bx bx-pencil"></i></button>
-                    <button type="button" data-tex-del-note="${n.id}"><i class="bx bx-trash"></i></button>
+                  ${!isEditing && (isMine || canDelete) ? `<span class="task-notes-bubble-actions">
+                    ${isMine ? `<button type="button" data-tex-edit-note="${n.id}"><i class="bx bx-pencil"></i></button>` : ""}
+                    ${canDelete ? `<button type="button" data-tex-del-note="${n.id}"><i class="bx bx-trash"></i></button>` : ""}
                   </span>` : ""}
                 </div>
                 ${isEditing
@@ -7667,7 +7348,7 @@ function openTaskExpandModal(task, tasks, proj, onSave, opts) {
             </div>`;
         }).join("")
       : `<div class="task-notes-empty">No updates yet.</div>`;
-    if (!editingId && chatBody) chatBody.scrollTop = chatBody.scrollHeight;
+    chatBody.scrollTop = stickToBottom ? chatBody.scrollHeight : scrollTop;
     wireNoteActions();
   }
 
@@ -7692,8 +7373,15 @@ function openTaskExpandModal(task, tasks, proj, onSave, opts) {
       saveNotes();
       renderNotes();
     }));
-    $all("[data-tex-del-note]", chatBody).forEach((btn) => btn.addEventListener("click", () => {
+    $all("[data-tex-del-note]", chatBody).forEach((btn) => btn.addEventListener("click", async () => {
       const id = btn.dataset.texDelNote;
+      const note = (task.notes || []).find((n) => n.id === id);
+      if (typeof canDeleteNote === "function" && !canDeleteNote(note)) {
+        toast("You can only delete your own notes.", "error");
+        return;
+      }
+      const ok = await confirmDialog({ title: "Delete note", message: "Delete this note? This cannot be undone.", confirmLabel: "Delete", danger: true });
+      if (!ok) return;
       task.notes = (task.notes || []).filter((n) => n.id !== id);
       saveNotes();
       renderNotes();
@@ -7707,7 +7395,7 @@ function openTaskExpandModal(task, tasks, proj, onSave, opts) {
     task.notes.unshift(note);
     saveNotes();
     if (input) input.value = "";
-    renderNotes();
+    renderNotes({ scrollToBottom: true });
   }
 
   function saveNotes() {
@@ -7724,183 +7412,7 @@ function openTaskExpandModal(task, tasks, proj, onSave, opts) {
   const sendBtn = $("#tex-notes-send", modal);
   if (sendBtn) sendBtn.addEventListener("click", () => postNote(input ? input.value : ""));
 
-  renderNotes();
-}
-
-function closeGanttContextMenu() {
-  const menu = document.getElementById("gantt-context-menu");
-  if (menu) menu.remove();
-}
-
-function wireGanttContextMenu(mount, tasks, expanded, onOpenEditor, redraw, opts) {
-  const saveSource = opts.saveSource || "Tracker";
-  const saveProjectCode = opts.projectCode || projectCodeForTaskList(tasks);
-
-  mount.addEventListener("contextmenu", (e) => {
-    const taskRow = e.target.closest(".monday-gantt-task-label[data-row-id]");
-    const subRow = e.target.closest(".monday-gantt-subtask-label");
-    if (!taskRow && !subRow) return;
-    e.preventDefault();
-    closeGanttContextMenu();
-
-    let taskId = taskRow ? taskRow.dataset.rowId : null;
-    let subIndex = null;
-    if (subRow) {
-      const ref = subRow.querySelector("[data-delete-subtask], [data-open-sub], [data-subtask-complete]");
-      const key = ref && (ref.dataset.deleteSubtask || ref.dataset.openSub || ref.dataset.subtaskComplete);
-      if (key && key.includes(":")) {
-        const parts = key.split(":");
-        taskId = parts[0];
-        subIndex = +parts[1];
-      }
-    }
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-
-    const menu = document.createElement("div");
-    menu.id = "gantt-context-menu";
-    menu.className = "gantt-context-menu";
-    menu.style.left = `${Math.min(e.clientX, window.innerWidth - 200)}px`;
-    menu.style.top = `${Math.min(e.clientY, window.innerHeight - 180)}px`;
-
-    function addItem(label, onClick, danger) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = `gantt-context-menu-item${danger ? " is-danger" : ""}`;
-      btn.textContent = label;
-      btn.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        closeGanttContextMenu();
-        onClick();
-      });
-      menu.appendChild(btn);
-    }
-
-    if (subIndex != null && !Number.isNaN(subIndex)) {
-      const sub = task.subtasks && task.subtasks[subIndex];
-      addItem("Edit subitem", () => onOpenEditor(taskId, subIndex));
-      addItem(sub && sub.done ? "Mark subitem not done" : "Mark subitem done", () => {
-        const sub = task.subtasks && task.subtasks[subIndex];
-        if (!sub) return;
-        setSubtaskCompletionState(sub, !sub.done);
-        Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
-        redraw();
-      });
-      addItem("Delete subitem", async () => {
-        const ok = await confirmDialog({ title: "Delete subitem", message: "Delete this subitem?", confirmLabel: "Delete", danger: true });
-        if (!ok) return;
-        task.subtasks.splice(subIndex, 1);
-        Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
-        redraw();
-      }, true);
-    } else {
-      addItem("Edit task", () => onOpenEditor(taskId));
-      addItem("Add subitem", async () => {
-        if (!task.subtasks) task.subtasks = [];
-        task.subtasks.push(normalizeTaskSubtask(task, { text: "", start: task.start, end: "", relatedDocs: [] }));
-        expanded[task.id] = true;
-        Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
-        onOpenEditor(task.id, task.subtasks.length - 1);
-      });
-      addItem(taskIsFullyDone(task) ? "Mark task not done" : "Mark task done", () => {
-        const wouldComplete = !taskIsFullyDone(task);
-        if (wouldComplete && task.subtasks && task.subtasks.length) {
-          const allDone = flattenTaskSubitems(task.subtasks).every(s => s.done);
-          if (!allDone) { toast("Complete all subtasks before marking this task done.", "error"); return; }
-        }
-        setTaskCompletionState(task, wouldComplete);
-        Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
-        redraw();
-      });
-      addItem("Delete task", async () => {
-        const ok = await confirmDialog({ title: "Delete task", message: `Delete "${task.title}"?`, confirmLabel: "Delete", danger: true });
-        if (!ok) return;
-        const idx = tasks.findIndex((t) => t.id === task.id);
-        if (idx >= 0) tasks.splice(idx, 1);
-        redraw();
-        Repo.remove("actionItem", task).catch(() => {
-          tasks.splice(idx, 0, task);
-          redraw();
-        });
-      }, true);
-    }
-
-    document.body.appendChild(menu);
-    const dismiss = () => closeGanttContextMenu();
-    setTimeout(() => {
-      document.addEventListener("click", dismiss, { once: true });
-      document.addEventListener("contextmenu", dismiss, { once: true });
-    }, 0);
-  });
-}
-
-/* Second header row under the month pills — the actual day/week/hour
-   indicators the month row alone doesn't provide. "Day" mode gets an hour
-   ruler across the single selected day (tasks are date-only, but the ruler
-   still orients you within that day the way the other range modes orient
-   you within a week/month). Week and Month modes get one label per day,
-   spaced by a stride so labels never collide at narrow zoom levels. */
-function buildMondayGanttTicks(rangeMode, rangeStart, dayWidth, totalDays) {
-  if (rangeMode === "day") {
-    const hours = [0, 3, 6, 9, 12, 15, 18, 21];
-    const hourWidth = dayWidth / 8;
-    return hours.map((h) => {
-      const left = (h / 24) * dayWidth;
-      const label = h === 0 ? "12 AM" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
-      return `<div class="monday-gantt-tick" style="left:${left}px;width:${hourWidth}px;"><span>${label}</span></div>`;
-    }).join("");
-  }
-  const stride = dayWidth >= 18 ? 1 : dayWidth >= 8 ? 7 : 30;
-  const todayIso = ganttIsoDate(new Date());
-  let html = "";
-  for (let i = 0; i < totalDays; i += stride) {
-    const d = ganttAddDays(rangeStart, i);
-    const iso = ganttIsoDate(d);
-    const isToday = iso === todayIso;
-    const isWeekend = stride === 1 && (d.getDay() === 0 || d.getDay() === 6);
-    const label = stride !== 1
-      ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-      : dayWidth >= 40
-        ? `${d.toLocaleDateString("en-US", { weekday: "short" })} ${d.getDate()}`
-        : `${d.getDate()}`;
-    const width = Math.min(stride, totalDays - i) * dayWidth;
-    html += `<div class="monday-gantt-tick${isToday ? " is-today" : ""}${isWeekend ? " is-weekend" : ""}" style="left:${i * dayWidth}px;width:${width}px;"><span>${label}</span></div>`;
-  }
-  return html;
-}
-
-function buildMondayGanttMonthPills(rangeStart, totalDays, dayWidth) {
-  const now = new Date();
-  let html = "";
-  let i = 0;
-  while (i < totalDays) {
-    const d = ganttAddDays(rangeStart, i);
-    const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    const endIndex = Math.min(ganttDaysBetween(ganttIsoDate(rangeStart), ganttIsoDate(monthEnd)) + 1, totalDays) - 1;
-    const spanDays = endIndex - i + 1;
-    const isCurrent = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    const label = d.toLocaleDateString("en-US", { month: "long" });
-    html += `<div class="monday-gantt-month${isCurrent ? " is-current" : ""}" style="left:${i * dayWidth}px;width:${spanDays * dayWidth}px;"><span>${label}</span></div>`;
-    i = endIndex + 1;
-  }
-  return html;
-}
-
-function buildMondayGanttDayGrid(totalDays, dayWidth) {
-  let html = "";
-  for (let i = 0; i <= totalDays; i++) {
-    const showLine = i % 7 === 0;
-    html += `<div class="monday-gantt-dayline${showLine ? " monday-gantt-dayline--week" : ""}" style="left:${i * dayWidth}px;"></div>`;
-  }
-  return html;
-}
-
-function buildMondayGanttQuarterLabel(rangeStart, rangeEnd) {
-  const start = ganttParseDate(ganttIsoDate(rangeStart));
-  const q = Math.floor(start.getMonth() / 3) + 1;
-  const year = start.getFullYear();
-  const endYear = ganttParseDate(ganttIsoDate(rangeEnd)).getFullYear();
-  return endYear !== year ? `Q${q} ${year} – ${endYear}` : `Q${q} ${year}`;
+  renderNotes({ scrollToBottom: true });
 }
 
 function renderSimpleTrackerGantt(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts) {
@@ -7926,10 +7438,32 @@ function renderSimpleTrackerGantt(mount, tasks, expanded, onToggleExpand, onOpen
       if (expanded[`${task.id}:${path}`]) addRows(subtask.subtasks || [], task, depth + 1, path);
     });
   }
-  tasks.filter((task) => !isTrackerDivider(task) && allowed.has(task.id)).forEach((task) => {
-    rows.push({ task, item: task, path: "", depth: 0, isSubtask: false });
-    if (expanded[task.id]) addRows(task.subtasks || [], task, 1, "");
-  });
+  const visibleTaskList = tasks.filter((task) => !isTrackerDivider(task) && allowed.has(task.id));
+  if (opts.groupByProject) {
+    // Combined multi-project Timeline (Weekly Meeting): group rows under a
+    // header per source project, in first-seen order, using the _projectCode/
+    // _projectName tags the caller stamped onto each task.
+    const order = [];
+    const groups = new Map();
+    visibleTaskList.forEach((task) => {
+      const key = task._projectCode || "";
+      if (!groups.has(key)) { groups.set(key, { name: task._projectName || "Untitled project", tasks: [] }); order.push(key); }
+      groups.get(key).tasks.push(task);
+    });
+    order.forEach((key) => {
+      const group = groups.get(key);
+      rows.push({ isProjectDivider: true, projectName: group.name, count: group.tasks.length });
+      group.tasks.forEach((task) => {
+        rows.push({ task, item: task, path: "", depth: 0, isSubtask: false });
+        if (expanded[task.id]) addRows(task.subtasks || [], task, 1, "");
+      });
+    });
+  } else {
+    visibleTaskList.forEach((task) => {
+      rows.push({ task, item: task, path: "", depth: 0, isSubtask: false });
+      if (expanded[task.id]) addRows(task.subtasks || [], task, 1, "");
+    });
+  }
 
   const days = Array.from({ length: totalDays }, (_, index) => ganttAddDays(gridStart, index));
   const todayKey = ganttIsoDate(today);
@@ -7937,19 +7471,32 @@ function renderSimpleTrackerGantt(mount, tasks, expanded, onToggleExpand, onOpen
   const gridLines = days.map((day) => `<i class="tracker-gantt-gridline${ganttIsoDate(day) === todayKey ? " is-today" : ""}"></i>`).join("");
 
   function rowHtml(row) {
+    if (row.isProjectDivider) {
+      return `<div class="tracker-gantt-project-divider">
+        <strong class="tracker-gantt-project-name">${escapeHtml(row.projectName)}</strong>
+        <span class="tracker-gantt-project-count">${row.count} task${row.count === 1 ? "" : "s"}</span>
+      </div>`;
+    }
     const item = row.item;
+    const completed = row.isSubtask ? !!item.done : taskIsFullyDone(item);
     const start = item.start || ganttIsoDate(today);
-    const end = item.end || "";
+    const todayIso = ganttIsoDate(today);
+    // Complete tasks show their real start -> end/due range (unchanged). An
+    // incomplete task has no reliable end date yet, so its bar shows elapsed
+    // progress instead: start -> today, or a dot at start if it hasn't
+    // started (start is still in the future).
+    const end = completed ? (item.end || "") : (start <= todayIso ? todayIso : "");
     const startOffset = ganttDaysBetween(ganttIsoDate(gridStart), start);
     const rawEndOffset = end ? ganttDaysBetween(ganttIsoDate(gridStart), end) : startOffset;
     const visible = rawEndOffset >= 0 && startOffset < totalDays;
     const left = Math.max(startOffset, 0) * dayWidth;
     const width = end ? Math.max((Math.min(rawEndOffset, totalDays - 1) - Math.max(startOffset, 0) + 1) * dayWidth, dayWidth) : 12;
-    const completed = row.isSubtask ? !!item.done : taskIsFullyDone(item);
     const hasChildren = row.isSubtask ? (item.subtasks || []).length > 0 : (item.subtasks || []).length > 0;
     const isOpen = row.isSubtask ? !!expanded[`${row.task.id}:${row.path}`] : !!expanded[row.task.id];
     const label = item.text || item.title || "Untitled task";
-    const dateLabel = end ? `${fmtDate(start)} – ${fmtDate(end)}` : `${fmtDate(start)} · Open`;
+    const dateLabel = completed
+      ? (end ? `${fmtDate(start)} – ${fmtDate(end)}` : `${fmtDate(start)} · Open`)
+      : (end ? `${fmtDate(start)} – Today` : `${fmtDate(start)} · Not started`);
     const openAttrs = row.isSubtask ? `data-simple-open-sub="${row.task.id}:${row.path}"` : `data-simple-open="${row.task.id}"`;
     const toggleAttrs = row.isSubtask ? `data-simple-toggle-sub="${row.task.id}:${row.path}"` : `data-simple-toggle="${row.task.id}"`;
     return `<div class="tracker-gantt-row${row.isSubtask ? " is-subtask" : ""}${completed ? " is-complete" : ""}" style="--gantt-depth:${row.depth}">
@@ -7961,9 +7508,10 @@ function renderSimpleTrackerGantt(mount, tasks, expanded, onToggleExpand, onOpen
     </div>`;
   }
 
+  const itemRowCount = rows.filter((row) => !row.isProjectDivider).length;
   mount.innerHTML = `<section class="tracker-gantt-shell">
     <header class="tracker-gantt-toolbar">
-      <div><strong>${monthStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</strong><span>${rows.length} visible item${rows.length === 1 ? "" : "s"}</span></div>
+      <div><strong>${monthStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</strong><span>${itemRowCount} visible item${itemRowCount === 1 ? "" : "s"}</span></div>
       <div class="tracker-gantt-nav"><button type="button" data-simple-gantt-nav="prev" aria-label="Previous month"><i class="bx bx-chevron-left"></i></button><button type="button" data-simple-gantt-nav="today">Today</button><button type="button" data-simple-gantt-nav="next" aria-label="Next month"><i class="bx bx-chevron-right"></i></button></div>
     </header>
     <div class="tracker-gantt-scroll"><div class="tracker-gantt-board" style="--gantt-days:${totalDays};--gantt-day-width:${dayWidth}px">
@@ -7999,32 +7547,6 @@ function renderGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, 
   renderSimpleTrackerGantt(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
 }
 
-function wireMondayGanttTitleEdits(mount, tasks, redraw, onOpenEditor, opts) {
-  const saveSource = opts.saveSource || "Tracker";
-  const saveProjectCode = opts.projectCode || projectCodeForTaskList(tasks);
-  $all(".monday-gantt-task-name[data-gantt-field], .monday-gantt-group-name[data-gantt-field]", mount).forEach((node) => {
-    node.addEventListener("mousedown", (e) => e.stopPropagation());
-    node.addEventListener("click", (e) => e.stopPropagation());
-    node.addEventListener("dblclick", (e) => {
-      e.stopPropagation();
-      const task = tasks.find((t) => t.id === node.dataset.taskId);
-      if (task && typeof onOpenEditor === "function") onOpenEditor(task.id);
-    });
-    node.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); node.blur(); }
-    });
-    node.addEventListener("blur", () => {
-      const task = tasks.find((t) => t.id === node.dataset.taskId);
-      if (!task) return;
-      const value = node.textContent.trim();
-      if (!value) { node.textContent = task.title || "Untitled"; return; }
-      task.title = value;
-      Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
-      if (typeof redraw === "function") redraw();
-    });
-  });
-}
-
 function taskIsFullyDone(task) {
   if (!task) return false;
   return task.status === "Done";
@@ -8040,423 +7562,6 @@ function setTaskCompletionState(task, completed) {
   if (!task) return;
   task.status = completed ? "Done" : "Not Started";
   if (completed) { task.health = "On Track"; task.end = new Date().toISOString().slice(0, 10); }
-}
-
-function buildGanttMonthTicks(rangeStart, totalDays, dayWidth) {
-  let html = "";
-  let i = 0;
-  while (i < totalDays) {
-    const d = ganttAddDays(rangeStart, i);
-    const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    const endIndex = Math.min(ganttDaysBetween(ganttIsoDate(rangeStart), ganttIsoDate(monthEnd)) + 1, totalDays) - 1;
-    const spanDays = endIndex - i + 1;
-    const label = d.toLocaleDateString("en-US", { month: "long", year: i === 0 ? "numeric" : undefined });
-    html += `<div class="gantt-month-tick" style="left:${i * dayWidth}px;width:${spanDays * dayWidth}px;">${label}</div>`;
-    i = endIndex + 1;
-  }
-  return html;
-}
-
-function renderLegacyGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts) {
-  opts = opts || {};
-  const mondayStyle = opts.mondayStyle !== false;
-  const meetingMode = !!opts.meetingMode;
-  const saveSource = opts.saveSource || "Tracker";
-  const saveProjectCode = opts.projectCode || projectCodeForTaskList(tasks);
-  visibleTasks = visibleTasks || tasks;
-  if (!tasks.length) {
-    mount.innerHTML = `<div class="gantt-empty">No tasks yet. Use "+ Add Task" to start building this project's plan.</div>`;
-    return;
-  }
-  if (!visibleTasks.length) {
-    mount.innerHTML = `<div class="gantt-empty">No tasks match this assignee filter.</div>`;
-    return;
-  }
-  const dayWidth = 26;
-  const pcode = projectCodeForTaskList(tasks);
-  const memberListId = `gantt-members-${Math.random().toString(36).slice(2, 8)}`;
-  const members = (window.AEWTTR.db && window.AEWTTR.db.members) || [];
-  const starts = visibleTasks.map(t => ganttParseDate(t.start).getTime());
-  const ends = visibleTasks.map(t => ganttParseDate(t.end).getTime());
-  const rangeStart = ganttAddDays(new Date(Math.min(...starts)), -2);
-  const rangeEnd = ganttAddDays(new Date(Math.max(...ends)), 2);
-  const totalDays = Math.max(ganttDaysBetween(ganttIsoDate(rangeStart), ganttIsoDate(rangeEnd)), 7) + 1;
-  const timelineWidth = totalDays * dayWidth;
-
-  let ticks = "";
-  for (let i = 0; i <= totalDays; i += 7) {
-    const d = ganttAddDays(rangeStart, i);
-    ticks += `<div class="gantt-tick" style="left:${i * dayWidth}px;">${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>`;
-  }
-  const monthTicks = buildGanttMonthTicks(rangeStart, totalDays + 1, dayWidth);
-  const todayOffset = ganttDaysBetween(ganttIsoDate(rangeStart), ganttIsoDate(new Date()));
-  const todayLine = (todayOffset >= 0 && todayOffset <= totalDays) ? `<div class="gantt-today" style="left:${todayOffset * dayWidth}px;"></div>` : "";
-
-  function mondayMetaRow(t) {
-    return `
-      <span class="gantt-row-dates">${ganttDateRangeLabel(t.start, t.end)}</span>
-      <span class="gantt-row-owner-label">${escapeHtml(t.assignee || "Unassigned")}</span>`;
-  }
-
-  let rows = "";
-  visibleTasks.forEach(t => {
-    const left = ganttDaysBetween(ganttIsoDate(rangeStart), t.start) * dayWidth;
-    const width = Math.max((ganttDaysBetween(t.start, t.end) + 1) * dayWidth, 18);
-    const statusClass = ganttBarClassForTask(t);
-    const isOpen = !!expanded[t.id];
-    const subtrackCount = (t.subtasks || []).length;
-    // Row height must scale with the real subtask count — it used to cap at
-    // 3/4 subtasks (Math.min), so any task with more than that had its 5th+
-    // subtask bar drawn past the row's bottom edge and overlapping the next
-    // task row instead of the row growing to fit (renderInlineSubtaskBars
-    // positions every subtask at top:index*16px with no cap of its own).
-    const rowHeight = meetingMode ? 44 + (subtrackCount ? subtrackCount * 12 + 4 : 0) : (mondayStyle ? 52 : 52) + (subtrackCount ? subtrackCount * 16 + 8 : 0);
-    const barProgress = taskProgressPct(t);
-    rows += `
-      <div class="gantt-cell-label gantt-cell-label--monday" data-row-id="${t.id}" style="min-height:${rowHeight}px;">
-        <div class="gantt-row-title-wrap">
-          ${mondayStyle ? "" : `<button class="cl-drag-handle"${tip("Drag to reorder")} type="button"><i class="bx bx-grid-vertical"></i></button>`}
-          <button class="gantt-expand-btn" data-toggle="${t.id}"${tip(isOpen ? "Hide subtasks" : "Show subtasks")}><i class="bx bx-chevron-${isOpen ? "down" : "right"}"></i></button>
-          ${mondayStyle ? "" : issueTypeIcon(t)}
-          ${mondayStyle
-            ? `<input type="text" class="gantt-inline-text gantt-inline-title" data-gantt-field="title" data-task-id="${t.id}" value="${escapeHtml(t.title || "")}"${tip("Task title")}>`
-            : `<button class="gantt-row-title gantt-open-link" data-open="${t.id}">${escapeHtml(t.title)}</button>`}
-        </div>
-        <div class="gantt-row-meta ${mondayStyle ? "gantt-row-meta--monday" : ""}">
-          ${mondayStyle ? mondayMetaRow(t) : `${issueKey(pcode, t)}${issuePriority(t.priority)}${issuePoints(t)}
-          ${userAvatarHtml(t.assignee || "Unassigned", memberEmailForPerson(t.assignee), 18)}
-          <span class="gantt-row-owner">${escapeHtml(t.assignee || "Unassigned")}</span>
-          <span style="font-size:11.5px;color:var(--aewttr-muted);">${escapeHtml(t.assignee || "Unassigned")}</span>
-          <button class="btn-aewttr-outline btn-aewttr-sm gantt-inline-edit" data-open="${t.id}"${tip("Edit this task")}><i class="bx bx-edit"></i> Edit</button>`}
-        </div>
-      </div>
-      <div class="gantt-cell-bar" style="min-height:${rowHeight}px;">
-        <div class="gantt-bar-wrap">
-          <button class="gantt-bar ${statusClass} ${mondayStyle ? "gantt-bar--monday" : ""}" data-open="${t.id}" data-drag-task="${t.id}" data-day-width="${dayWidth}" style="left:${left}px; width:${width}px;"${typeof ganttTip === "function" ? ganttTip(ganttTaskTipText(t)) : ""}>
-            ${mondayStyle ? `<span class="gantt-bar-progress" style="width:${barProgress}%;"></span>` : escapeHtml(t.title)}
-            <span class="gantt-resize-handle left" data-drag-task="${t.id}" data-mode="start"></span>
-            <span class="gantt-resize-handle right" data-drag-task="${t.id}" data-mode="end"></span>
-          </button>
-        </div>
-        ${renderInlineSubtaskBars(t, rangeStart, dayWidth)}
-      </div>
-      ${isOpen ? `
-      <div class="gantt-drawer">
-        ${t.subtasks && t.subtasks.length ? t.subtasks.map((s, si) => renderSubtaskPreview(t, s, si)).join("") : `<div class="gantt-drawer-empty">No subtasks yet — open the task editor to add timeline detail and file references.</div>`}
-      </div>` : ""}`;
-  });
-
-  mount.innerHTML = `
-    ${mondayStyle && members.length ? `<datalist id="${memberListId}">${members.map((m) => `<option value="${escapeHtml(m.name)}">`).join("")}</datalist>` : ""}
-    <div class="gantt-scroll ${mondayStyle ? "gantt-scroll--monday" : ""} ${meetingMode ? "gantt-scroll--meeting" : ""}">
-      <div class="gantt-grid ${mondayStyle ? "gantt-grid--monday" : ""} ${meetingMode ? "gantt-grid--meeting" : ""}">
-        <div class="gantt-head-label">Task</div>
-        <div class="gantt-head-ruler gantt-head-ruler--monday" style="width:${timelineWidth}px;">
-          <div class="gantt-month-row">${monthTicks}</div>
-          <div class="gantt-week-row">${ticks}${todayLine}</div>
-        </div>
-        ${rows}
-      </div>
-    </div>`;
-
-  $all("[data-toggle]", mount).forEach(elx => elx.addEventListener("click", (e) => { e.stopPropagation(); onToggleExpand(elx.dataset.toggle); }));
-  $all("[data-open]", mount).forEach(elx => elx.addEventListener("click", (e) => {
-    if (e.target.closest(".gantt-inline-text, .gantt-inline-date, .gantt-inline-health, .gantt-resize-handle")) return;
-    if (mount.dataset.dragJustFinished) return;
-    onOpenEditor(elx.dataset.open);
-  }));
-  $all("[data-open-sub]", mount).forEach(elx => elx.addEventListener("click", (e) => {
-    if (mount.dataset.dragJustFinished) return;
-    e.stopPropagation();
-    const [taskId, subIndex] = elx.dataset.openSub.split(":");
-    onOpenEditor(taskId, +subIndex);
-  }));
-  $all(".gantt-sub-top", mount).forEach(row => row.addEventListener("click", (e) => {
-    if (e.target.closest("input[type=checkbox], button, label, .gantt-inline-text")) return;
-    if (mount.dataset.dragJustFinished) return;
-    const btn = row.querySelector("[data-open-sub]");
-    if (!btn) return;
-    const [taskId, subIndex] = btn.dataset.openSub.split(":");
-    onOpenEditor(taskId, +subIndex);
-  }));
-  $all(".gantt-drawer input[type=checkbox]", mount).forEach(cb => cb.addEventListener("change", (e) => {
-    e.stopPropagation();
-    const t = tasks.find(x => x.id === cb.dataset.task);
-    setSubtaskCompletionState(t.subtasks[+cb.dataset.sub], cb.checked);
-    Repo.save("actionItem", t, { projectCode: saveProjectCode, source: saveSource });
-    renderGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-  }));
-  if (mondayStyle) wireGanttInlineEdits(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-  wireGanttBarDragging(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, { saveSource, projectCode: saveProjectCode });
-  wireGanttRowReordering(mount, tasks, redraw);
-}
-
-function wireGanttInlineEdits(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts) {
-  const saveSource = opts.saveSource || "Tracker";
-  const saveProjectCode = opts.projectCode || projectCodeForTaskList(tasks);
-  function persist(task) {
-    ensureAssigneesFromTask(saveProjectCode, task);
-    Repo.save("actionItem", task, { projectCode: saveProjectCode, source: saveSource });
-    if (typeof redraw === "function") redraw();
-  }
-  $all(".gantt-inline-text[data-gantt-field]", mount).forEach((input) => {
-    input.addEventListener("click", (e) => e.stopPropagation());
-    const commit = () => {
-      const task = tasks.find((t) => t.id === input.dataset.taskId);
-      if (!task) return;
-      const field = input.dataset.ganttField;
-      const value = input.value.trim();
-      if (field === "title" && !value) { input.value = task.title; return; }
-      task[field] = value || (field === "assignee" ? "Unassigned" : task[field]);
-      persist(task);
-    };
-    input.addEventListener("change", commit);
-    input.addEventListener("blur", commit);
-    if (input.dataset.ganttField === "assignee") wireAssigneeAutocomplete(mount, input);
-  });
-  $all(".gantt-inline-date[data-gantt-field]", mount).forEach((input) => {
-    input.addEventListener("click", (e) => e.stopPropagation());
-    input.addEventListener("change", () => {
-      const task = tasks.find((t) => t.id === input.dataset.taskId);
-      if (!task || !input.value) return;
-      const prevStart = task.start;
-      const prevEnd = task.end;
-      task[input.dataset.ganttField] = input.value;
-      cascadeSubtaskDates(tasks, task, prevStart, prevEnd);
-      persist(task);
-      renderGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-    });
-  });
-  $all(".monday-gantt-complete-check[data-task-complete]", mount).forEach((input) => {
-    input.addEventListener("click", (e) => e.stopPropagation());
-    input.addEventListener("change", () => {
-      const task = tasks.find((t) => t.id === input.dataset.taskComplete);
-      if (!task) return;
-      setTaskCompletionState(task, input.checked);
-      persist(task);
-      renderGanttChart(mount, tasks, expanded, onToggleExpand, onOpenEditor, redraw, visibleTasks, opts);
-    });
-  });
-  $all(".gantt-inline-health[data-gantt-field]", mount).forEach((sel) => {
-    sel.addEventListener("click", (e) => e.stopPropagation());
-    sel.addEventListener("change", () => {
-      const task = tasks.find((t) => t.id === sel.dataset.taskId);
-      if (!task) return;
-      task.health = sel.value;
-      sel.className = `gantt-inline-health health-${sel.value.replace(/\s+/g, "-")}`;
-      persist(task);
-    });
-  });
-}
-
-/* Drag-and-drop reordering of Gantt task rows via the row's drag handle
-   (mirrors the Checklist view's reordering — see .cl-drag-handle wiring below). */
-function wireGanttRowReordering(mount, tasks, redraw) {
-  let draggedId = null;
-  const rowSelector = ".monday-gantt-task-label[data-row-id], .gantt-cell-label[data-row-id]";
-  $all(rowSelector, mount).forEach(row => {
-    const id = row.dataset.rowId;
-    const handle = $(".cl-drag-handle", row);
-    if (!handle) return;
-    // A plain click (mousedown with no following dragstart) must not leave
-    // the row permanently draggable=true — native drag-and-drop suppresses
-    // the normal "mouseup"/"touchend" event for a gesture that actually
-    // becomes a drag, so this reset only fires for the non-drag case.
-    handle.addEventListener("mousedown", () => {
-      row.draggable = true;
-      const resetIfNoDrag = () => { if (!row.classList.contains("dragging")) row.draggable = false; };
-      window.addEventListener("mouseup", resetIfNoDrag, { once: true });
-    });
-    handle.addEventListener("touchstart", () => {
-      row.draggable = true;
-      const resetIfNoDrag = () => { if (!row.classList.contains("dragging")) row.draggable = false; };
-      window.addEventListener("touchend", resetIfNoDrag, { once: true });
-    }, { passive: true });
-    row.addEventListener("dragstart", (e) => {
-      draggedId = id;
-      // Deferred so the browser snapshots the row at full opacity before
-      // the "dragging" class fades it — otherwise the drag ghost can render
-      // blank, leaving no visual feedback under the cursor while dragging.
-      setTimeout(() => row.classList.add("dragging"), 0);
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", id);
-    });
-    row.addEventListener("dragend", () => {
-      row.draggable = false;
-      row.classList.remove("dragging");
-      $all(rowSelector, mount).forEach(el => el.classList.remove("drag-over"));
-      draggedId = null;
-    });
-    row.addEventListener("dragover", (e) => {
-      if (!draggedId || draggedId === id) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      row.classList.add("drag-over");
-    });
-    row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
-    row.addEventListener("drop", (e) => {
-      e.preventDefault();
-      row.classList.remove("drag-over");
-      if (!draggedId || draggedId === id) return;
-      ganttReorderTask(tasks, draggedId, id);
-      Repo.save("actionItem", tasks.find(t => t.id === draggedId), { projectCode: projectCodeForTaskList(tasks), source: "Tracker" });
-      draggedId = null;
-      redraw();
-    });
-  });
-}
-
-function wireTrackerTableDragDrop(mount, tasks, redraw, opts) {
-  opts = opts || {};
-  const saveProjectCode = opts.projectCode || projectCodeForTaskList(tasks);
-  const saveSource = opts.saveSource || "Tracker";
-
-  let dragState = null;
-
-  function clearHighlights() {
-    $all(".tracker-drag-over", mount).forEach(el => el.classList.remove("tracker-drag-over"));
-  }
-
-  function wireSource(row, stateFactory) {
-    const handle = $(".cl-drag-handle", row);
-    if (!handle) return;
-    handle.addEventListener("mousedown", () => {
-      row.draggable = true;
-      const reset = () => { if (!row.classList.contains("dragging")) row.draggable = false; };
-      window.addEventListener("mouseup", reset, { once: true });
-    });
-    handle.addEventListener("touchstart", () => {
-      row.draggable = true;
-      const reset = () => { if (!row.classList.contains("dragging")) row.draggable = false; };
-      window.addEventListener("touchend", reset, { once: true });
-    }, { passive: true });
-    row.addEventListener("dragstart", e => {
-      dragState = stateFactory();
-      setTimeout(() => row.classList.add("dragging"), 0);
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", JSON.stringify(dragState));
-    });
-    row.addEventListener("dragend", () => {
-      row.draggable = false;
-      row.classList.remove("dragging");
-      clearHighlights();
-      dragState = null;
-    });
-  }
-
-  function wireTarget(row, accepts, onDrop) {
-    row.addEventListener("dragover", e => {
-      if (!dragState || !accepts(dragState)) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      row.classList.add("tracker-drag-over");
-    });
-    row.addEventListener("dragleave", () => row.classList.remove("tracker-drag-over"));
-    row.addEventListener("drop", e => {
-      e.preventDefault();
-      row.classList.remove("tracker-drag-over");
-      if (!dragState || !accepts(dragState)) return;
-      onDrop(dragState);
-      dragState = null;
-    });
-  }
-
-  $all("tr.monday-row--tracker[data-id]", mount).forEach(row => {
-    wireSource(row, () => ({ type: "task", taskId: row.dataset.id }));
-  });
-
-  $all("tr.monday-sub-row-item[data-task-id][data-sub-path]", mount).forEach(row => {
-    wireSource(row, () => ({ type: "subtask", taskId: row.dataset.taskId, subPath: row.dataset.subPath }));
-  });
-
-  $all("tr.monday-row--tracker[data-id]", mount).forEach(row => {
-    const targetId = row.dataset.id;
-    const targetTask = () => tasks.find(t => t.id === targetId);
-    wireTarget(row,
-      ds => {
-        if (ds.type === "task") return ds.taskId !== targetId && !isTrackerDivider(targetTask());
-        if (ds.type === "subtask") return ds.taskId !== targetId && !isTrackerDivider(targetTask());
-        return false;
-      },
-      ds => {
-        const tt = targetTask();
-        if (!tt || isTrackerDivider(tt)) return;
-        if (ds.type === "task") {
-          const dragged = tasks.find(t => t.id === ds.taskId);
-          if (!dragged) return;
-          tasks.splice(tasks.findIndex(t => t.id === ds.taskId), 1);
-          if (!tt.subtasks) tt.subtasks = [];
-          tt.subtasks.push({
-            text: dragged.title || dragged.text || "",
-            assignee: dragged.assignee || dragged.owner || "",
-            start: dragged.start || "",
-            end: dragged.end || "",
-            done: false,
-            notes: []
-          });
-          Repo.save("actionItem", tt, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
-          Repo.remove("actionItem", dragged).catch(() => {});
-          redraw();
-        } else if (ds.type === "subtask") {
-          const srcTask = tasks.find(t => t.id === ds.taskId);
-          if (!srcTask || !srcTask.subtasks) return;
-          const pathParts = ds.subPath.split(".");
-          if (pathParts.length > 1) return;
-          const idx = parseInt(pathParts[0], 10);
-          if (isNaN(idx) || idx >= srcTask.subtasks.length) return;
-          const [sub] = srcTask.subtasks.splice(idx, 1);
-          if (!tt.subtasks) tt.subtasks = [];
-          tt.subtasks.push(sub);
-          Repo.save("actionItem", srcTask, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
-          Repo.save("actionItem", tt, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
-          redraw();
-        }
-      }
-    );
-  });
-
-  $all("tr.monday-divider-row[data-divider-id]", mount).forEach(row => {
-    const dividerId = row.dataset.dividerId;
-    wireTarget(row,
-      ds => ds.type === "task" || ds.type === "subtask",
-      ds => {
-        const dividerIdx = tasks.findIndex(t => t.id === dividerId);
-        if (dividerIdx < 0) return;
-        if (ds.type === "task") {
-          const taskIdx = tasks.findIndex(t => t.id === ds.taskId);
-          if (taskIdx < 0) return;
-          const [moved] = tasks.splice(taskIdx, 1);
-          const insertIdx = dividerIdx >= taskIdx ? dividerIdx : dividerIdx + 1;
-          tasks.splice(insertIdx, 0, moved);
-          Repo.save("actionItem", moved, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
-          redraw();
-        } else if (ds.type === "subtask") {
-          const srcTask = tasks.find(t => t.id === ds.taskId);
-          if (!srcTask || !srcTask.subtasks) return;
-          const pathParts = ds.subPath.split(".");
-          if (pathParts.length > 1) return;
-          const idx = parseInt(pathParts[0], 10);
-          if (isNaN(idx) || idx >= srcTask.subtasks.length) return;
-          const [sub] = srcTask.subtasks.splice(idx, 1);
-          const newTask = {
-            id: "task-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
-            title: sub.text || sub.title || "",
-            assignee: sub.assignee || "",
-            start: sub.start || "",
-            end: sub.end || "",
-            done: sub.done || false,
-            subtasks: [],
-            notes: sub.notes || []
-          };
-          tasks.splice(dividerIdx + 1, 0, newTask);
-          if (typeof syncTaskStatusFromSubtasks === "function") syncTaskStatusFromSubtasks(srcTask);
-          Repo.save("actionItem", srcTask, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
-          Repo.save("actionItem", newTask, { projectCode: saveProjectCode, source: saveSource }).catch(() => {});
-          redraw();
-        }
-      }
-    );
-  });
 }
 
 function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEditor, onChange, visibleTasks, proj, tableOpts) {
@@ -8500,6 +7605,7 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
   if (focusSubtask) window.AEWTTR.state.trackerFocusSubtask = null;
 
   function inlineAddTask(parentDividerId, afterTaskId) {
+    if (tableOpts.readOnly) return;
     if (typeof tableOpts.onCreateTask === "function") {
       tableOpts.onCreateTask(parentDividerId || "", afterTaskId || "");
       return;
@@ -8541,7 +7647,12 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
     onChange();
   }
 
-  function persistTask(task) {
+  function persistTask(task, saveOpts) {
+    // Notes/comments stay postable regardless of edit permission — same as
+    // the Project Notes tab and Task Details modal, neither of which gate
+    // on canEditProject. Everything else routed through here (field edits,
+    // reordering, completion toggles) stays blocked for read-only viewers.
+    if (tableOpts.readOnly && !(saveOpts && saveOpts.force)) return;
     if (isTrackerDivider(task)) {
       syncDividerMetadata(task);
       ensureDividerRolesOnProjectPeople(saveProjectCode, task);
@@ -8565,12 +7676,13 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
 
   renderMondayTable(mount, {
     mode: "tracker",
+    canEdit: !tableOpts.readOnly,
     extraColumns,
     tasks: visiblePlain,
     allTasks: tasks,
     sections,
     subitemExpanded,
-    reorderable: true,
+    reorderable: !tableOpts.readOnly,
     focusTaskId,
     focusSubtask,
     ownerField: "assignee",
@@ -8595,6 +7707,7 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
     },
     onEditDivider: () => {},
     onDeleteDivider: async (id) => {
+      if (tableOpts.readOnly) return;
       const divider = tasks.find((t) => t.id === id && isTrackerDivider(t));
       if (!divider) return;
       const ok = await confirmDialog({
@@ -8639,6 +7752,7 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
       onChange();
     },
     onDeleteTask: async (task) => {
+      if (tableOpts.readOnly) return;
       const ok = await confirmDialog({
         title: "Delete task",
         message: `Delete "${task.title}" and all its subitems?`,
@@ -8656,6 +7770,7 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
       });
     },
     onDeleteSubtask: async (task, pathOrIdx) => {
+      if (tableOpts.readOnly) return;
       const sub = resolveSub(task, pathOrIdx);
       const ok = await confirmDialog({
         title: "Delete subitem",
@@ -8778,7 +7893,7 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
       if (key === "start" || key === "end" || key.startsWith("subtask.")) {
         if (key === "start" || key === "end") cascadeSubtaskDates(tasks, task, task.start, task.end);
       }
-      persistTask(task);
+      persistTask(task, { force: key === "notes" });
     },
     onToggleSubtaskDone: (task, pathOrIdx, checked) => {
       const sub = resolveSub(task, pathOrIdx);
@@ -8791,7 +7906,7 @@ function renderTrackerTableView(mount, tasks, expanded, onToggleExpand, onOpenEd
       onChange();
     }
   });
-  wireTrackerContextMenu(mount, tasks, onOpenEditor, onChange, { saveSource, projectCode: saveProjectCode, proj, subitemExpanded, expanded });
+  wireTrackerContextMenu(mount, tasks, onOpenEditor, onChange, { saveSource, projectCode: saveProjectCode, proj, subitemExpanded, expanded, readOnly: tableOpts.readOnly });
 
   if (routeIntent && routeIntent.task) {
     const task = tasks.find((item) => item.id === routeIntent.task);
@@ -8956,6 +8071,7 @@ function openTaskSidePanel(task, tasks, onChange, opts) {
         <button class="btn-aewttr-ghost" id="tsp-cancel" type="button">Cancel</button>
         <button class="btn-aewttr" id="tsp-save" type="button">Save Changes</button>`;
   panel.innerHTML = taskEditorFrameHtml("Edit Gantt Task", bodyHtml, footHtml, isModal);
+  if (opts.readOnly) applyProjectReadOnlyMode(panel, ["#tsp-delete", "#tsp-save", "#tsp-add-subtask"]);
   const db = window.AEWTTR.db;
   const currentAssigneeMember = task.assignee && task.assignee !== "Unassigned"
     ? (db.members || []).find((m) => m.name === task.assignee)
@@ -8966,7 +8082,7 @@ function openTaskSidePanel(task, tasks, onChange, opts) {
   wirePeoplePicker(panel, pendingAssignee, { mount: "tsp-assignee-sel", input: "tsp-assignee-input", suggestions: "tsp-assignee-sugg" }, { singleSelect: true, allowManualEmail: false });
   $("#tsp-close", panel).addEventListener("click", closeTaskSidePanel);
   $("#tsp-cancel", panel).addEventListener("click", closeTaskSidePanel);
-  const subtaskOpts = { presentation: opts.presentation || "sidebar" };
+  const subtaskOpts = { presentation: opts.presentation || "sidebar", readOnly: opts.readOnly };
   $("#tsp-add-subtask", panel).addEventListener("click", async () => {
     if (!task.subtasks) task.subtasks = [];
     task.subtasks.push(normalizeTaskSubtask(task, { text: "", start: task.start, end: "", relatedDocs: [] }));
@@ -9060,6 +8176,7 @@ function openSubtaskSidePanel(task, tasks, onChange, subIndex, isNew, opts) {
         <button class="btn-aewttr-ghost" id="ssp-cancel" type="button">Cancel</button>
         <button class="btn-aewttr" id="ssp-save" type="button">Save Subtask</button>`;
   panel.innerHTML = taskEditorFrameHtml(isNew ? "Add Subtask" : "Edit Subtask", bodyHtml, footHtml, isModal);
+  if (opts.readOnly) applyProjectReadOnlyMode(panel, ["#ssp-delete", "#ssp-save", "#ssp-add-file", ".sf-remove"]);
   wireAssigneeAutocomplete(panel, "ssp-assignee");
 
   function wireFileRemovers() {
@@ -9163,6 +8280,7 @@ function drawEngChecklists(body, proj) {
 
 function drawProjectSettings(body, proj) {
   const db = window.AEWTTR.db;
+  const editable = canEditProject(proj);
   const extra = ensureProjectExtra(proj.id);
   if (!window.AEWTTR.state.projectSettingsTabs) window.AEWTTR.state.projectSettingsTabs = {};
   const settingsTabs = [
@@ -9542,11 +8660,25 @@ function drawProjectSettings(body, proj) {
     }
   }
 
+  function settingsFlusher(opts) {
+    return function() {
+      unregisterAutosaveFlusher(settingsFlusher.current);
+      if (!saveTimer) return;
+      clearTimeout(saveTimer);
+      saveTimer = null;
+      return persistSettings(opts || {});
+    };
+  }
+
   function scheduleAutosave(opts) {
     clearTimeout(saveTimer);
     clearTimeout(savePendingLabel);
     setAutosaveState("pending", "Saving soon…");
+    if (settingsFlusher.current) unregisterAutosaveFlusher(settingsFlusher.current);
+    settingsFlusher.current = settingsFlusher(opts);
+    registerAutosaveFlusher(settingsFlusher.current);
     saveTimer = setTimeout(() => {
+      unregisterAutosaveFlusher(settingsFlusher.current);
       saveTimer = null;
       persistSettings(opts || {});
     }, 900);
@@ -9632,6 +8764,17 @@ function drawProjectSettings(body, proj) {
     toast("Project deleted", "success");
     navigate("projects");
   });
+
+  if (!editable) {
+    applyProjectReadOnlyMode(body, [
+      "#ps-delete", "#ps-cover-pick", "#ps-cover-clear",
+      "#ps-add-deliverable", ".ps-deliverable-remove",
+      ".tag-chip-remove", ".tag-picker-add-btn",
+      ".project-role-clear", ".project-role-new-btn",
+      ".project-role-new-cancel", ".project-role-new-save",
+      "[data-cand-index]"
+    ]);
+  }
 
   // Background refresh updates window.AEWTTR.db in place but never
   // re-renders on its own — this tab is where PM/Engineer/ISSO/Range POC/
@@ -9728,7 +8871,118 @@ function drawProjectTickets(body, proj) {
   draw();
 }
 
+/* Every group (Portfolio/Program/End Item Config) this project belongs to —
+   used to surface a compact "Other Milestones" editor for each on the
+   project's own Reporting tab, in addition to the group's own page. */
+function projectGroupMemberships(proj) {
+  const out = [];
+  (Array.isArray(proj.portfolios) ? proj.portfolios : []).forEach(function(name) {
+    if (name) out.push({ type: "portfolio", label: "Portfolio", name: name });
+  });
+  if (proj.program) {
+    String(proj.program).split(",").map(function(p) { return normalizeProgramName(p.trim()); }).filter(Boolean).forEach(function(name) {
+      out.push({ type: "program", label: "Program Office", name: name });
+    });
+  }
+  (typeof projectConfigEndItems === "function" ? projectConfigEndItems(proj) : []).forEach(function(name) {
+    out.push({ type: "eic", label: "End Item Config", name: name });
+  });
+  return out;
+}
+
+/* Shared editor for a group's "Other Milestones" — ad-hoc named events with
+   a date, distinct from the fixed Contract/FAT/SAT/etc. categories every
+   project already tracks on its own. Reused in two places: the group's own
+   Reporting tab (editing directly) and, compactly, on the Reporting tab of
+   any project that belongs to that group — the list itself always lives on
+   the shared groupReportConfig record, never on the project. */
+function otherMilestonesListHtml(list) {
+  return (list || []).map(function(m, i) {
+    return `<div class="rep-om-item" data-om-idx="${i}">
+      <input type="text" class="input-aewttr rep-om-label" data-om-field="label" data-om-idx="${i}" placeholder="Milestone name…" value="${escapeHtml(m.label || "")}">
+      <input type="date" class="input-aewttr rep-om-date" data-om-field="date" data-om-idx="${i}" value="${escapeHtml(m.date || "")}">
+      <button type="button" class="rep-om-del" data-om-idx="${i}" title="Remove"><i class="bx bx-x"></i></button>
+    </div>`;
+  }).join("");
+}
+function renderOtherMilestonesEditor(container, list, onChange) {
+  container.innerHTML = `
+    <div class="rep-om-list">
+      ${otherMilestonesListHtml(list)}
+      <button type="button" class="rep-tb-add rep-om-add"><i class="bx bx-plus"></i> Add milestone</button>
+    </div>
+  `;
+  let dt = null;
+  container.querySelectorAll(".rep-om-label, .rep-om-date").forEach(function(inp) {
+    inp.addEventListener("input", function() {
+      const idx = parseInt(inp.dataset.omIdx, 10);
+      if (!list[idx]) return;
+      list[idx][inp.dataset.omField] = inp.value;
+      clearTimeout(dt);
+      dt = setTimeout(onChange, 200);
+    });
+  });
+  container.querySelectorAll(".rep-om-del").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      list.splice(parseInt(btn.dataset.omIdx, 10), 1);
+      onChange();
+      renderOtherMilestonesEditor(container, list, onChange);
+    });
+  });
+  const addBtn = container.querySelector(".rep-om-add");
+  if (addBtn) {
+    addBtn.addEventListener("click", function() {
+      list.push({ id: uid("om"), label: "", date: "" });
+      onChange();
+      renderOtherMilestonesEditor(container, list, onChange);
+      const inputs = container.querySelectorAll(".rep-om-label");
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+  }
+}
+
+/* A compact rich-text box (Bold/Italic/Bullet list/Clear formatting) for
+   group-level Description content — plain textarea can't distinguish an EIC's
+   structured bullet-style summary from a Portfolio's narrative paragraph, so
+   this stores real HTML instead of a flat string. Deliberately much lighter
+   than the full OneNote-style meeting-minutes editor (weekly.js) — just
+   enough formatting for a short slide description, not a whole document. */
+function richTextEditorHtml() {
+  return `
+    <div class="rep-rich-toolbar" role="toolbar" aria-label="Formatting">
+      <button type="button" class="rep-rich-btn" data-rich-cmd="bold" title="Bold"><b>B</b></button>
+      <button type="button" class="rep-rich-btn" data-rich-cmd="italic" title="Italic"><i>I</i></button>
+      <button type="button" class="rep-rich-btn" data-rich-cmd="insertUnorderedList" title="Bullet list"><i class="bx bx-list-ul"></i></button>
+      <button type="button" class="rep-rich-btn" data-rich-cmd="removeFormat" title="Clear formatting"><i class="bx bx-eraser"></i></button>
+    </div>
+    <div class="rep-rich-editor" contenteditable="true" spellcheck="true"></div>
+  `;
+}
+function wireRichTextEditor(container, initialHtml, placeholder, onChange) {
+  container.innerHTML = richTextEditorHtml();
+  const editor = container.querySelector(".rep-rich-editor");
+  editor.innerHTML = initialHtml || "";
+  if (placeholder) editor.dataset.placeholder = placeholder;
+  let dt = null;
+  editor.addEventListener("input", function() {
+    clearTimeout(dt);
+    dt = setTimeout(function() { onChange(editor.innerHTML); }, 200);
+  });
+  container.querySelectorAll(".rep-rich-btn").forEach(function(btn) {
+    // Without this, clicking the toolbar steals focus from the editor and
+    // the text selection execCommand needs to act on is lost.
+    btn.addEventListener("mousedown", function(e) { e.preventDefault(); });
+    btn.addEventListener("click", function() {
+      editor.focus();
+      document.execCommand(btn.dataset.richCmd, false, null);
+      onChange(editor.innerHTML);
+    });
+  });
+  return editor;
+}
+
 function drawProjectReporting(body, proj) {
+  const editable = canEditProject(proj);
   const extra = ensureProjectExtra(proj.id);
   if (!extra.reportConfig) extra.reportConfig = {};
   const cfg = extra.reportConfig;
@@ -9742,33 +8996,18 @@ function drawProjectReporting(body, proj) {
   if (!cfg.techBullets) cfg.techBullets = [];
 
   const sc = cfg.slideContent;
-  // This is the one project-level milestone store used by every reporting
-  // surface (Project, Portfolio, Program, End Item Config, and PPTX export).
-  const tm = typeof getProjectReportingMilestones === "function"
-    ? getProjectReportingMilestones(proj)
-    : cfg.taskMilestones;
+  sc.overallRag = computeOverallRiskRag(sc.riskRows);
+  // One date per milestone category, directly on this project — no task
+  // picking. Portfolio/Program/EIS group Reporting tabs read this same
+  // store (getProjectMilestones) to build a cross-project table.
+  const tm = typeof getProjectMilestones === "function"
+    ? getProjectMilestones(proj)
+    : {};
 
-  const MC = [
-    { key: "contractAwarded", label: "Contract Award",      short: "Contract", color: "#7f7f7f", sym: "★" },
-    { key: "fat",             label: "First Article Test",  short: "FAT",      color: "#70d6c8", sym: "△" },
-    { key: "sat",             label: "Site Acceptance Test", short: "SAT",     color: "#bdd7ee", sym: "△" },
-    { key: "add",             label: "ADD / MFR",           short: "ADD",      color: "#c55a11", sym: "△" },
-    { key: "fielding",        label: "Fielding",            short: "Field",    color: "#7030a0", sym: "△" },
-    { key: "complete",        label: "Project Completion",  short: "Complete", color: "#ff0000", sym: "★" }
-  ];
+  const MC = PROJECT_MILESTONE_CATEGORIES;
 
   const allTasks = (window.AEWTTR.db.ganttTasks && window.AEWTTR.db.ganttTasks[proj.id]) || [];
   const plainTasks = trackerPlainTasks(allTasks);
-
-  // Auto-seed complete date from tracker status
-  let autoSeededMilestones = false;
-  plainTasks.forEach(function(task) {
-    if (!tm[task.id]) tm[task.id] = {};
-    if (/complete|done/i.test(String(task.status || "")) && !tm[task.id].complete) {
-      tm[task.id].complete = task.dueDate || task.end || "";
-      autoSeededMilestones = !!tm[task.id].complete;
-    }
-  });
 
   function saveConfig() {
     proj.updated = new Date().toISOString().slice(0, 10);
@@ -9778,8 +9017,6 @@ function drawProjectReporting(body, proj) {
       aewttrSaveStore();
     }
   }
-
-  if (autoSeededMilestones) saveConfig();
 
   function setRagClass(sel, val) {
     sel.classList.remove("rep-rag--green", "rep-rag--amber", "rep-rag--red");
@@ -9791,78 +9028,27 @@ function drawProjectReporting(body, proj) {
   function renderMilestoneTable() {
     const wrap = $("#rep-milestone-table-wrap", body);
     if (!wrap) return;
-    if (!plainTasks.length) {
-      wrap.innerHTML = `<div class="rep-mt-empty">No tasks in tracker yet. Add tasks in the Tracker tab then return here to set milestone dates.</div>`;
-      return;
-    }
     wrap.innerHTML = `
-      <div class="rep-mt-scroll">
-        <table class="rep-mt-tbl">
-          <thead>
-            <tr>
-              <th class="rep-mt-th rep-mt-th--sel" title="Include in report">In Report</th>
-              <th class="rep-mt-th rep-mt-th--name">Task</th>
-              ${MC.map(function(c) {
-                return `<th class="rep-mt-th rep-mt-th--date" style="--mc:#${c.color.replace("#","")}">
-                  <span class="rep-mt-sym" style="color:${c.color}">${c.sym}</span>${c.short}
-                </th>`;
-              }).join("")}
-            </tr>
-          </thead>
-          <tbody>
-            ${plainTasks.map(function(task) {
-              const t = tm[task.id] || {};
-              const isComplete = /complete|done/i.test(String(task.status || ""));
-              return `<tr class="rep-mt-row${t.inReport ? " rep-mt-row--on" : ""}" data-task-id="${task.id}">
-                <td class="rep-mt-td rep-mt-td--sel">
-                  <button type="button" class="rep-mt-sel${t.inReport ? " rep-mt-sel--on" : ""}" data-task-id="${task.id}" title="${t.inReport ? "Remove from milestones slide" : "Add to milestones slide"}">
-                    <i class="bx ${t.inReport ? "bxs-check-square" : "bx-checkbox"}"></i>
-                  </button>
-                </td>
-                <td class="rep-mt-td rep-mt-td--name">
-                  <span class="rep-mt-name">${escapeHtml(task.title || "Unnamed task")}</span>
-                  ${isComplete ? `<span class="rep-mt-badge">Done</span>` : ""}
-                </td>
-                ${MC.map(function(c) {
-                  const val = t[c.key] || "";
-                  return `<td class="rep-mt-td rep-mt-td--date">
-                    <input type="date" class="rep-mt-date${val ? " rep-mt-date--set" : ""}"
-                      data-task-id="${task.id}" data-col="${c.key}"
-                      value="${escapeHtml(val)}" style="--mc:${c.color}">
-                  </td>`;
-                }).join("")}
-              </tr>`;
-            }).join("")}
-          </tbody>
-        </table>
+      <div class="rep-ms-fields">
+        ${MC.map(function(c) {
+          const val = tm[c.key] || "";
+          return `<div class="rep-ms-field" style="--mc:${c.color}">
+            <label class="rep-ms-field-label"><span class="rep-mt-sym" style="color:${c.color}">${c.sym}</span>${c.label}</label>
+            <input type="date" class="rep-ms-date${val ? " rep-ms-date--set" : ""}" data-col="${c.key}" value="${escapeHtml(val)}">
+          </div>`;
+        }).join("")}
       </div>
     `;
 
-    $all(".rep-mt-sel", wrap).forEach(function(btn) {
-      btn.addEventListener("click", function() {
-        const id = btn.dataset.taskId;
-        const current = tm[id] || {};
-        const next = typeof updateProjectReportingMilestone === "function"
-          ? updateProjectReportingMilestone(proj, id, { inReport: !current.inReport })
-          : (tm[id] = Object.assign(current, { inReport: !current.inReport }));
-        if (next) tm[id] = next;
-        saveConfig();
-        renderMilestoneTable();
-        renderTimeline();
-        renderSlidePreview();
-      });
-    });
+    if (!editable) applyProjectReadOnlyMode(wrap, []);
 
-    $all(".rep-mt-date", wrap).forEach(function(inp) {
+    $all(".rep-ms-date", wrap).forEach(function(inp) {
       inp.addEventListener("change", function() {
-        const id = inp.dataset.taskId;
+        if (!editable) return;
         const col = inp.dataset.col;
-        const current = tm[id] || {};
-        const next = typeof updateProjectReportingMilestone === "function"
-          ? updateProjectReportingMilestone(proj, id, { [col]: inp.value })
-          : (tm[id] = Object.assign(current, { [col]: inp.value }));
-        if (next) tm[id] = next;
-        inp.classList.toggle("rep-mt-date--set", !!inp.value);
+        if (typeof updateProjectMilestone === "function") updateProjectMilestone(proj, col, inp.value);
+        else tm[col] = inp.value;
+        inp.classList.toggle("rep-ms-date--set", !!inp.value);
         saveConfig();
         renderTimeline();
         renderSlidePreview();
@@ -9874,19 +9060,10 @@ function drawProjectReporting(body, proj) {
     const wrap = $("#rep-timeline-wrap", body);
     if (!wrap) return;
 
-    const reportTasks = plainTasks.filter(function(t) { return tm[t.id] && tm[t.id].inReport; });
-    if (!reportTasks.length) {
-      wrap.innerHTML = `<div class="rep-tl-empty">Select tasks above (check <strong>In Report</strong>) to see them on the timeline.</div>`;
-      return;
-    }
-
     const allMs = [];
-    reportTasks.forEach(function(task) {
-      const t = tm[task.id] || {};
-      MC.forEach(function(c) { if (t[c.key]) allMs.push(new Date(t[c.key]).getTime()); });
-    });
+    MC.forEach(function(c) { if (tm[c.key]) allMs.push(new Date(tm[c.key]).getTime()); });
     if (!allMs.length) {
-      wrap.innerHTML = `<div class="rep-tl-empty">Enter milestone dates in the table above to see the timeline.</div>`;
+      wrap.innerHTML = `<div class="rep-tl-empty">Enter milestone dates above to see the timeline.</div>`;
       return;
     }
 
@@ -9929,14 +9106,13 @@ function drawProjectReporting(body, proj) {
             </div>
           </div>
           <div class="rep-tl-rows">
-            ${reportTasks.map(function(task) {
-              const t = tm[task.id] || {};
-              const markers = MC.map(function(c) { return { c: c, v: t[c.key] }; }).filter(function(m) { return m.v; });
+            ${(function() {
+              const markers = MC.map(function(c) { return { c: c, v: tm[c.key] }; }).filter(function(m) { return m.v; });
               const xs = markers.map(function(m) { return toX(m.v); });
               const minX = xs.length ? Math.min.apply(null, xs) : 0;
               const maxX = xs.length ? Math.max.apply(null, xs) : 0;
               return `<div class="rep-tl-row">
-                <div class="rep-tl-row-label" title="${escapeHtml(task.title || "")}">${escapeHtml(task.title || "")}</div>
+                <div class="rep-tl-row-label" title="${escapeHtml(proj.name || "")}">${escapeHtml(proj.name || "")}</div>
                 <div class="rep-tl-track">
                   ${xs.length >= 2 ? `<div class="rep-tl-connector" style="left:${minX.toFixed(2)}%;width:${(maxX - minX).toFixed(2)}%"></div>` : ""}
                   ${todayVisible ? `<div class="rep-tl-today-line" style="left:${todayX.toFixed(2)}%"></div>` : ""}
@@ -9948,73 +9124,11 @@ function drawProjectReporting(body, proj) {
                   }).join("")}
                 </div>
               </div>`;
-            }).join("")}
+            })()}
           </div>
         </div>
       </div>
     `;
-  }
-
-  function buildGanttHtml() {
-    var reportTasks = plainTasks.filter(function(t) { return tm[t.id] && tm[t.id].inReport; });
-    if (!reportTasks.length) return '<div class="rep-sld-empty-msg">Select tasks below (In Report)</div>';
-    var allMs = [];
-    reportTasks.forEach(function(task) {
-      var t = tm[task.id] || {};
-      MC.forEach(function(c) { if (t[c.key]) allMs.push(new Date(t[c.key]).getTime()); });
-    });
-    if (!allMs.length) return '<div class="rep-sld-empty-msg">Enter milestone dates below</div>';
-    var minT = Math.min.apply(null, allMs);
-    var maxT = Math.max.apply(null, allMs);
-    var startMoDate = new Date(minT);
-    var startMo = new Date(startMoDate.getFullYear(), 0, 1);
-    var endMoDate = new Date(maxT);
-    var endMo = new Date(endMoDate.getFullYear() + 1, 0, 1);
-    var rMin = startMo.getTime();
-    var rMax = endMo.getTime();
-    var span = rMax - rMin;
-    var mos = [];
-    var cur = new Date(startMo.getFullYear(), startMo.getMonth(), 1);
-    while (cur.getTime() < rMax) { mos.push(new Date(cur)); cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); }
-    var byYear = {}, yearsOrder = [];
-    mos.forEach(function(m) {
-      var yr = m.getFullYear();
-      if (!byYear[yr]) { byYear[yr] = []; yearsOrder.push(yr); }
-      byYear[yr].push(m);
-    });
-    function toFrac(ds) { return ((new Date(ds).getTime() - rMin) / span) * 100; }
-    var todayFrac = ((Date.now() - rMin) / span) * 100;
-    var showToday = todayFrac >= 0 && todayFrac <= 100;
-    var MONTHS = "JFMAMJJASOND";
-    var hdrHtml = '<div class="rep-sld-gantt-hdr">' +
-      '<div class="rep-sld-gantt-lbl-col rep-sld-gantt-project-head">Project</div>' +
-      '<div class="rep-sld-gantt-hdr-cols">' +
-      yearsOrder.map(function(yr) {
-        return '<div class="rep-sld-gantt-yr-grp" style="flex:' + byYear[yr].length + '">' +
-          '<div class="rep-sld-gantt-yr-label">' + yr + '</div>' +
-          '<div class="rep-sld-gantt-mo-row">' +
-          byYear[yr].map(function(m) { return '<div class="rep-sld-gantt-mo">' + MONTHS[m.getMonth()] + '</div>'; }).join("") +
-          '</div></div>';
-      }).join("") +
-      '</div></div>';
-    var rowsHtml = reportTasks.slice(0, 7).map(function(task) {
-      var t = tm[task.id] || {};
-      var markers = MC.map(function(c) { return { c: c, v: t[c.key] }; }).filter(function(m) { return m.v; });
-      var fracs = markers.map(function(m) { return toFrac(m.v); });
-      var minF = fracs.length ? Math.min.apply(null, fracs) : null;
-      var maxF = fracs.length ? Math.max.apply(null, fracs) : null;
-      return '<div class="rep-sld-gantt-row">' +
-        '<div class="rep-sld-gantt-lbl-col">' + escapeHtml((task.title || "").slice(0, 16)) + '</div>' +
-        '<div class="rep-sld-gantt-track">' +
-        (showToday ? '<div class="rep-sld-gantt-today" style="left:' + todayFrac.toFixed(1) + '%"></div>' : "") +
-        (minF !== null && maxF !== null && fracs.length >= 2 ? '<div class="rep-sld-gantt-bar" style="left:' + minF.toFixed(1) + '%;width:' + (maxF - minF).toFixed(1) + '%"></div>' : "") +
-        markers.map(function(m, i) { return '<span class="rep-sld-gantt-sym" style="left:' + fracs[i].toFixed(1) + '%;color:' + m.c.color + '">' + m.c.sym + '</span>'; }).join("") +
-        '</div></div>';
-    }).join("");
-    var legendHtml = '<div class="rep-sld-gantt-legend">' +
-      MC.map(function(c) { return '<span class="rep-sld-gantt-legend-item"><span style="color:' + c.color + '">' + c.sym + '</span>' + c.short + '</span>'; }).join('') +
-      '</div>';
-    return '<div class="rep-sld-gantt">' + hdrHtml + '<div class="rep-sld-gantt-body">' + rowsHtml + '</div>' + legendHtml + '</div>';
   }
 
   function renderSlidePreview() { /* preview removed */ return;
@@ -10042,7 +9156,6 @@ function drawProjectReporting(body, proj) {
     var pocPhone = (pocMember && (pocMember.phone || pocMember.workPhone)) || (pocEntry && pocEntry.phone) || proj.pocPhone || proj.phone || "";
     var pocEmail = (pocEntry && pocEntry.email) || (pocMember && pocMember.email) || proj.pocEmail || proj.email || "";
     var asOf = new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
-    var ganttHtml = buildGanttHtml();
     wrap.innerHTML =
       '<div class="rep-slide-frame"><div class="rep-sld-mock">' +
       '<div class="rep-sld-cui-top">CONTROLLED UNCLASSIFIED INFORMATION</div>' +
@@ -10092,7 +9205,6 @@ function drawProjectReporting(body, proj) {
         '</div>' +
         '<div class="rep-sld-quad rep-sld-quad--br">' +
           '<div class="rep-sld-qhead">Milestones</div>' +
-          ganttHtml +
         '</div>' +
       '</div>' +
       '<div class="rep-sld-footer-line"></div>' +
@@ -10173,7 +9285,7 @@ function drawProjectReporting(body, proj) {
 
       <!-- Action bar -->
       <div class="rep-bar">
-        <div class="rep-bar-right">
+        <div class="rep-bar-right" style="margin-left:auto;">
           <button type="button" class="btn-aewttr-outline btn-aewttr-sm" id="rep-export-project-slide"><i class="bx bx-file"></i> Export project slide</button>
           <button type="button" class="btn-aewttr btn-aewttr-sm" id="rep-export-full-deck"><i class="bx bxs-slideshow"></i> Export full deck</button>
         </div>
@@ -10209,39 +9321,43 @@ function drawProjectReporting(body, proj) {
               <span class="rep-qcard-pos">↗ Top Right</span>
               <span class="rep-qcard-name">Technical Status</span>
             </div>
-            <div class="rep-qcard-bd">
-              <p class="rep-qcard-sub">Status Bullets</p>
-              <p class="rep-qcard-hint">Bullet points that appear in the slide's technical status section</p>
-              <div id="rep-tech-bullets-wrap"></div>
-              <div class="rep-qcard-rule"></div>
-              <p class="rep-qcard-sub">Risk Summary</p>
-              <p class="rep-qcard-hint">Click the badge to cycle Green → Yellow → Red</p>
-              <div class="rep-risk-rows">
-                ${sc.riskRows.map(function(row, i) {
-                  return '<div class="rep-risk-row">' +
-                    '<div class="rep-risk-cat">' + escapeHtml(row.cat) + '</div>' +
-                    '<button type="button" class="rep-risk-pill rep-risk-pill--' + (row.rag || "none") + ' rep-risk-rag-btn"' + ragPillStyle(row.rag) + ' data-risk-idx="' + i + '">' + (row.rag || "—") + '</button>' +
-                    '<input type="text" class="input-aewttr rep-risk-note rep-risk-notes-inp" data-risk-idx="' + i + '" placeholder="Comment…" value="' + escapeHtml(row.notes || "") + '">' +
-                  '</div>';
-                }).join("")}
+            <div class="rep-qcard-bd rep-qcard-bd--tech">
+              <div class="rep-tech-block">
+                <p class="rep-qcard-sub">Status Bullets</p>
+                <p class="rep-qcard-hint">Bullet points that appear in the slide's technical status section</p>
+                <div id="rep-tech-bullets-wrap"></div>
               </div>
-              ${_allRisks.length ? `
-              <div class="rep-qcard-rule"></div>
-              <p class="rep-qcard-sub">Risks Slide — Select Items</p>
-              <p class="rep-qcard-hint">Choose which risks from the risk register to include in the risks export slide.</p>
-              <div class="rep-risk-checklist" id="rep-risk-checklist">
-                ${_allRisks.map(function(r) {
-                  const checked = cfg.selectedRisks.indexOf(r.id) >= 0;
-                  const ragColor = r.rating === "Red" ? "#ef4444" : r.rating === "Yellow" || r.rating === "Amber" ? "#f59e0b" : r.rating === "Green" ? "#22c55e" : "";
-                  return '<label class="rep-risk-check-row' + (checked ? " rep-risk-check-row--on" : "") + '">' +
-                    '<input type="checkbox" class="rep-risk-check-cb" data-risk-id="' + escapeHtml(r.id) + '"' + (checked ? " checked" : "") + '>' +
-                    (ragColor ? '<span class="rep-risk-check-dot" style="background:' + ragColor + '"></span>' : '<span class="rep-risk-check-dot rep-risk-check-dot--none"></span>') +
-                    '<span class="rep-risk-check-name">' + escapeHtml(r.name || r.description || "Unnamed risk") + '</span>' +
-                    (r.owner ? '<span class="rep-risk-check-owner">' + escapeHtml(r.owner) + '</span>' : '') +
-                  '</label>';
-                }).join("")}
+              <div class="rep-tech-block">
+                <p class="rep-qcard-sub">Risk Summary</p>
+                <p class="rep-qcard-hint">Click the badge to cycle Green → Yellow → Red</p>
+                <div class="rep-risk-rows">
+                  ${sc.riskRows.map(function(row, i) {
+                    return '<div class="rep-risk-row">' +
+                      '<div class="rep-risk-cat">' + escapeHtml(row.cat) + '</div>' +
+                      '<button type="button" class="rep-risk-pill rep-risk-pill--' + (row.rag || "none") + ' rep-risk-rag-btn"' + ragPillStyle(row.rag) + ' data-risk-idx="' + i + '">' + (row.rag || "—") + '</button>' +
+                      '<input type="text" class="input-aewttr rep-risk-note rep-risk-notes-inp" data-risk-idx="' + i + '" placeholder="Comment…" value="' + escapeHtml(row.notes || "") + '">' +
+                    '</div>';
+                  }).join("")}
+                </div>
               </div>
-              ` : `<div class="rep-qcard-rule"></div><p class="rep-qcard-hint" style="color:var(--aewttr-muted);">No open risks in the risk register. Add risks in the Risks tab to select them for export.</p>`}
+              <div class="rep-tech-block rep-tech-block--last">
+                <p class="rep-qcard-sub">Risks Slide — Select Items</p>
+                ${_allRisks.length ? `
+                <p class="rep-qcard-hint">Choose which risks from the risk register to include in the risks export slide.</p>
+                <div class="rep-risk-checklist" id="rep-risk-checklist">
+                  ${_allRisks.map(function(r) {
+                    const checked = cfg.selectedRisks.indexOf(r.id) >= 0;
+                    const ragColor = r.rating === "Red" ? "#ef4444" : r.rating === "Yellow" || r.rating === "Amber" ? "#f59e0b" : r.rating === "Green" ? "#22c55e" : "";
+                    return '<label class="rep-risk-check-row' + (checked ? " rep-risk-check-row--on" : "") + '">' +
+                      '<input type="checkbox" class="rep-risk-check-cb" data-risk-id="' + escapeHtml(r.id) + '"' + (checked ? " checked" : "") + '>' +
+                      (ragColor ? '<span class="rep-risk-check-dot" style="background:' + ragColor + '"></span>' : '<span class="rep-risk-check-dot rep-risk-check-dot--none"></span>') +
+                      '<span class="rep-risk-check-name">' + escapeHtml(r.name || r.description || "Unnamed risk") + '</span>' +
+                      (r.owner ? '<span class="rep-risk-check-owner">' + escapeHtml(r.owner) + '</span>' : '') +
+                    '</label>';
+                  }).join("")}
+                </div>
+                ` : `<p class="rep-qcard-hint" style="color:var(--aewttr-muted);">No open risks in the risk register. Add risks in the Risks tab to select them for export.</p>`}
+              </div>
             </div>
           </div>
 
@@ -10270,8 +9386,8 @@ function drawProjectReporting(body, proj) {
             </div>
             <div class="rep-qcard-bd rep-qcard-bd--ms">
               <div style="padding:0 14px">
-                <p class="rep-qcard-sub">Task Milestone Dates</p>
-                <p class="rep-qcard-hint">Check <strong>In Report</strong> to include a task on the Gantt. Enter dates for each event type.</p>
+                <p class="rep-qcard-sub">Milestone Dates</p>
+                <p class="rep-qcard-hint">Enter this project's date for each milestone type.</p>
               </div>
               <div id="rep-milestone-table-wrap"></div>
               <div class="rep-qcard-rule" style="margin:14px 14px"></div>
@@ -10283,6 +9399,23 @@ function drawProjectReporting(body, proj) {
           </div>
 
         </div><!-- /rep-cards-only -->
+
+        ${(function() {
+          const memberships = projectGroupMemberships(proj);
+          if (!memberships.length) return "";
+          return `<div class="rep-om-groups">
+            <p class="rep-qcard-hint" style="margin:0 0 2px;">Milestones that belong to a Portfolio, Program, or End Item Config itself — not to this project — live here. They never appear on this project's own slide, but do show up when exporting that group's combined slide.</p>
+            ${memberships.map(function(m, i) {
+              return `<div class="rep-om-group-card">
+                <div class="rep-om-group-hd">
+                  <span class="rep-om-group-kind">${escapeHtml(m.label)}</span>
+                  <span class="rep-om-group-name">${escapeHtml(m.name)}</span>
+                </div>
+                <div id="rep-om-group-wrap-${i}"></div>
+              </div>`;
+            }).join("")}
+          </div>`;
+        })()}
     </div><!-- /rep-shell -->
   `;
 
@@ -10290,6 +9423,15 @@ function drawProjectReporting(body, proj) {
   renderTimeline();
   renderSlidePreview();
   renderTechBullets();
+
+  projectGroupMemberships(proj).forEach(function(m, i) {
+    const wrap = $("#rep-om-group-wrap-" + i, body);
+    if (!wrap) return;
+    const gcfg = ensureGroupReportConfig(m.type, m.name);
+    renderOtherMilestonesEditor(wrap, gcfg.otherMilestones, function() {
+      if (typeof Repo !== "undefined" && Repo && typeof Repo.save === "function") Repo.save("groupReportConfig", gcfg);
+    });
+  });
 
   const RAG_CYCLE = ["", "Green", "Yellow", "Red"];
   $all(".rep-risk-rag-btn", body).forEach(function(btn) {
@@ -10304,6 +9446,7 @@ function drawProjectReporting(body, proj) {
       var _pillBg = RAG_BG[row.rag] || "";
       btn.style.background = _pillBg;
       btn.style.color = _pillBg ? "#fff" : "";
+      sc.overallRag = computeOverallRiskRag(sc.riskRows);
       saveConfig();
       renderSlidePreview();
     });

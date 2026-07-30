@@ -491,9 +491,9 @@
     const metrics = [
       { label: "Projects", value: m.totalProjects },
       { label: "Active Proj.", value: m.activeProjects },
-      { label: "Tasks", value: m.activeTasks },
-      { label: "Overdue", value: m.overdueTasks, color: C.red },
-      { label: "Blocked", value: m.blockedTasks, color: C.red },
+      { label: "Total Tasks", value: m.totalTasks },
+      { label: "Open Tasks", value: m.activeTasks },
+      { label: "Closed Tasks", value: m.closedTasks },
       { label: "Risks", value: m.openRisks, color: C.amber },
       { label: "People", value: m.teamSize },
       { label: "Review", value: m.documentsInReview }
@@ -538,10 +538,9 @@
     const m = model.metrics;
     const metrics = [
       { label: "Projects", value: m.totalProjects },
-      { label: "Tasks", value: m.totalTasks },
-      { label: "Active", value: m.activeTasks },
-      { label: "Overdue", value: m.overdueTasks, color: C.red },
-      { label: "Done", value: m.completedTasks },
+      { label: "Total Tasks", value: m.totalTasks },
+      { label: "Open Tasks", value: m.activeTasks },
+      { label: "Closed Tasks", value: m.completedTasks },
       { label: "Reviewed", value: m.documentsReviewed },
       { label: "Signed", value: m.documentsSigned },
       { label: "Travel", value: m.travelRequests }
@@ -568,7 +567,7 @@
         color: signal.color
       });
     });
-    addCallout(slide, `${m.overdueTasks} overdue tasks / ${m.activeTasks} active assigned tasks`, {
+    addCallout(slide, `${m.activeTasks} open tasks / ${m.completedTasks} closed tasks`, {
       x: 5.84, y: 5.42, w: 3.45, h: 0.56
     });
   }
@@ -627,17 +626,16 @@
       footerLeft: "PULSE TEAM OVERVIEW"
     });
     const rows = [
-      headerRow(["ID", "Project", "End item", "PM", "Status", "Active", "Late", "Risk", "Due"], 5.9),
+      headerRow(["Project", "End item", "PM", "Status", "Open", "Closed", "Risk", "Due"], 5.9),
       ...projects.map((project, index) => {
         const fill = rowFill(index);
         return [
-          tableCell(project.id, { fill, fontSize: 5.65, align: "center" }),
           tableCell(project.name, { fill, color: C.ink, fontSize: 5.65 }),
           tableCell(project.endItem, { fill, fontSize: 5.65, align: "center" }),
           tableCell(project.pm || "-", { fill, fontSize: 5.65, align: "center" }),
           statusCell(project.derivedStatus, 5.65),
           tableCell(project.activeTasks, { fill, fontSize: 5.65, align: "center" }),
-          tableCell(project.overdueTasks, { fill, fontSize: 5.65, align: "center" }),
+          tableCell(project.closedTasks, { fill, fontSize: 5.65, align: "center" }),
           tableCell(project.openRisks, { fill, fontSize: 5.65, align: "center" }),
           tableCell(isoDate(project.dueDate), { fill, fontSize: 5.65, align: "center" })
         ];
@@ -647,7 +645,7 @@
       x: 0.18,
       y: 1.50,
       w: 9.64,
-      colW: weightedWidths(9.64, [0.62, 2.08, 1.96, 0.92, 0.83, 0.62, 0.52, 0.52, 0.82]),
+      colW: weightedWidths(9.64, [2.70, 1.96, 0.92, 0.83, 0.62, 0.62, 0.52, 0.82]),
       rowH: 0.35
     });
     addText(slide, "Inventory continues onto additional pages before project-detail slides.", {
@@ -666,11 +664,10 @@
       footerLeft: "PULSE MY OVERVIEW"
     });
     const rows = [
-      headerRow(["ID", "Project", "Team", "Role", "Status", "My active", "Due"], 6.8),
+      headerRow(["Project", "Team", "Role", "Status", "My active", "Due"], 6.8),
       ...projects.map((project, index) => {
         const fill = rowFill(index);
         return [
-          tableCell(project.id, { fill, fontSize: 6.7, align: "center" }),
           tableCell(project.name, { fill, color: C.ink, fontSize: 6.7 }),
           tableCell(project.team || "-", { fill, fontSize: 6.7, align: "center" }),
           tableCell(project.role || "Member", { fill, fontSize: 6.7, align: "center" }),
@@ -684,7 +681,7 @@
       x: 0.42,
       y: 1.70,
       w: 9.18,
-      colW: weightedWidths(9.18, [0.62, 2.25, 1.25, 1.45, 1.05, 0.75, 0.95]),
+      colW: weightedWidths(9.18, [2.87, 1.25, 1.45, 1.05, 0.75, 0.95]),
       rowH: 0.34
     });
     addSectionLabel(slide, "PROJECT SIGNAL", 0.48, 4.30, 1.7);
@@ -756,7 +753,7 @@
       title: project.name,
       footerLeft: `PULSE TEAM OVERVIEW | PROJECT DETAIL ${index}`
     });
-    addText(slide, `${project.id}  /  ${project.endItem}  /  PM: ${project.pm || "-"}`, {
+    addText(slide, `${project.endItem}  /  PM: ${project.pm || "-"}`, {
       x: 0.42, y: 1.58, w: 6.80, h: 0.18
     }, {
       fontSize: 7.8,
@@ -858,13 +855,13 @@
       footerLeft: "PULSE TEAM OVERVIEW"
     });
     const rows = [
-      headerRow(["Person", "Active", "Blocked", "Projects", "Next due"], 6.8),
+      headerRow(["Person", "Open", "Closed", "Projects", "Next due"], 6.8),
       ...workload.map((entry, index) => {
         const fill = rowFill(index);
         return [
           tableCell(entry.person, { fill, fontSize: 6.8 }),
           tableCell(entry.activeTasks, { fill, color: C.ink, fontSize: 6.8, align: "center" }),
-          tableCell(entry.blockedTasks, { fill, fontSize: 6.8, align: "center" }),
+          tableCell(entry.closedTasks, { fill, fontSize: 6.8, align: "center" }),
           tableCell(entry.projectCount, { fill, fontSize: 6.8, align: "center" }),
           tableCell(isoDate(entry.nextDue), { fill, fontSize: 6.8, align: "center" })
         ];
@@ -878,24 +875,50 @@
       rowH: 0.34
     });
     addSectionLabel(slide, "LOAD INDICATORS", 6.18, 1.72, 1.7);
-    const maximum = Math.max(1, ...workload.map(entry => entry.activeTasks));
-    workload.slice(0, 7).forEach((entry, index) => {
-      addBar(slide, {
-        label: entry.person,
-        value: entry.activeTasks,
-        max: maximum,
-        x: 6.20,
-        y: 2.19 + index * 0.42,
-        labelW: 1.20,
-        barX: 7.60,
-        barW: 1.50,
-        valueX: 9.25,
-        valueW: 0.25,
-        color: entry.blockedTasks ? C.red : C.accent
-      });
+    const topWorkload = [...workload].sort((a, b) => b.activeTasks - a.activeTasks).slice(0, 7);
+    slide.addChart(prs.ChartType.bar, [{
+      name: "Open Tasks",
+      labels: topWorkload.map(entry => entry.person),
+      values: topWorkload.map(entry => entry.activeTasks)
+    }], {
+      x: 6.10, y: 1.95, w: 3.65, h: 2.55,
+      barDir: "bar",
+      barGapWidthPct: 40,
+      chartColors: [C.accent],
+      showLegend: false,
+      showValue: true,
+      dataLabelColor: C.ink,
+      dataLabelFontSize: 7,
+      catAxisLabelColor: C.muted,
+      catAxisLabelFontSize: 7,
+      valAxisHidden: true,
+      showTitle: false
     });
-    addCallout(slide, "Review blocked workload before assigning new work.", {
-      x: 6.12, y: 5.20, w: 3.20, h: 0.62
+
+    const tiers = { Heavy: 0, Moderate: 0, Light: 0 };
+    workload.forEach(entry => {
+      if (entry.activeTasks >= 5) tiers.Heavy++;
+      else if (entry.activeTasks >= 2) tiers.Moderate++;
+      else tiers.Light++;
+    });
+    addSectionLabel(slide, "WORKLOAD DISTRIBUTION", 0.42, 4.55, 2.6);
+    slide.addChart(prs.ChartType.doughnut, [{
+      name: "People",
+      labels: ["Heavy (5+)", "Moderate (2-4)", "Light (0-1)"],
+      values: [tiers.Heavy, tiers.Moderate, tiers.Light]
+    }], {
+      x: 0.42, y: 4.78, w: 2.9, h: 1.95,
+      chartColors: [C.red, C.amber, C.green],
+      showLegend: true,
+      legendPos: "r",
+      legendFontSize: 7,
+      showTitle: false,
+      dataLabelColor: C.white,
+      dataLabelFontSize: 7
+    });
+
+    addCallout(slide, "Review open workload distribution before assigning new work.", {
+      x: 3.55, y: 5.05, w: 2.55, h: 0.9
     });
   }
 
@@ -961,10 +984,9 @@
 
   function buildTeamModel(db, visibleProjects) {
     const projects = Array.isArray(visibleProjects) ? visibleProjects : (db.projects || []);
-    const now = new Date();
+    let totalTasks = 0;
     let activeTasks = 0;
-    let overdueTasks = 0;
-    let blockedTasks = 0;
+    let closedTasks = 0;
     let openRisks = 0;
     const statusGroups = { "On Track": 0, "At Risk": 0, "Blocked": 0 };
     const blockedProjectNames = [];
@@ -972,15 +994,14 @@
     const projectRows = projects.map(project => {
       const tasks = plainTasks(db, project.id);
       const active = tasks.filter(task => !taskIsDone(task));
-      const overdue = active.filter(task => dateIsOverdue(task.end, now));
-      const blocked = active.filter(taskIsBlocked);
+      const closed = tasks.filter(taskIsDone);
       const risks = openProjectRisks(db, project.id);
       const derivedStatus = presentationProjectStatus(project, tasks);
       if (statusGroups[derivedStatus] != null) statusGroups[derivedStatus]++;
       if (derivedStatus === "Blocked") blockedProjectNames.push(project.name || project.id);
+      totalTasks += tasks.length;
       activeTasks += active.length;
-      overdueTasks += overdue.length;
-      blockedTasks += blocked.length;
+      closedTasks += closed.length;
       openRisks += risks.length;
       return {
         id: project.id || "-",
@@ -994,8 +1015,9 @@
         lifecycleStatus: project.lifecycleStatus || project.status || "",
         dueDate: project.dueDate || "",
         derivedStatus,
+        totalTasks: tasks.length,
         activeTasks: active.length,
-        overdueTasks: overdue.length,
+        closedTasks: closed.length,
         openRisks: risks.length,
         tasks: active.map(task => ({
           ...task,
@@ -1003,6 +1025,10 @@
           title: task.title || task.text || "Untitled task",
           assignee: task.assignee || task.owner || "",
           nextAction: task.nextAction || task.notes || ""
+        })),
+        closedTaskList: closed.map(task => ({
+          ...task,
+          assignee: task.assignee || task.owner || ""
         })),
         risks: risks.map(risk => ({
           ...risk,
@@ -1015,24 +1041,34 @@
     });
 
     const people = {};
+    function ensurePerson(person) {
+      if (!people[person]) {
+        people[person] = { person, activeTasks: 0, closedTasks: 0, projects: new Set(), nextDue: "" };
+      }
+      return people[person];
+    }
     projectRows.forEach(project => {
       project.tasks.forEach(task => {
         const person = safe(task.assignee || "");
         if (!person) return;
-        if (!people[person]) {
-          people[person] = { person, activeTasks: 0, blockedTasks: 0, projects: new Set(), nextDue: "" };
-        }
-        people[person].activeTasks++;
-        if (taskIsBlocked(task)) people[person].blockedTasks++;
-        people[person].projects.add(project.id);
+        const entry = ensurePerson(person);
+        entry.activeTasks++;
+        entry.projects.add(project.id);
         const due = isoDate(task.end);
-        if (due !== "-" && (!people[person].nextDue || due < people[person].nextDue)) people[person].nextDue = due;
+        if (due !== "-" && (!entry.nextDue || due < entry.nextDue)) entry.nextDue = due;
+      });
+      project.closedTaskList.forEach(task => {
+        const person = safe(task.assignee || "");
+        if (!person) return;
+        const entry = ensurePerson(person);
+        entry.closedTasks++;
+        entry.projects.add(project.id);
       });
     });
     const workload = Object.values(people).map(entry => ({
       person: entry.person,
       activeTasks: entry.activeTasks,
-      blockedTasks: entry.blockedTasks,
+      closedTasks: entry.closedTasks,
       projectCount: entry.projects.size,
       nextDue: entry.nextDue
     })).sort((a, b) => b.activeTasks - a.activeTasks || a.person.localeCompare(b.person));
@@ -1084,9 +1120,9 @@
       metrics: {
         totalProjects: projectRows.length,
         activeProjects,
+        totalTasks,
         activeTasks,
-        overdueTasks,
-        blockedTasks,
+        closedTasks,
         openRisks,
         teamSize: workload.length,
         documentsInReview,
@@ -1096,7 +1132,7 @@
         activeSummary,
         blockedSummary,
         `Document review has ${documentsInReview} active item${documentsInReview === 1 ? "" : "s"}; ${pendingTravel} travel request${pendingTravel === 1 ? " is" : "s are"} pending.`,
-        `${overdueTasks} overdue task${overdueTasks === 1 ? "" : "s"} and ${openRisks} open risk${openRisks === 1 ? "" : "s"} require routine monitoring.`
+        `${closedTasks} of ${totalTasks} total task${totalTasks === 1 ? "" : "s"} are closed; ${openRisks} open risk${openRisks === 1 ? "" : "s"} require routine monitoring.`
       ],
       statusGroups,
       endItems,
@@ -1142,7 +1178,6 @@
 
     const active = allMyTasks.filter(task => !taskIsDone(task));
     const completed = allMyTasks.filter(taskIsDone);
-    const overdue = active.filter(task => dateIsOverdue(task.end, now));
     const docs = allReviewRecords(db);
     const identity = memberIdentity(db);
     const isMe = value => {
@@ -1188,7 +1223,6 @@
         totalProjects: projects.length,
         totalTasks: allMyTasks.length,
         activeTasks: active.length,
-        overdueTasks: overdue.length,
         completedTasks: completed.length,
         documentsReviewed: reviewed.length,
         documentsSigned: signed.length,
@@ -1198,15 +1232,15 @@
         projectNames.length
           ? `Active work spans ${projectNames.join(", ")}${projects.length > 3 ? ", and additional assigned projects" : ""}.`
           : "No projects are currently assigned.",
-        overdue.length
-          ? `${overdue.length} assigned task${overdue.length === 1 ? " is" : "s are"} overdue and require${overdue.length === 1 ? "s" : ""} follow-up.`
-          : "No assigned tasks are overdue.",
+        active.length
+          ? `${active.length} assigned task${active.length === 1 ? " is" : "s are"} still open.`
+          : "No assigned tasks are open.",
         nextDue ? `The next assigned task is due ${isoDate(nextDue.end)}.` : "No active task due dates are recorded.",
-        `${completed.length} task${completed.length === 1 ? " is" : "s are"} complete and ${pendingReviews} document review${pendingReviews === 1 ? " is" : "s are"} awaiting action.`
+        `${completed.length} task${completed.length === 1 ? " is" : "s are"} closed and ${pendingReviews} document review${pendingReviews === 1 ? " is" : "s are"} awaiting action.`
       ],
       completionSignals: [
         { label: "Assigned tasks complete", percent: percent(completed.length, allMyTasks.length), color: C.green },
-        { label: "Tasks not overdue", percent: percent(Math.max(0, active.length - overdue.length), active.length), color: C.accent },
+        { label: "Assigned tasks open", percent: percent(active.length, allMyTasks.length), color: C.accent },
         { label: "Documents reviewed", percent: percent(reviewed.length, reviewed.length + pendingReviews), color: C.amber }
       ],
       projects,

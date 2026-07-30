@@ -95,7 +95,14 @@ const APP_CONFIG = {
   // SharePoint Site Page that hosts the PULSE app (Teams notification links).
   pulseAppPageFileName: "AEWTTR-PULSE.aspx",
   // Used only when site URL auto-detection is unavailable (local dev).
-  pulseAppPagePath: "/sites/AEWTTRTst/SitePages/AEWTTR-PULSE.aspx",
+  pulseAppPagePath: "/sites/AEWTTRTest/SitePages/AEWTTR-PULSE.aspx",
+
+  // Absolute URL always used for the "Open PULSE" button in emails. Emails
+  // are opened outside any live page/iframe context, so they can't rely on
+  // auto-detecting the current site the way in-app links do — this fixed
+  // URL is what every notification email's CTA button links to. Leave
+  // blank to fall back to site auto-detection (see pulseAppUrl in notify.js).
+  pulseAppFullUrl: "https://flankspeed.sharepoint-mil.us/sites/AEWTTRTest/SitePages/AEWTTR-PULSE.aspx",
 
   // Role assigned when an admin assigns someone to PULSE (creates App Roles).
   defaultUserRole: "Member",

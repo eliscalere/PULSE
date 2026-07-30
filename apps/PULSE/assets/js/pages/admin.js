@@ -222,6 +222,7 @@ function drawIssueReviewPage(body, issueId) {
     } finally {
       saveInFlight = false;
       if (savedVersion < changeVersion) autoSaveTimer = setTimeout(flushAutoSave, 350);
+      else unregisterAutosaveFlusher(flushAutoSave);
     }
   };
 
@@ -229,6 +230,7 @@ function drawIssueReviewPage(body, issueId) {
     changeVersion += 1;
     clearTimeout(autoSaveTimer);
     setAutoSaveState("saving", "Saving changes…");
+    registerAutosaveFlusher(flushAutoSave);
     autoSaveTimer = setTimeout(flushAutoSave, 650);
   };
 

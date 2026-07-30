@@ -1842,17 +1842,14 @@ function openUploadDocModal(onDone) {
             </div>
             <div class="form-row"><label>Deadline</label><input type="date" class="input-aewttr" id="sd-deadline"></div>
           </div>
-          <div class="form-grid-2">
-            <div class="form-row"><label>Type</label><input class="input-aewttr" id="sd-type" placeholder="SOP, brief…"></div>
-            <div class="form-row"><label>Kind</label>
-              <select class="select-aewttr" id="sd-kind">
-                <option value="">Not specified</option>
-                <option value="Government Document">Government document</option>
-                <option value="Contractor Deliverable">Contractor deliverable</option>
-              </select>
-            </div>
+          <div class="form-row"><label>Kind</label>
+            <select class="select-aewttr" id="sd-kind">
+              <option value="">Not specified</option>
+              <option value="Government Document">Government document</option>
+              <option value="Contractor Deliverable">Contractor deliverable</option>
+            </select>
           </div>
-          <div class="form-row" id="sd-contractor-row" hidden><label>Contractor</label><input class="input-aewttr" id="sd-contractor" placeholder="Contractor / company"></div>
+          <div class="form-row" id="sd-contractor-row" hidden><label>Contractor</label>${typeof tagPickerHtml === "function" ? tagPickerHtml([], "sd-contractor", { emptyText: "No contractor set.", placeholder: "Search or add contractor…", hint: "New contractors are remembered for future documents." }) : `<input class="input-aewttr" id="sd-contractor-input" placeholder="Contractor / company">`}</div>
           <div class="form-row"><label>Portfolios</label>${typeof portfolioPickerHtml === "function" ? portfolioPickerHtml([], "sd-portfolios") : `<input class="input-aewttr" id="sd-portfolios-input" placeholder="Portfolio name…">`}</div>
           <div class="form-row"><label>Config end items</label>${typeof tagPickerHtml === "function" ? tagPickerHtml([], "sd-configenditem", { placeholder: "Search or add config end item…", emptyText: "No config end items linked.", hint: "" }) : `<input class="input-aewttr" id="sd-configenditem-input" placeholder="Config end item…">`}</div>
         </div>
@@ -1908,6 +1905,16 @@ function openUploadDocModal(onDone) {
   kindSelect.addEventListener("change", () => {
     contractorRow.hidden = kindSelect.value !== "Contractor Deliverable";
   });
+
+  const selectedContractor = new Set();
+  if (typeof wireTagPicker === "function") {
+    wireTagPicker(modal, selectedContractor, "sd-contractor", {
+      normalize: normalizeContractorName,
+      getKnown: getKnownContractorNames,
+      remember: rememberContractorNames,
+      singleSelect: true
+    });
+  }
 
   const selectedPortfolios = new Set();
   if (typeof wirePortfolioPicker === "function") {
@@ -1968,9 +1975,8 @@ function openUploadDocModal(onDone) {
     const projectId = $("#sd-project", modal).value;
     const project = db.projects.find(p => p.id === projectId);
     const deadline = $("#sd-deadline", modal).value;
-    const type = $("#sd-type", modal).value.trim();
     const kind = kindSelect.value;
-    const contractor = kind === "Contractor Deliverable" ? $("#sd-contractor", modal).value.trim() : "";
+    const contractor = kind === "Contractor Deliverable" ? (Array.from(selectedContractor)[0] || "") : "";
     const flatReviewers = typeof expandPickerPeople === "function" ? expandPickerPeople(reviewers) : reviewers;
     const flatSigners = typeof expandPickerPeople === "function" ? expandPickerPeople(signers) : signers;
 
@@ -1990,7 +1996,6 @@ function openUploadDocModal(onDone) {
       ["Title", title ? `<span class="udm-review-value">${escapeHtml(title)}</span>` : `<span class="udm-review-value empty">Not set</span>`],
       ["Project", project ? `<span class="udm-review-value">${escapeHtml(project.name)}</span>` : `<span class="udm-review-value empty">General</span>`],
       ["Deadline", deadline ? `<span class="udm-review-value">${deadline}</span>` : `<span class="udm-review-value empty">None</span>`],
-      ["Type", type ? `<span class="udm-review-value">${escapeHtml(type)}</span>` : `<span class="udm-review-value empty">Document</span>`],
       ["Kind", kind ? `<span class="udm-review-value">${escapeHtml(kind)}${contractor ? ` — ${escapeHtml(contractor)}` : ""}</span>` : `<span class="udm-review-value empty">Not specified</span>`],
       ["Portfolios", tagChipHtml(portfoliosArr)],
       ["Config end items", tagChipHtml(configEndItemsArr)],
@@ -2034,9 +2039,9 @@ function openUploadDocModal(onDone) {
           id: uid("D"),
           title: title,
           projectCode: $("#sd-project", modal).value || "",
-          type: $("#sd-type", modal).value || "Document",
+          type: "Document",
           docKind: kindSelect.value || "",
-          contractorName: kindSelect.value === "Contractor Deliverable" ? $("#sd-contractor", modal).value.trim() : "",
+          contractorName: kindSelect.value === "Contractor Deliverable" ? (Array.from(selectedContractor)[0] || "") : "",
           portfolios: Array.from(selectedPortfolios),
           configEndItems: Array.from(selectedConfigEndItems),
           submitter: (liveDb.user && liveDb.user.name) || (db.user && db.user.name) || "",

@@ -359,10 +359,12 @@
     bulletize(extra.meetingNotes || "", 3).forEach((b) => bullets.push(b));
     const tasks = (db.ganttTasks && db.ganttTasks[proj.id]) || [];
     const plain = typeof trackerPlainTasks === "function" ? trackerPlainTasks(tasks) : tasks;
-    const open = plain.filter((t) => t && t.itemType !== "divider" && t.status !== "Complete" && t.status !== "Done");
-    const atRisk = open.filter((t) => t.health === "At Risk" || t.health === "Off Track" || t.status === "Blocked");
-    if (atRisk.length) {
-      bullets.push(`${atRisk.length} tracker item${atRisk.length === 1 ? "" : "s"} at risk / off track / blocked`);
+    const allNonDivider = plain.filter((t) => t && t.itemType !== "divider");
+    const open = allNonDivider.filter((t) => t.status !== "Complete" && t.status !== "Done");
+    const totalCount = allNonDivider.length;
+    const closedCount = totalCount - open.length;
+    if (totalCount) {
+      bullets.push(`${totalCount} total task${totalCount === 1 ? "" : "s"} — ${open.length} open, ${closedCount} closed`);
     }
     const soon = open
       .filter((t) => t.end)
@@ -722,32 +724,52 @@
     return "△"; // △
   }
 
-  /* Draw a Gantt-style milestone chart using typed MC dates from reportConfig.taskMilestones */
-  function drawMcMilestoneChart(slide, shapes, proj, x, y, w, h) {
+  /* Draw a Gantt-style milestone chart using this project's own MC dates
+     from reportConfig.projectMilestones (one date per category, no tasks).
+     opts.selectedKeys filters which of the 6 categories render (defaults to
+     all). opts.rows lets a group-by-End-Item-Config slide draw one row per
+     project sharing that config instead of the usual single-project row. */
+  function drawMcMilestoneChart(slide, shapes, proj, x, y, w, h, opts) {
+    opts = opts || {};
     const db = window.AEWTTR.db || {};
-    const extra = (db.projectExtra && db.projectExtra[proj.id]) || {};
-    const cfg = extra.reportConfig || {};
-    const tm = typeof getProjectReportingMilestones === "function"
-      ? getProjectReportingMilestones(proj)
-      : cfg.taskMilestones || {};
-    const tasks = (db.ganttTasks && db.ganttTasks[proj.id]) || [];
-    const plain = typeof trackerPlainTasks === "function" ? trackerPlainTasks(tasks) : tasks;
-    const reportTasks = plain.filter((t) => tm[t.id] && tm[t.id].inReport);
+    const rows = Array.isArray(opts.rows) && opts.rows.length ? opts.rows : [proj];
+    // Ad-hoc named milestones that belong to a group (Portfolio/Program/EIC)
+    // itself rather than to any one project — rendered as extra rows below
+    // the normal per-project ones, each with a single date and no category.
+    const customRows = (Array.isArray(opts.customRows) ? opts.customRows : []).filter((m) => m && m.date);
 
-    if (!reportTasks.length) {
-      slide.addText("No tasks selected in Reporting tab. Enable ‘In Report’ for tasks and set milestone dates.", {
+    function milestonesFor(p) {
+      const extra = (db.projectExtra && db.projectExtra[p.id]) || {};
+      const cfg = extra.reportConfig || {};
+      return typeof getProjectMilestones === "function" ? getProjectMilestones(p) : cfg.projectMilestones || {};
+    }
+    const rowMilestones = rows.map(milestonesFor);
+
+    // Which category columns actually show — a category is only relevant if
+    // at least one row has a date entered for it, so nobody has to manually
+    // toggle categories on/off; an empty column just never appears.
+    const selectedKeys = Array.isArray(opts.selectedKeys) && opts.selectedKeys.length
+      ? opts.selectedKeys
+      : MC_PPTX.filter((c) => rowMilestones.some((tm) => tm[c.key])).map((c) => c.key);
+    const MC = MC_PPTX.filter((c) => selectedKeys.includes(c.key));
+
+    if (!MC.length && !customRows.length) {
+      slide.addText("No milestone categories selected for this slide.", {
         x, y: y + 0.1, w, h: 0.55, fontSize: 8, color: GRAY, fontFace: "Arial"
       });
       return;
     }
 
     const allMs = [];
-    reportTasks.forEach((task) => {
-      const t = tm[task.id] || {};
-      MC_PPTX.forEach((c) => {
-        const when = t[c.key] ? new Date(t[c.key]).getTime() : NaN;
+    rowMilestones.forEach((tm) => {
+      MC.forEach((c) => {
+        const when = tm[c.key] ? new Date(tm[c.key]).getTime() : NaN;
         if (!isNaN(when)) allMs.push(when);
       });
+    });
+    customRows.forEach((m) => {
+      const when = new Date(m.date).getTime();
+      if (!isNaN(when)) allMs.push(when);
     });
     if (!allMs.length) {
       slide.addText("Enter milestone dates in the Reporting tab to generate the timeline.", {
@@ -837,27 +859,30 @@
       }
     }
 
-    /* ── Rows ── */
+    /* ── Row(s) — one set of dates per project. Usually a single row (this
+       project); a group-by-End-Item-Config slide passes opts.rows with every
+       project sharing that config, one row each, plus opts.customRows for
+       any ad-hoc milestones belonging to the group itself. ── */
+    const totalRows = rows.length + customRows.length;
     const legendH = 0.18;
-    const rows = reportTasks.slice(0, 8);
-    const rowH = Math.min(0.32, (h - axisH - legendH - 0.14) / Math.max(rows.length, 1));
+    const rowH = Math.min(0.32, (h - axisH - legendH - 0.14) / Math.max(totalRows, 1));
     const symSz = Math.max(7, Math.min(11, rowH * 26));
 
-    rows.forEach((task, i) => {
+    rows.forEach((p, i) => {
+      const tm = rowMilestones[i];
       const rowY = y + axisH + i * rowH;
-      const t = tm[task.id] || {};
 
       slide.addShape(shapes.rect, {
         x, y: rowY, w, h: rowH,
         fill: { color: "FFFFFF" }, line: { color: "000000", width: 0.5 }
       });
 
-      slide.addText(task.title || task.name || "Task", {
+      slide.addText(p.name || "Project", {
         x: x + 0.03, y: rowY, w: labelW - 0.06, h: rowH,
         fontSize: 7, fontFace: "Arial", color: "000000", bold: true, valign: "middle", margin: 0
       });
 
-      const markers = MC_PPTX.map((c) => ({ c, v: t[c.key] })).filter((m) => m.v);
+      const markers = MC.map((c) => ({ c, v: tm[c.key] })).filter((m) => m.v);
       if (!markers.length) return;
       const fracs = markers.map((m) => toFrac(m.v));
       const minF = Math.min.apply(null, fracs);
@@ -886,11 +911,32 @@
       });
     });
 
+    /* Extra rows for group-level milestones: one label + one diamond marker
+       each, no per-category legend entry needed since there's just one date. */
+    customRows.forEach((m, ci) => {
+      const rowY = y + axisH + (rows.length + ci) * rowH;
+      slide.addShape(shapes.rect, {
+        x, y: rowY, w, h: rowH,
+        fill: { color: "F5F1FA" }, line: { color: "000000", width: 0.5 }
+      });
+      slide.addText(m.label || "Milestone", {
+        x: x + 0.03, y: rowY, w: labelW - 0.06, h: rowH,
+        fontSize: 7, fontFace: "Arial", color: "000000", bold: true, italic: true, valign: "middle", margin: 0
+      });
+      const f = toFrac(m.date);
+      const cx = chartX + f * chartW;
+      const symY = rowY + rowH / 2 - (symSz / 72) * 0.55;
+      slide.addText("◆", {
+        x: cx - 0.14, y: symY, w: 0.28, h: (symSz / 72) * 1.2,
+        fontSize: symSz, color: "7030A0", align: "center", valign: "middle", fontFace: "Arial"
+      });
+    });
+
     for (let yr = startYear + 1; yr <= endYear; yr++) {
       const frac = (new Date(yr, 0, 1).getTime() - minT) / span;
       if (frac <= 0 || frac >= 1) continue;
       slide.addShape(shapes.line, {
-        x: chartX + frac * chartW, y, w: 0, h: axisH + rows.length * rowH,
+        x: chartX + frac * chartW, y, w: 0, h: axisH + totalRows * rowH,
         line: { color: "000000", width: 0.5 }
       });
     }
@@ -902,19 +948,19 @@
       const tx = chartX + todayF * chartW;
       slide.addShape(shapes.line, {
         x: tx, y: y + axisH,
-        w: 0, h: rows.length * rowH + 0.1,
+        w: 0, h: totalRows * rowH + 0.1,
         line: { color: "FFC000", width: 1.5 }
       });
       slide.addText("Today", {
-        x: tx - 0.22, y: y + axisH + rows.length * rowH + 0.1, w: 0.44, h: 0.13,
+        x: tx - 0.22, y: y + axisH + totalRows * rowH + 0.1, w: 0.44, h: 0.13,
         fontSize: 5.5, color: "9C6500", align: "center", fontFace: "Arial", bold: true
       });
     }
 
     /* ── Legend ── */
     const legY = y + h - legendH;
-    const legendCellW = w / MC_PPTX.length;
-    MC_PPTX.forEach((c, idx) => {
+    const legendCellW = w / MC.length;
+    MC.forEach((c, idx) => {
       const cellX = x + idx * legendCellW;
       slide.addShape(shapes.rect, {
         x: cellX, y: legY, w: legendCellW, h: legendH,
@@ -1170,7 +1216,8 @@
     });
   }
 
-  async function buildStatusSlide(pptx, shapes, proj, logos, imageDataUris, pageNum) {
+  async function buildStatusSlide(pptx, shapes, proj, logos, imageDataUris, pageNum, cfg) {
+    cfg = cfg || {};
     const slide = pptx.addSlide();
     slide.background = { color: "FFFFFF" };
     addStatusChrome(slide, shapes, logos, pageNum);
@@ -1358,12 +1405,231 @@
     );
 
     addSectionHeading(slide, "Milestones", L.milesHead);
-    drawMcMilestoneChart(slide, shapes, proj, L.milesBody.x, L.milesBody.y, L.milesBody.w, L.milesBody.h);
+    drawMcMilestoneChart(slide, shapes, proj, L.milesBody.x, L.milesBody.y, L.milesBody.w, L.milesBody.h, {});
 
     slide.addText(`As of ${todayLabel()}`, {
       x: L.asOf.x, y: L.asOf.y, w: L.asOf.w, h: L.asOf.h,
       fontSize: 10, color: "333333", align: "center", fontFace: "Arial", valign: "middle"
     });
+  }
+
+  /* Rich-text group descriptions are stored as HTML from a contenteditable
+     editor (Bold/Italic/Bullet-list only). Extracts one line per block/list
+     item, with a per-line bold/italic flag detected heuristically (true when
+     ~all of the line's text sits inside a b/strong or i/em tag) — good enough
+     since the editor only ever applies those two styles to whole selections,
+     and fitBulletsToBox never reflows a line so this index lines up with its
+     output 1:1. */
+  function htmlDescriptionToLines(html) {
+    const raw = String(html || "").trim();
+    if (!raw) return [];
+    const doc = new DOMParser().parseFromString(raw, "text/html");
+    const body = doc.body;
+
+    function lineIsFormatted(el, tagsSel, soloTags) {
+      const total = (el.textContent || "").replace(/\s+/g, " ").trim();
+      if (!total) return false;
+      if (soloTags.includes(el.tagName)) return true;
+      const matched = Array.from(el.querySelectorAll(tagsSel))
+        .map((n) => (n.textContent || "").replace(/\s+/g, " ").trim())
+        .join("");
+      return matched.length > 0 && matched.length >= total.length * 0.9;
+    }
+    function makeLine(el) {
+      const text = (el.textContent || "").replace(/\s+/g, " ").trim();
+      if (!text) return null;
+      return {
+        text,
+        bold: lineIsFormatted(el, "b, strong", ["B", "STRONG"]),
+        italic: lineIsFormatted(el, "i, em", ["I", "EM"])
+      };
+    }
+
+    const blockTags = ["P", "DIV", "H1", "H2", "H3", "BLOCKQUOTE", "LI"];
+    const lines = [];
+    Array.from(body.children).forEach((el) => {
+      if (el.tagName === "UL" || el.tagName === "OL") {
+        Array.from(el.children).forEach((li) => {
+          const line = makeLine(li);
+          if (line) lines.push(line);
+        });
+      } else if (blockTags.includes(el.tagName)) {
+        const line = makeLine(el);
+        if (line) lines.push(line);
+      }
+    });
+
+    if (!lines.length) {
+      /* No block elements — plain text / <br>-separated content. */
+      const tmp = doc.createElement("div");
+      tmp.innerHTML = body.innerHTML.replace(/<br\s*\/?>/gi, "\n");
+      String(tmp.textContent || "")
+        .split("\n")
+        .map((s) => s.replace(/\s+/g, " ").trim())
+        .filter(Boolean)
+        .forEach((text) => lines.push({ text, bold: false, italic: false }));
+    }
+    return lines;
+  }
+
+  /* One combined 4-quadrant slide per End Item Config (or Portfolio/Program
+     grouped by EIC): title = EIC name. Technical Status + Risk Summary (TR)
+     and Description (BL) are group-level content entered once for the whole
+     config; Photos (TL) is the one photo a PM picked from a member project's
+     Photos tab; Milestones (BR) always shows one row per project in the
+     config, plus any ad-hoc milestones entered for the config itself, same
+     chart used on the single-project slide. */
+  async function buildEicMilestoneSlide(pptx, shapes, eicName, eicProjects, logos, pageNum, cfg) {
+    cfg = cfg || {};
+    const groupCfg = (window.AEWTTR.db.groupReportConfigs && window.AEWTTR.db.groupReportConfigs["eic:" + eicName]) || {
+      techBullets: [],
+      description: "",
+      otherMilestones: [],
+      riskRows: []
+    };
+    const slide = pptx.addSlide();
+    slide.background = { color: "FFFFFF" };
+    addStatusChrome(slide, shapes, logos, pageNum);
+
+    slide.addText(eicName || "End Item Configuration", {
+      x: L.title.x, y: L.title.y, w: 3.6, h: L.title.h,
+      fontSize: 20, bold: true, fontFace: "Arial Black", color: "000000",
+      align: "left", valign: "middle", fit: "shrink"
+    });
+    slide.addText(`${eicProjects.length} project${eicProjects.length === 1 ? "" : "s"}`, {
+      x: L.poc.x, y: L.poc.y, w: L.poc.w, h: L.poc.h,
+      fontSize: 8, bold: true, fontFace: "Arial", color: "222222", valign: "top", margin: 0
+    });
+
+    /* Navy cross dividers, matching the single-project template's chrome. */
+    slide.addShape(shapes.line, {
+      x: L.vDiv.x, y: L.vDiv.y, w: 0, h: L.vDiv.h, line: { color: DIVIDER, width: 1.5 }
+    });
+    slide.addShape(shapes.line, {
+      x: L.hDiv.x, y: L.hDiv.y, w: L.hDiv.w, h: 0, line: { color: DIVIDER, width: 1.5 }
+    });
+
+    /* Top-left: the one photo a PM picked (from any project in this config)
+       to represent it — pulled through the same fetch-as-data-URI path the
+       single-project slide uses, since PptxGenJS needs real image bytes. */
+    const photoDataUri = groupCfg.photoUrl ? await fetchAsDataUri(groupCfg.photoUrl) : "";
+    await placePhotosInFrame(slide, shapes, photoDataUri ? [photoDataUri] : [], L.photo);
+
+    /* Bottom-left: group-level description entered by the user via the
+       rich-text editor (Bold/Italic/Bullet-list) — stored as HTML. */
+    addSectionHeading(slide, "Description", L.descHead);
+    const descLines = htmlDescriptionToLines(groupCfg.description);
+    const descSource = descLines.length
+      ? descLines.map((l) => l.text)
+      : ["No description entered for this configuration yet."];
+    const descFit = fitBulletsToBox(descSource, L.descBody.w, L.descBody.h, {
+      maxFont: 10, minFont: 7, paraGap: 2, pad: 0.02
+    });
+    slide.addText(
+      descFit.texts.map((t, idx) => ({
+        text: t,
+        options: {
+          bullet: true,
+          breakLine: idx < descFit.texts.length - 1,
+          bold: !!(descLines[idx] && descLines[idx].bold),
+          italic: !!(descLines[idx] && descLines[idx].italic)
+        }
+      })),
+      {
+        x: L.descBody.x, y: L.descBody.y, w: L.descBody.w, h: L.descBody.h,
+        fontSize: descFit.fontSize, fontFace: "Arial", color: "222222",
+        valign: "top", margin: 0, paraSpacingAfter: descFit.paraGap, fit: "shrink"
+      }
+    );
+
+    /* Top-right: group-level technical status bullets + a fixed 3-row
+       Schedule/Budget/Technical risk summary below, same layout the
+       single-project slide uses for this quadrant. */
+    addSectionHeading(slide, "Technical Status", L.techHead);
+    const TECH_BOX_H = 1.35;
+    const RISK_TABLE_Y = L.techPanel.y + TECH_BOX_H + 0.12;
+    const tech = (groupCfg.techBullets || []).map((b) => (b && b.text) || b).filter(Boolean);
+    const techFit = fitBulletsToBox(tech, L.techPanel.w - 0.2, TECH_BOX_H - 0.1, {
+      maxFont: 10, minFont: 7, paraGap: 2, pad: 0.02
+    });
+    slide.addText(
+      (techFit.texts.length ? techFit.texts : ["No technical status entered for this configuration yet."]).map((t, idx) => ({
+        text: t,
+        options: { bullet: true, breakLine: idx < (techFit.texts.length || 1) - 1 }
+      })),
+      {
+        x: L.techPanel.x + 0.1, y: L.techPanel.y + 0.06,
+        w: L.techPanel.w - 0.2, h: TECH_BOX_H - 0.08,
+        fontSize: techFit.fontSize, fontFace: "Arial", color: "111111",
+        valign: "top", margin: 0, paraSpacingAfter: techFit.paraGap, fit: "shrink"
+      }
+    );
+
+    const riskSummary = (groupCfg.riskRows || []).map((r) => ({
+      category: r.cat, status: r.rag || "", comments: r.notes || ""
+    }));
+    let riskY = RISK_TABLE_Y;
+    const riskMaxBottom = L.hDiv.y - 0.06;
+    const riskEstH = 0.28 + riskSummary.length * 0.34;
+    if (riskY + riskEstH > riskMaxBottom) {
+      riskY = Math.max(RISK_TABLE_Y, riskMaxBottom - riskEstH);
+    }
+    slide.addTable(
+      [
+        [
+          { text: "Risk Category", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "000000", align: "left" } },
+          { text: "Status", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "000000", align: "center" } },
+          { text: "Comments", options: { bold: true, fill: { color: LIGHT_BLUE }, color: "000000", align: "left" } }
+        ]
+      ].concat(
+        riskSummary.map((row, idx) => {
+          const fill = row.status ? ragColor(row.status) : "BBBBBB";
+          const stripe = idx % 2 ? ROW_ALT : "FFFFFF";
+          return [
+            { text: row.category, options: { fontSize: 10, fill: { color: stripe }, color: "222222" } },
+            { text: "", options: { fill: { color: fill }, align: "center" } },
+            { text: row.comments, options: { fontSize: 9, fill: { color: stripe }, color: "222222" } }
+          ];
+        })
+      ),
+      {
+        x: L.riskTable.x, y: riskY, w: L.riskTable.w, colW: L.riskColW,
+        border: [
+          { pt: 0.75, color: "000000" },
+          { pt: 0.75, color: "000000" },
+          { pt: 0.75, color: "000000" },
+          { pt: 0.75, color: "000000" }
+        ],
+        fontFace: "Arial", fontSize: 10, color: "222222", valign: "middle", rowH: 0.32
+      }
+    );
+
+    /* Bottom-right: milestones — every project in the config always shows
+       as its own row (each using its own Contract/FAT/SAT/etc. dates), plus
+       any ad-hoc milestones entered for the config itself as extra rows. */
+    addSectionHeading(slide, "Milestones", L.milesHead);
+    drawMcMilestoneChart(slide, shapes, null, L.milesBody.x, L.milesBody.y, L.milesBody.w, L.milesBody.h, {
+      rows: eicProjects,
+      customRows: groupCfg.otherMilestones
+    });
+
+    slide.addText(`As of ${todayLabel()}`, {
+      x: L.asOf.x, y: L.asOf.y, w: L.asOf.w, h: L.asOf.h,
+      fontSize: 10, color: "333333", align: "center", fontFace: "Arial", valign: "middle"
+    });
+  }
+
+  function groupProjectsByEic(list) {
+    const groups = new Map();
+    (list || []).forEach((proj) => {
+      const names = typeof projectConfigEndItems === "function" ? projectConfigEndItems(proj) : [];
+      const keys = names.length ? names : ["Unclassified"];
+      keys.forEach((name) => {
+        if (!groups.has(name)) groups.set(name, []);
+        groups.get(name).push(proj);
+      });
+    });
+    return groups;
   }
 
   async function buildRiskSlide(pptx, shapes, proj, risk, logos, pageNum, totalPages) {
@@ -1592,7 +1858,7 @@
     pptx.defineLayout({ name: "AEWTTR_4x3", width: SLIDE_W, height: SLIDE_H });
     pptx.layout = "AEWTTR_4x3";
     pptx.author = "AEWTTR PULSE";
-    pptx.title = `${proj.id || ""} ${proj.name || "Project"} Status`.trim();
+    pptx.title = `${proj.name || "Project"} Status`.trim();
     pptx.subject = "Project status and risk assessment";
 
     const shapes = pptx.ShapeType || PptxGenJS.shapes || {};
@@ -1611,7 +1877,8 @@
       if (data) imageDataUris.push(data);
     }
 
-    await buildStatusSlide(pptx, S, proj, logos, imageDataUris, 1);
+    const reportCfg = ((window.AEWTTR.db.projectExtra && window.AEWTTR.db.projectExtra[proj.id]) || {}).reportConfig || {};
+    await buildStatusSlide(pptx, S, proj, logos, imageDataUris, 1, reportCfg);
 
     /* A project update is deliberately one slide.  Risk and work appendices
        belong only in an explicitly requested full deck. */
@@ -1661,7 +1928,7 @@
 
   function projectFilesLabel(proj) {
     if (typeof projectDocumentsLabel === "function") return projectDocumentsLabel(proj);
-    return `${proj.id || "project"} - ${proj.name || "Untitled"}`;
+    return proj.name || "Untitled";
   }
 
   async function uploadStatusPptxToSharePoint(proj, blob, fileName) {
@@ -1805,17 +2072,28 @@
       page += 1;
     }
 
-    /* Every output contains its project-status slide.  The concise output
-       stops here; a full briefing can add focused appendices below. */
-    for (const proj of selectedProjects) {
-      const imageUrls = cfg.includePhotos === false ? [] : collectExportImages(proj);
-      const imageDataUris = [];
-      for (const url of imageUrls) {
-        const data = await fetchAsDataUri(url);
-        if (data) imageDataUris.push(data);
+    /* Every output contains its project-status slide (or, in "one slide per
+       End Item Config" mode, one combined milestone slide per config group).
+       The concise output stops here; a full briefing can add focused
+       appendices below. */
+    if (!isProjectSlide && cfg.exportGroupBy === "eic") {
+      const groups = groupProjectsByEic(selectedProjects);
+      const sortedNames = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
+      for (const eicName of sortedNames) {
+        await buildEicMilestoneSlide(pptx, S, eicName, groups.get(eicName), logos, page, cfg);
+        page++;
       }
-      await buildStatusSlide(pptx, S, proj, logos, imageDataUris, page);
-      page++;
+    } else {
+      for (const proj of selectedProjects) {
+        const imageUrls = cfg.includePhotos === false ? [] : collectExportImages(proj);
+        const imageDataUris = [];
+        for (const url of imageUrls) {
+          const data = await fetchAsDataUri(url);
+          if (data) imageDataUris.push(data);
+        }
+        await buildStatusSlide(pptx, S, proj, logos, imageDataUris, page, cfg);
+        page++;
+      }
     }
 
     /* Risk slides */

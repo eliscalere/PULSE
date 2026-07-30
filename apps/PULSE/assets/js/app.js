@@ -87,9 +87,28 @@ function pulseBrandLockup(opts) {
   `;
 }
 
+/* Admins land on Team Overview by default (instead of Dashboard) since
+   that's the page they open first in practice — everyone else keeps the
+   existing Dashboard default. A port config's explicit defaultRoute (e.g.
+   a Travel-only deployment) always wins over this. */
+function pulseComputeDefaultRoute() {
+  if (window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.defaultRoute) {
+    return window.PULSE_PORT_CONFIG.defaultRoute;
+  }
+  const user = window.AEWTTR && window.AEWTTR.db && window.AEWTTR.db.user;
+  if (user && user.isAdmin) {
+    if (window.AEWTTR) {
+      window.AEWTTR.state = window.AEWTTR.state || {};
+      window.AEWTTR.state.overviewView = "Team";
+    }
+    return "overview";
+  }
+  return "dashboard";
+}
+
 function wirePulseBrandHome(node) {
   if (!node) return;
-  const targetRoute = (window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.defaultRoute) || "dashboard";
+  const targetRoute = pulseComputeDefaultRoute();
   node.addEventListener("click", () => {
     if (typeof navigate === "function") navigate(targetRoute);
   });
@@ -1154,7 +1173,17 @@ function isNoteAuthor(note) {
   const me = currentUserNoteIdentity();
   if (note.authorId && me.id && String(note.authorId) === String(me.id)) return true;
   if (note.authorEmail && me.email && String(note.authorEmail).toLowerCase() === me.email.toLowerCase()) return true;
-  return !!(me.name && note.author === me.name);
+  // Older notes predate authorId/authorEmail and only have a plain name —
+  // match loosely (case/whitespace) so a display-name rename, casing
+  // change, or stray space doesn't permanently lock the real author out.
+  return !!(me.name && note.author && String(note.author).trim().toLowerCase() === me.name.trim().toLowerCase());
+}
+/* Notes an old, unmatchable author string can leave permanently stuck even
+   after the loose match above — Admin can always delete as a backstop. */
+function canDeleteNote(note) {
+  if (isNoteAuthor(note)) return true;
+  const user = window.AEWTTR && window.AEWTTR.db && window.AEWTTR.db.user;
+  return !!(user && user.isAdmin);
 }
 function stampNoteAuthor(note) {
   const me = currentUserNoteIdentity();
@@ -1196,21 +1225,26 @@ function openTaskNotesModal(task, taskLabel, onNotesChange) {
     if (typeof onNotesChange === "function") onNotesChange(task.notes);
   }
 
-  function renderMessages() {
+  // Editing/cancelling/deleting an older message shouldn't yank the view —
+  // only a brand-new post (or the initial open) should jump to the newest.
+  function renderMessages(opts) {
+    const stickToBottom = !!(opts && opts.scrollToBottom);
+    const scrollTop = chatBody.scrollTop;
     const notes = (task.notes || []).slice().reverse();
     chatBody.innerHTML = notes.length
       ? notes.map((n) => {
           const isMine = isNoteAuthor(n);
+          const canDelete = canDeleteNote(n);
           const isEditing = editingId === n.id;
           return `
           <div class="task-notes-bubble-row ${isMine ? "mine" : ""}">
             <div class="task-notes-bubble">
               <div class="task-notes-bubble-meta">
                 <strong>${escapeHtml(n.author || "Unknown")}</strong><span>${escapeHtml(formatNoteTimestamp(n))}</span>
-                ${isMine && !isEditing ? `
+                ${!isEditing && (isMine || canDelete) ? `
                   <span class="task-notes-bubble-actions">
-                    <button type="button" data-edit-note="${n.id}" aria-label="Edit"${tip("Edit")}><i class="bx bx-pencil"></i></button>
-                    <button type="button" data-delete-note="${n.id}" aria-label="Delete"${tip("Delete")}><i class="bx bx-trash"></i></button>
+                    ${isMine ? `<button type="button" data-edit-note="${n.id}" aria-label="Edit"${tip("Edit")}><i class="bx bx-pencil"></i></button>` : ""}
+                    ${canDelete ? `<button type="button" data-delete-note="${n.id}" aria-label="Delete"${tip("Delete")}><i class="bx bx-trash"></i></button>` : ""}
                   </span>` : ""}
               </div>
               ${isEditing
@@ -1225,7 +1259,7 @@ function openTaskNotesModal(task, taskLabel, onNotesChange) {
         `;
         }).join("")
       : `<div class="task-notes-empty">No updates yet. Say something below to start the thread.</div>`;
-    if (!editingId) chatBody.scrollTop = chatBody.scrollHeight;
+    chatBody.scrollTop = stickToBottom ? chatBody.scrollHeight : scrollTop;
     wireMessageActions();
   }
 
@@ -1263,7 +1297,7 @@ function openTaskNotesModal(task, taskLabel, onNotesChange) {
     $all("[data-delete-note]", chatBody).forEach((btn) => btn.addEventListener("click", async () => {
       const id = btn.dataset.deleteNote;
       const note = (task.notes || []).find((n) => n.id === id);
-      if (!isNoteAuthor(note)) { toast("You can only delete your own notes.", "error"); return; }
+      if (!canDeleteNote(note)) { toast("You can only delete your own notes.", "error"); return; }
       const ok = await confirmDialog({ title: "Delete note", message: "Delete this note? This cannot be undone.", confirmLabel: "Delete", danger: true });
       if (!ok) return;
       task.notes = (task.notes || []).filter((n) => n.id !== id);
@@ -1282,11 +1316,11 @@ function openTaskNotesModal(task, taskLabel, onNotesChange) {
     touchNoteTimestamp(note);
     delete note.editedAt;
     task.notes.unshift(note);
-    renderMessages();
+    renderMessages({ scrollToBottom: true });
     notify();
   });
 
-  renderMessages();
+  renderMessages({ scrollToBottom: true });
   input.focus();
 }
 
@@ -1632,8 +1666,8 @@ function canManageMeetings() {
 function canEditProject(proj) {
   const user = window.AEWTTR.db && window.AEWTTR.db.user;
   if (!user) return false;
-  if (user.isAdmin) return true;
   const role = currentAppRole();
+  if (user.isAdmin || role === "PM Admin") return true;
   if (role === "Member" || role === "Viewer" || role === "Guest") return false;
   const db = window.AEWTTR.db;
   const roster = (db.projectPeople && db.projectPeople[proj && proj.id]) || [];
@@ -3040,14 +3074,31 @@ function hideSaveIndicator() {
   if (el) el.classList.remove("is-active");
 }
 
+/* Registry of "flush my pending debounced save right now" callbacks. Any page
+   with a local setTimeout-before-Repo.save autosave pattern (Project Settings,
+   Notification Settings, meeting agenda fields, etc.) registers one here on
+   mount and unregisters on its own clean teardown. Without this, navigating
+   away while a local timer is still pending silently drops the edit — the
+   save call was never even made, so Repo.flush() (below) has nothing to
+   rescue, since it only knows about writes already inside Repo's own queue. */
+window.AEWTTR._pendingAutosaveFlushers = window.AEWTTR._pendingAutosaveFlushers || new Set();
+function registerAutosaveFlusher(fn) { window.AEWTTR._pendingAutosaveFlushers.add(fn); }
+function unregisterAutosaveFlusher(fn) { window.AEWTTR._pendingAutosaveFlushers.delete(fn); }
+async function flushPendingAutosaves() {
+  const flushers = Array.from(window.AEWTTR._pendingAutosaveFlushers);
+  await Promise.all(flushers.map((fn) => {
+    try { return Promise.resolve(fn()); } catch (e) { return null; }
+  }));
+}
+
 async function renderPage() {
-  // If there are pending saves (doc editor debounce or repo queue), flush them
-  // now and show a two-dot indicator. Only shown when the user navigates away.
-  const hasPendingLocal = typeof window.AEWTTR._flushDocSave === "function";
+  // If there are pending saves (local autosave timers or repo queue), flush
+  // them now and show a two-dot indicator. Only shown when the user navigates away.
+  const hasPendingLocal = window.AEWTTR._pendingAutosaveFlushers.size > 0;
   const hasPendingRepo = typeof Repo !== "undefined" && Repo.hasPendingChanges();
   if (hasPendingLocal || hasPendingRepo) {
     showSaveIndicator();
-    try { if (hasPendingLocal) await window.AEWTTR._flushDocSave(); } catch (e) {}
+    try { if (hasPendingLocal) await flushPendingAutosaves(); } catch (e) {}
     try { if (typeof Repo !== "undefined") await Repo.flush(); } catch (e) {}
     hideSaveIndicator();
   }
@@ -4805,7 +4856,7 @@ function startPulseApplication() {
         if (window.PULSELoader) window.PULSELoader.finish();
         const bootUrl = new URL(location.href);
         if (!bootUrl.searchParams.get("page") && !location.hash) {
-          const defaultRoute = (window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.defaultRoute) || "dashboard";
+          const defaultRoute = pulseComputeDefaultRoute();
           navigate(defaultRoute);
         } else {
           renderPage();
@@ -4824,6 +4875,21 @@ function startPulseApplication() {
         wireBackgroundRefresh();
         scheduleNotificationRefresh();
         setTimeout(() => showDigestModal(), 1200);
+        // Best-effort daily send: no server exists to run this on a real
+        // schedule, so whoever's copy of PULSE is open at or after 8am
+        // triggers the org-wide digest for everyone. Checking only once at
+        // boot means a tab left open from before 8am would never notice the
+        // clock passing 8am — so also re-check on a slow recurring timer;
+        // the function itself no-ops immediately outside SharePoint mode or
+        // before 8am or once today's send is already claimed, so this is
+        // cheap on every tick that isn't the actual trigger moment.
+        setTimeout(() => {
+          if (typeof runDailyActionItemDigestIfDue === "function") runDailyActionItemDigestIfDue();
+        }, 1500);
+        setInterval(() => {
+          if (document.visibilityState !== "visible") return;
+          if (typeof runDailyActionItemDigestIfDue === "function") runDailyActionItemDigestIfDue();
+        }, 5 * 60 * 1000);
       }
       window.AEWTTR.bootComplete = true;
     } catch (bootErr) {

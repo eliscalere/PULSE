@@ -164,7 +164,12 @@ function defaultNotificationPrefs() {
       delivery: DEFAULT_DOC_REVIEW_DELIVERY,
       digestFrequency: DEFAULT_DOC_REVIEW_DIGEST_FREQUENCY
     },
-    digest: { enabled: false, frequency: "daily" }
+    digest: { enabled: false, frequency: "daily" },
+    // Separate from `digest` above (which only governs the in-app popup and
+    // predates any real send). Defaults to true so the daily action-item
+    // email/Teams digest reaches everyone without requiring anyone to visit
+    // Settings first — people who don't want it can turn it off here.
+    actionItemDigest: { enabled: true }
   };
 }
 
@@ -192,7 +197,11 @@ function normalizeNotificationPrefs(prefs) {
     enabled: !!digestRaw.enabled,
     frequency: DIGEST_FREQUENCIES.includes(digestRaw.frequency) ? digestRaw.frequency : "daily"
   };
-  return { areas, tone, channels, everything, documents, digest };
+  const actionItemDigestRaw = prefs.actionItemDigest && typeof prefs.actionItemDigest === "object" ? prefs.actionItemDigest : {};
+  const actionItemDigest = {
+    enabled: actionItemDigestRaw.enabled === false ? false : true
+  };
+  return { areas, tone, channels, everything, documents, digest, actionItemDigest };
 }
 
 function isNotificationAreaEnabledForMember(member, area) {
@@ -200,6 +209,11 @@ function isNotificationAreaEnabledForMember(member, area) {
   const prefs = normalizeNotificationPrefs(member.notificationPrefs);
   if (prefs.everything) return true;
   return prefs.areas.includes(area || "General");
+}
+
+function isActionItemDigestEnabledForMember(member) {
+  if (!member) return false;
+  return normalizeNotificationPrefs(member.notificationPrefs).actionItemDigest.enabled;
 }
 
 function isDocReviewDigestMode(prefs) {
@@ -248,13 +262,18 @@ function firstNameOf(fullName) {
 }
 
 function pulseAppUrl() {
+  // Emails are opened outside any live page/iframe context, so a fixed,
+  // known-good absolute URL beats auto-detecting "the current site" — use
+  // it whenever configured, regardless of where the send was triggered from.
+  const fullUrl = typeof APP_CONFIG !== "undefined" && APP_CONFIG.pulseAppFullUrl;
+  if (fullUrl) return fullUrl;
   const pageName = (typeof APP_CONFIG !== "undefined" && APP_CONFIG.pulseAppPageFileName) || "AEWTTR-PULSE.aspx";
   const siteUrl = window.AEWTTR && window.AEWTTR.siteUrl;
   if (siteUrl) {
     return `${String(siteUrl).replace(/\/$/, "")}/SitePages/${pageName}`;
   }
   const fallbackPath = (typeof APP_CONFIG !== "undefined" && APP_CONFIG.pulseAppPagePath)
-    || "/sites/AEWTTRTst/SitePages/AEWTTR-PULSE.aspx";
+    || "/sites/AEWTTRTest/SitePages/AEWTTR-PULSE.aspx";
   return `${location.origin}${fallbackPath.startsWith("/") ? fallbackPath : `/${fallbackPath}`}`;
 }
 
@@ -374,7 +393,7 @@ function wrapEmailChrome({ subject, area, kind, preview, facts, actionUrl, actio
     ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:${innerHtml || introBlock ? "16px" : "4px"} 0 0;">${factRows}</table>`
     : "";
   const cta = actionUrl
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 0;"><tr><td style="background:#070708;"><a href="${notifyEscape(actionUrl)}" style="display:inline-block;padding:12px 22px;font-family:${fn};font-size:11px;font-weight:700;color:#fff;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;">${notifyEscape(actionTitle || "Open in PULSE")}</a></td></tr></table>`
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 0;"><tr><td style="background:#2F66FF;border-radius:8px;mso-padding-alt:14px 30px;" bgcolor="#2F66FF"><a href="${notifyEscape(actionUrl)}" style="display:inline-block;padding:14px 30px;font-family:${fn};font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">${notifyEscape(actionTitle || "Open in PULSE")}&nbsp;&nbsp;&rarr;</a></td></tr></table>`
     : "";
 
   // innerHtml (calendar block, meeting body, etc.) renders FIRST so the CTA is at top
@@ -392,17 +411,27 @@ function wrapEmailChrome({ subject, area, kind, preview, facts, actionUrl, actio
 <!--[if mso]><style>table,td,p,a{font-family:Arial,Helvetica,sans-serif !important;}</style><![endif]-->
 </head>
 <body style="margin:0;padding:0;background:#ECEDEF;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#ECEDEF;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#ECEDEF;" bgcolor="#ECEDEF">
   <tr>
     <td align="center" style="padding:32px 16px 24px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;width:100%;">
 
-        <!-- Header: Signal Black with PULSE wordmark -->
+        <!-- Header: Signal Black with PULSE wordmark. Text + inline styles
+             only — no <svg>/<img>, since most real mail clients (Outlook
+             desktop's Word engine especially) don't render inline SVG and
+             often block external/data-URI images, silently leaving a blank
+             gap where a graphic logo would have been. -->
         <tr>
-          <td style="background:#070708;padding:20px 28px 18px;">
+          <td style="background:#070708;padding:20px 28px 18px;" bgcolor="#070708">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
               <tr>
-                <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 36" width="108" height="28" role="img" aria-label="PULSE"><circle cx="32" cy="5" r="3" fill="#fff"/><text x="2" y="27" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="300" letter-spacing="4">PULSE</text><circle cx="67" cy="34" r="3" fill="#fff"/></svg></td>
+                <td>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td style="font-family:Arial,Helvetica,sans-serif;font-size:21px;font-weight:300;letter-spacing:5px;color:#ffffff;">PULSE</td>
+                    <td style="width:8px;font-size:0;line-height:0;">&nbsp;</td>
+                    <td style="width:7px;height:7px;line-height:7px;font-size:0;background:#2F66FF;border-radius:4px;" bgcolor="#2F66FF">&nbsp;</td>
+                  </tr></table>
+                </td>
                 <td align="right" style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#51545A;">AEWTTR</td>
               </tr>
             </table>
@@ -411,12 +440,12 @@ function wrapEmailChrome({ subject, area, kind, preview, facts, actionUrl, actio
 
         <!-- Status accent bar (3px, brand color) -->
         <tr>
-          <td style="height:3px;line-height:3px;font-size:0;background:${kindMeta.accent};">&nbsp;</td>
+          <td style="height:3px;line-height:3px;font-size:0;background:${kindMeta.accent};" bgcolor="${kindMeta.accent}">&nbsp;</td>
         </tr>
 
         <!-- Card body -->
         <tr>
-          <td style="background:#ffffff;">
+          <td style="background:#ffffff;" bgcolor="#ffffff">
 
             <!-- Area label -->
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
@@ -459,7 +488,7 @@ function wrapEmailChrome({ subject, area, kind, preview, facts, actionUrl, actio
 
         <!-- Footer -->
         <tr>
-          <td style="background:#ECEDEF;padding:14px 28px;border-top:1px solid #D1D3D8;">
+          <td style="background:#ECEDEF;padding:14px 28px;border-top:1px solid #D1D3D8;" bgcolor="#ECEDEF">
             <p style="margin:0;font-family:Arial,sans-serif;font-size:10.5px;line-height:1.5;color:#51545A;">Sent by <strong>AEWTTR PULSE</strong> &middot; Automated notification &middot; Manage preferences in Settings</p>
           </td>
         </tr>
@@ -787,6 +816,172 @@ async function notifyUsers({ to, subject, area, kind, preview, facts, actionUrl,
   }
 
   return { email: emailResult, teams: teamsResult, digestHeld };
+}
+
+const ACTION_ITEM_DIGEST_CLOSED_STATUSES = ["Done", "Complete", "Cancelled"];
+const ACTION_ITEM_DIGEST_CONCURRENCY = 4;
+
+/* Every person's open action items, resolved by name-matching AssignedToName
+   against db.members (memberMatchesAssignee — same imperfect matcher used
+   everywhere else in the app; not solving name-collision ambiguity here). */
+function collectOpenActionItemsByMember() {
+  const db = window.AEWTTR && window.AEWTTR.db;
+  const byEmail = new Map();
+  if (!db) return byEmail;
+  const members = db.members || [];
+  (db.projects || []).forEach((project) => {
+    const items = (db.ganttTasks && db.ganttTasks[project.id]) || [];
+    items.forEach((task) => {
+      if (typeof isTrackerDivider === "function" && isTrackerDivider(task)) return;
+      if (ACTION_ITEM_DIGEST_CLOSED_STATUSES.includes(task.status)) return;
+      const assignee = String(task.assignee || "").trim();
+      if (!assignee || assignee === "Unassigned") return;
+      const member = members.find((m) => typeof memberMatchesAssignee === "function" && memberMatchesAssignee(m, assignee));
+      if (!member || !member.email) return;
+      const email = String(member.email).trim().toLowerCase();
+      if (!byEmail.has(email)) byEmail.set(email, []);
+      byEmail.get(email).push({
+        title: task.title || task.name || "Untitled task",
+        projectTitle: project.title || project.name || "",
+        due: task.due || task.end || "",
+        status: task.status || "",
+        health: task.health || ""
+      });
+    });
+  });
+  return byEmail;
+}
+
+function actionItemDigestIsOverdue(due, status) {
+  if (!due || ACTION_ITEM_DIGEST_CLOSED_STATUSES.includes(status)) return false;
+  return typeof isOverdue === "function" ? isOverdue(String(due).slice(0, 10)) : false;
+}
+
+function buildActionItemDigestContent(items) {
+  const rows = items.map((item) => {
+    const overdue = actionItemDigestIsOverdue(item.due, item.status);
+    const dueLabel = item.due ? (typeof fmtDate === "function" ? fmtDate(String(item.due).slice(0, 10)) : item.due) : "No due date";
+    const project = item.projectTitle ? ` — ${escapeHtml(item.projectTitle)}` : "";
+    const flag = overdue ? ` <strong style="color:#DC2626;">(Overdue)</strong>` : "";
+    return {
+      html: `<li><strong>${escapeHtml(item.title)}</strong>${project}<br><span style="color:#64748b;font-size:12.5px;">${escapeHtml(item.status || "")} · Due ${escapeHtml(dueLabel)}${flag}</span></li>`,
+      text: `- ${item.title}${item.projectTitle ? ` (${item.projectTitle})` : ""} — ${item.status || ""}, due ${dueLabel}${overdue ? " (OVERDUE)" : ""}`
+    };
+  });
+  return {
+    bodyHtml: `<ul style="margin:0;padding-left:20px;">${rows.map((r) => r.html).join("")}</ul>`,
+    teamsText: rows.map((r) => r.text).join("\n")
+  };
+}
+
+async function sendActionItemDigestInBatches(entries) {
+  let i = 0;
+  async function worker() {
+    while (i < entries.length) {
+      const [email, items] = entries[i++];
+      try {
+        const content = buildActionItemDigestContent(items);
+        await notifyUsers({
+          to: [email],
+          subject: `Your PULSE Daily Digest — ${items.length} open action item${items.length === 1 ? "" : "s"}`,
+          area: "General",
+          kind: "info",
+          body: content.bodyHtml,
+          teamsText: content.teamsText,
+          actionUrl: pulseAppRouteUrl("projects"),
+          actionTitle: "Open PULSE"
+        });
+      } catch (e) {
+        console.warn("PULSE: daily action-item digest send failed for", email, e);
+      }
+    }
+  }
+  const workers = Array.from({ length: Math.min(ACTION_ITEM_DIGEST_CONCURRENCY, entries.length) }, worker);
+  await Promise.all(workers);
+}
+
+/* Reads the "PULSE App Settings" record straight from SharePoint, bypassing
+   window.AEWTTR.db — the digest claim needs server truth, not whatever a
+   background poll (or a stale local cache left over from a previous day)
+   happens to hold in memory right now. */
+async function fetchFreshAppSettingsRecord() {
+  if (typeof isSharePointMode !== "function" || !isSharePointMode()) return null;
+  const siteUrl = window.AEWTTR && window.AEWTTR.siteUrl;
+  if (!siteUrl || typeof listOrEmpty !== "function" || typeof spItemToAppSettings !== "function") return null;
+  const listTitle = (typeof SP_LISTS !== "undefined" && SP_LISTS.appSettings) || "PULSE App Settings";
+  const items = await listOrEmpty(siteUrl, listTitle);
+  return items.length ? spItemToAppSettings(items[0]) : (typeof appSettingsDefaults === "function" ? appSettingsDefaults() : null);
+}
+
+/* Fired at boot and on a recurring timer (see app.js) so it runs whenever
+   anyone has PULSE open. Best-effort daily send: no server exists to run
+   this on a real schedule, so it can't fire at 8am on its own — instead,
+   whoever's copy of PULSE is open at or after 8am (their browser's local
+   time) each calendar day triggers the org-wide digest for everyone, and a
+   session left open across the 8am mark picks it up on its next timer tick
+   without needing a fresh reload.
+
+   SharePoint REST has no compare-and-swap, so a naive read-then-write claim
+   double-sends whenever more than one person's client checks in before the
+   other's write has propagated — in practice this happens whenever several
+   people open PULSE fresh in the same morning window, since each one reads
+   its own not-yet-refreshed local copy of "already sent today". Two things
+   close that gap: (1) re-fetch the settings record from the server, not
+   window.AEWTTR.db, right before deciding whether today's send is still
+   open; (2) write our claim with a random token, wait for any competing
+   claim to settle, then re-fetch once more and only actually send if our
+   token is still the one on record — whichever claim wrote last wins, and
+   every loser silently stands down instead of also mailing the whole org. */
+async function runDailyActionItemDigestIfDue() {
+  if (typeof isSharePointMode !== "function" || !isSharePointMode()) return;
+  const db = window.AEWTTR && window.AEWTTR.db;
+  if (!db || !db.appSettings) return;
+
+  const now = new Date();
+  if (now.getHours() < 8) return;
+
+  const today = now.toDateString();
+  if (db.appSettings.lastActionItemDigestDate === today) return;
+
+  try {
+    const fresh = await fetchFreshAppSettingsRecord();
+    if (fresh) {
+      Object.assign(db.appSettings, fresh);
+      if (db.appSettings.lastActionItemDigestDate === today) return;
+    }
+  } catch (e) {
+    // Couldn't reach the server to double-check — fall through to the
+    // normal claim path below; no worse than before this fix existed.
+  }
+
+  const claimToken = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  try {
+    db.appSettings.lastActionItemDigestDate = today;
+    db.appSettings.lastActionItemDigestClaimToken = claimToken;
+    await Repo.save("appSettings", db.appSettings, { immediate: true });
+  } catch (e) {
+    console.warn("PULSE: could not claim daily action-item digest — skipping this boot.", e);
+    return;
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  try {
+    const verify = await fetchFreshAppSettingsRecord();
+    if (!verify || verify.lastActionItemDigestClaimToken !== claimToken) return;
+  } catch (e) {
+    return; // can't confirm we won the claim — don't risk a duplicate send
+  }
+
+  try {
+    const byEmail = collectOpenActionItemsByMember();
+    const entries = Array.from(byEmail.entries()).filter(([email]) => {
+      const member = typeof findMemberByEmail === "function" ? findMemberByEmail(email) : null;
+      return typeof isActionItemDigestEnabledForMember === "function" ? isActionItemDigestEnabledForMember(member) : true;
+    });
+    if (entries.length) await sendActionItemDigestInBatches(entries);
+  } catch (e) {
+    console.warn("PULSE: daily action-item digest failed.", e);
+  }
 }
 
 function travelRequestsForCurrentUser() {
