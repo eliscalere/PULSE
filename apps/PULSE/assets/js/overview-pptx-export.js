@@ -522,7 +522,7 @@
         color: style.text
       });
     });
-    addCallout(slide, `${m.documentsInReview} in review / ${m.pendingTravel} pending travel`, {
+    addCallout(slide, `${m.documentsInReview} in review / ${m.pendingTravel} awaiting C/O`, {
       x: 5.66, y: 5.15, w: 3.55, h: 0.62
     });
   }
@@ -1097,8 +1097,13 @@
     const documentsInReview = docs.filter(doc =>
       !doc.isArchived && !["Review Complete", "Signed", "Archived"].includes(doc._column || "")
     ).length;
+    /* Matches buildTeamMetrics() in overview.js and the Travel page's own
+       "Awaiting Finance" filter. The old test looked for a "Pending" status that
+       this app never had, so the deck reported a different number than the
+       screen it was exported from. */
     const pendingTravel = (db.travelRequests || []).filter(request =>
-      request.status === "Pending" || request.status === "Submitted"
+      request.status === "Submitted" && request.chargeObjectStatus === "Pending"
+      && (typeof travelCategory !== "function" || travelCategory(request) !== "Leave")
     ).length;
     const activeProjects = projectRows.filter(project =>
       ["On Track", "At Risk", "Blocked"].includes(project.derivedStatus)
@@ -1131,7 +1136,7 @@
       summaryNarrative: [
         activeSummary,
         blockedSummary,
-        `Document review has ${documentsInReview} active item${documentsInReview === 1 ? "" : "s"}; ${pendingTravel} travel request${pendingTravel === 1 ? " is" : "s are"} pending.`,
+        `Document review has ${documentsInReview} active item${documentsInReview === 1 ? "" : "s"}; ${pendingTravel} travel request${pendingTravel === 1 ? " is" : "s are"} awaiting a charge object.`,
         `${closedTasks} of ${totalTasks} total task${totalTasks === 1 ? "" : "s"} are closed; ${openRisks} open risk${openRisks === 1 ? "" : "s"} require routine monitoring.`
       ],
       statusGroups,

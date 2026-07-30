@@ -32,6 +32,7 @@ graphify-out/
 **/graphify-out/
 .openai/
 **/.openai/
+.foglamp/
 PRODUCT.md
 
 # Generated zips (sources are tracked; zips are redundant)

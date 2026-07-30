@@ -1,9 +1,10 @@
 /* Architecture figures generated from the codebase scan.
 
    architecture-data.json is the node/edge graph produced by the codebase scan
-   (public/embeds/codebase-scan.html). Every node carries a sourceRef, and all 22
-   of them were verified to exist in the tree before this was published — a
-   diagram claiming a file that is not there is worse than no diagram.
+   (app/codebase-scan.tsx, inlined into the Codebase scan tab). Every node
+   carries a sourceRef, and all 22 of them were verified to exist in the tree
+   before this was published — a diagram claiming a file that is not there is
+   worse than no diagram.
 
    Two figures rather than one picture of all 26 nodes: the full graph is legible
    interactively (that is what the embedded scan is for) but unreadable as a

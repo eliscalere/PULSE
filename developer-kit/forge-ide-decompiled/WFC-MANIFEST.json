@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "project": "forge",
+  "generated": "2026-06-29T17:03:54.348Z",
+  "index": "index.html",
+  "files": [
+    {
+      "kind": "css",
+      "path": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css",
+      "external": true,
+      "hash": "1671b8ac"
+    },
+    {
+      "kind": "css",
+      "path": "css/codicon-inline.css",
+      "external": false,
+      "hash": "8a65fabb"
+    },
+    {
+      "kind": "css",
+      "path": "css/styles.css",
+      "external": false,
+      "hash": "db722c78"
+    },
+    {
+      "kind": "js",
+      "path": "https://code.jquery.com/jquery-3.7.1.min.js",
+      "external": true,
+      "hash": "f6b137bd"
+    },
+    {
+      "kind": "js",
+      "path": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js",
+      "external": true,
+      "hash": "2cf078ee"
+    },
+    {
+      "kind": "js",
+      "path": "https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js",
+      "external": true,
+      "hash": "603bf219"
+    },
+    {
+      "kind": "js",
+      "path": "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
+      "external": true,
+      "hash": "b965d301"
+    },
+    {
+      "kind": "js",
+      "path": "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js",
+      "external": true,
+      "hash": "91668e28"
+    },
+    {
+      "kind": "js",
+      "path": "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
+      "external": true,
+      "hash": "72b2d2c8"
+    },
+    {
+      "kind": "js",
+      "path": "cm6-bundle.js",
+      "external": false,
+      "hash": "ea9c20ef"
+    },
+    {
+      "kind": "js",
+      "path": "aiResponseParser.js",
+      "external": false,
+      "hash": "c22a9292"
+    },
+    {
+      "kind": "js",
+      "path": "loadFolder.js",
+      "external": false,
+      "hash": "a2b85c82"
+    },
+    {
+      "kind": "js",
+      "path": "newProjectWalkthrough.js",
+      "external": false,
+      "hash": "f1830d3c"
+    },
+    {
+      "kind": "js",
+      "path": "editor.js",
+      "external": false,
+      "hash": "825b1c46"
+    },
+    {
+      "kind": "js",
+      "path": "aiResponseImporter.js",
+      "external": false,
+      "hash": "9591cf58"
+    },
+    {
+      "kind": "js",
+      "path": "checkpointManager.js",
+      "external": false,
+      "hash": "df9f6449"
+    },
+    {
+      "kind": "js",
+      "path": "compiler.js",
+      "external": false,
+      "hash": "8e456e06"
+    },
+    {
+      "kind": "js",
+      "path": "decompiler.js",
+      "external": false,
+      "hash": "61f37906"
+    },
+    {
+      "kind": "js",
+      "path": "search.js",
+      "external": false,
+      "hash": "bf4c1716"
+    },
+    {
+      "kind": "js",
+      "path": "devconsoleTab.js",
+      "external": false,
+      "hash": "a0b9aaa3"
+    },
+    {
+      "kind": "js",
+      "path": "testRecorderTab.js",
+      "external": false,
+      "hash": "0e69da79"
+    },
+    {
+      "kind": "js",
+      "path": "advancedDebugTab.js",
+      "external": false,
+      "hash": "5f1d569f"
+    },
+    {
+      "kind": "js",
+      "path": "mathLogicTesterTab.js",
+      "external": false,
+      "hash": "ddf3a963"
+    },
+    {
+      "kind": "js",
+      "path": "sharedriveNoSqlTab.js",
+      "external": false,
+      "hash": "5f44f136"
+    },
+    {
+      "kind": "js",
+      "path": "leafletMapTab.js",
+      "external": false,
+      "hash": "cb6d1d40"
+    },
+    {
+      "kind": "js",
+      "path": "aiHelper.js",
+      "external": false,
+      "hash": "39941d06"
+    },
+    {
+      "kind": "js",
+      "path": "sharedrive-nosql.js",
+      "external": false,
+      "hash": "17363396"
+    },
+    {
+      "kind": "js",
+      "path": "sastTab.js",
+      "external": false,
+      "hash": "c0c40e37"
+    },
+    {
+      "kind": "js",
+      "path": "securityReviewer.js",
+      "external": false,
+      "hash": "d1e58596"
+    },
+    {
+      "kind": "js",
+      "path": "domPurify.js",
+      "external": false,
+      "hash": "ce56b714"
+    },
+    {
+      "kind": "js",
+      "path": "athenaCompat.js",
+      "external": false,
+      "hash": "f0e5244d"
+    },
+    {
+      "kind": "js",
+      "path": "js/merge-editor.js",
+      "external": false,
+      "hash": "6d6ec68d"
+    },
+    {
+      "kind": "js",
+      "path": "athenaAgent.js",
+      "external": false,
+      "hash": "da8c4dcb"
+    },
+    {
+      "kind": "js",
+      "path": "promptLab.js",
+      "external": false,
+      "hash": "a5a96ba1"
+    }
+  ]
+}

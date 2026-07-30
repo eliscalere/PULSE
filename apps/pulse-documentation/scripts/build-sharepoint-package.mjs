@@ -96,11 +96,13 @@ function collectPublicAssets(manifestFiles) {
   const assetUrls = {};
   /* The controlled PDFs are ~64% of the payload and only matter when a reader
      clicks through to verify a passage, but a single-file package cannot fetch
-     them on demand — inlining them costs every reader seconds of download and
-     JS parse before the shell appears. So they are opt-in: the default build is
-     the one you put on a page, and INCLUDE_PDFS=1 produces the archival package
-     that carries them. The UI hides PDF affordances when they are absent. */
+     them on demand. They still must not cost every reader JS-parse time before
+     the shell appears, so they are kept out of assetUrls entirely — see
+     pdfBase64 below — and opt-in at the file level: the default build omits
+     them, INCLUDE_PDFS=1 produces the archival package that carries them. The
+     UI hides PDF affordances when they are absent. */
   const includePdfs = process.env.INCLUDE_PDFS === "1";
+  const pdfBase64 = {};
   /* The brand ZIP is 346 KB of the package and duplicates assets that are
      already inlined individually, so it is excluded from the delivered build.
      The archival build carries it. */
@@ -111,7 +113,6 @@ function collectPublicAssets(manifestFiles) {
     ...publicFilesUnder("source-text"),
     ...publicFilesUnder("screenshots"),
     ...publicFilesUnder("figures"),
-    ...publicFilesUnder("embeds"),
     path.join(PUBLIC_ROOT, "favicon.svg"),
   ].filter((filePath) => existsSync(filePath));
 
@@ -122,28 +123,64 @@ function collectPublicAssets(manifestFiles) {
     manifestFiles.push({ kind: "public", path: relativePath, external: false, hash: hash(bytes) });
     if (relativePath.startsWith("source-text/")) {
       sourceText[publicPath] = bytes.toString("utf8");
+    } else if (relativePath.startsWith("source-pdfs/")) {
+      pdfBase64[publicPath] = bytes.toString("base64");
     } else {
       assetUrls[publicPath] = dataUri(filePath);
     }
   }
 
-  return { sourceText, assetUrls };
+  return { sourceText, assetUrls, pdfBase64 };
 }
 
-function createAssetRuntime(sourceText, assetUrls) {
+/* A PDF's base64 body is megabytes of text that must never be parsed as
+   JavaScript — assigning it into a JS object literal forces V8 to tokenize
+   the whole thing as source before the script can finish running, which
+   blocks the first paint on exactly the bytes nobody has asked for yet.
+   Placed in its own <script type="application/json"> (see buildPackage),
+   the browser stores it as an inert text node — no compile, no execution —
+   and it costs nothing until downloadPdf() actually parses it, one time, on
+   the click that needs it. */
+function pdfPayloadScript(pdfBase64) {
+  const json = JSON.stringify(pdfBase64).replaceAll("<", "\\u003c");
+  return `<script type="application/json" id="pulse-pdf-payload">${json}</script>`;
+}
+
+function createAssetRuntime(sourceText, assetUrls, pdfPathnames) {
   const sourceJson = JSON.stringify(sourceText).replaceAll("<", "\\u003c");
   const assetJson = JSON.stringify(assetUrls).replaceAll("<", "\\u003c");
+  const pdfPathnameJson = JSON.stringify(pdfPathnames).replaceAll("<", "\\u003c");
   return `
 (function () {
   var sourceText = ${sourceJson};
+  var pdfPathnames = ${pdfPathnameJson};
+  var pdfAssetCache = null;
+  function pdfAssetUrls() {
+    if (pdfAssetCache) return pdfAssetCache;
+    var el = document.getElementById("pulse-pdf-payload");
+    var base64ByPath = el ? JSON.parse(el.textContent) : {};
+    pdfAssetCache = {};
+    Object.keys(base64ByPath).forEach(function (key) {
+      pdfAssetCache[key] = "data:application/pdf;base64," + base64ByPath[key];
+    });
+    return pdfAssetCache;
+  }
   var assetUrls = ${assetJson};
   window.__PULSE_ASSETS__ = assetUrls;
+  /* PDFs are not in assetUrls (see pdfAssetUrls above), so hasAsset() would
+     otherwise report them as missing and the UI would hide the download
+     affordance even when the archival build carries them. */
+  window.__PULSE_HAS_ASSET__ = function (path) {
+    return Object.prototype.hasOwnProperty.call(assetUrls, path) || pdfPathnames.indexOf(path) !== -1;
+  };
   /* Exposed so the reader can populate itself synchronously instead of waiting
      on fetch() — the text is already in the document, so there is nothing to
      wait for and the boot overlay can clear on the first commit. */
   window.__PULSE_SOURCE_TEXT__ = sourceText;
   window.getAssetUrl = function (path) {
-    return assetUrls[path] || path;
+    if (assetUrls[path]) return assetUrls[path];
+    if (pdfPathnames.indexOf(path) !== -1) return pdfAssetUrls()[path] || path;
+    return path;
   };
   var nativeFetch = typeof window.fetch === "function" ? window.fetch.bind(window) : null;
 
@@ -406,7 +443,7 @@ async function buildPackage() {
     .replace(/<link\b(?=[^>]*\brel=["'](?:modulepreload|preload)["'])[^>]*>/gi, "")
     .replace(/<meta\b(?=[^>]*\b(?:property|name)=["'](?:og:image|twitter:image)["'])[^>]*>/gi, "");
 
-  const { sourceText, assetUrls } = collectPublicAssets(manifestFiles);
+  const { sourceText, assetUrls, pdfBase64 } = collectPublicAssets(manifestFiles);
   const favicon = assetUrls["/favicon.svg"];
   if (favicon) {
     html = html.replace(/(<link\b[^>]*\bhref=["'])\/favicon\.svg(["'][^>]*>)/gi, `$1${favicon}$2`);
@@ -414,7 +451,8 @@ async function buildPackage() {
   html = inlineHtmlAssetTags(html, assetUrls);
 
   const bundled = bundleClient(html, manifestFiles);
-  const runtimeBlock = `<script>\n${escapeScript(createAssetRuntime(sourceText, assetUrls))}\n</script>\n<script id="_R_"`;
+  const pdfPathnames = Object.keys(pdfBase64);
+  const runtimeBlock = `<script>\n${escapeScript(createAssetRuntime(sourceText, assetUrls, pdfPathnames))}\n</script>\n${pdfPathnames.length ? `${pdfPayloadScript(pdfBase64)}\n` : ""}<script id="_R_"`;
   html = bundled.html.replace(/<script\s+id=["']_R_["']/i, () => runtimeBlock);
   html = neutralizeChunkTable(html);
 

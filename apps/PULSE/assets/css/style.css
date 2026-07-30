@@ -1779,6 +1779,10 @@ a.btn-travel-action {
 }
 .overview-filter-select { min-width: 140px; }
 .overview-filter-search { flex: 1; min-width: 180px; max-width: 320px; }
+/* .select-aewttr is width:100% by default, which as a flex item resolves to a
+   full-width basis — so a single status dropdown wrapped onto its own line and
+   stretched the whole card. Filters belong on one row beside the search. */
+.overview-filters .select-aewttr { flex: 0 1 190px; width: auto; min-width: 150px; }
 
 .overview-attention-list {
   display: flex;
@@ -18397,3 +18401,28 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .ov-activity-tbl tbody tr[data-person-name]:hover td { background: var(--aewttr-surface-2, #f7f8fa); }
 .ov-activity-num { text-align: right; padding-right: 0 !important; font-variant-numeric: tabular-nums; }
 th.ov-activity-num { text-align: right; }
+
+/* Resources: one dense table per view. The previous rows were 73px tall with a
+   second table underneath repeating the same people, so five team members filled
+   the screen and nothing could be compared at a glance. */
+.resource-table-scroll { width: 100%; overflow-x: auto; }
+.resource-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.resource-table th { padding: 0 10px 8px 0; border-bottom: 1px solid var(--aewttr-text); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--aewttr-text); text-align: left; white-space: nowrap; }
+.resource-table td { padding: 6px 10px 6px 0; line-height: 1.3; border-bottom: 1px solid var(--aewttr-border); font-size: 13px; color: var(--aewttr-text); vertical-align: middle; }
+.resource-table tbody tr.resource-tr { cursor: pointer; }
+.resource-table tbody tr.resource-tr:hover td { background: var(--aewttr-surface-2, #f7f8fa); }
+.resource-table tbody tr.is-expanded td { background: var(--aewttr-surface-2, #f7f8fa); border-bottom-color: transparent; }
+.resource-num { text-align: right; padding-right: 0 !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+th.resource-num { text-align: right; }
+.resource-person-cell { display: inline-flex; align-items: center; gap: 8px; }
+.resource-person-cell strong { font-weight: 600; white-space: nowrap; }
+.resource-proj-cell { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.resource-proj-cell em { font-style: normal; font-size: 11px; padding: 2px 7px; border-radius: 20px; background: var(--aewttr-surface-2, #f2f3f5); color: var(--aewttr-muted); white-space: nowrap; }
+.resource-proj-cell .resource-more { background: transparent; }
+.resource-detail-tr td { padding: 0 0 12px !important; border-bottom: 1px solid var(--aewttr-border); background: var(--aewttr-surface-2, #f7f8fa); }
+.resource-table .resource-avatar-stack { display: inline-flex; gap: 3px; vertical-align: middle; }
+.resource-table .av, .resource-table .kc-avatar { flex: none; }
+.resource-scroll-list .resource-table-scroll { padding: 2px 20px 16px; }
+/* The list scrolls vertically, so the header has to stay put or the numeric
+   columns lose their labels as soon as the team is longer than the card. */
+.resource-scroll-list .resource-table th { position: sticky; top: 0; z-index: 2; background: var(--aewttr-surface, #fff); }

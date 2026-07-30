@@ -441,13 +441,12 @@ main { display:flex; min-height:100vh; }.sidebar { position:fixed; z-index:10; i
 @media print { .figure-lightbox { display:none !important; } .doc-figure-zoom { display:none !important; } .doc-figure-open { border-color:var(--line) !important; } }
 
 
-/* Codebase scan embed. The scan is its own self-contained page, so it runs in a
-   sandboxed frame off the inlined asset rather than being reimplemented here. */
+/* Codebase scan embed. Rendered directly by CodebaseScanEmbed (app/codebase-scan.tsx)
+   inside this box; the component fills it via position:absolute;inset:0. */
 .scan-page { padding:58px 9.5% 90px; background:var(--field); }
 .scan-page .brand-intro { border-bottom:1px solid var(--line); }
-.scan-frame { margin:30px 0 0; border:1px solid var(--line); border-radius:2px; background:var(--mist); overflow:hidden; }
-.scan-frame iframe { display:block; width:100%; height:min(78vh,860px); border:0; background:var(--field); }
+.scan-frame { position:relative; margin:30px 0 0; border:1px solid var(--line); border-radius:2px; background:var(--mist); overflow:hidden; height:min(78vh,860px); }
 .scan-note { margin-top:15px; color:var(--graphite); font-size:12px; line-height:1.6; }
 .scan-note code { font:11px ui-monospace,SFMono-Regular,Menlo,monospace; }
-@media (max-width:860px) { .scan-page { padding-left:22px; padding-right:22px; } .scan-frame iframe { height:70vh; } }
+@media (max-width:860px) { .scan-page { padding-left:22px; padding-right:22px; } .scan-frame { height:70vh; } }
 @media print { .scan-page { display:none !important; } }

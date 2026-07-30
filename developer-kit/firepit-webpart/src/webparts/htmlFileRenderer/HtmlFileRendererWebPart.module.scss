@@ -1,0 +1,181 @@
+@import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
+
+.htmlFileRenderer {
+  width: 100%;
+  min-height: 100px;
+  color: "[theme:bodyText, default: #323130]";
+  color: var(--bodyText);
+}
+
+// Placeholder state (no URL configured)
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: "[theme:neutralLighterAlt, default: #faf9f8]";
+  background: var(--neutralLighterAlt, #faf9f8);
+  border: 2px dashed "[theme:neutralTertiary, default: #a19f9d]";
+  border-color: var(--neutralTertiary, #a19f9d);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.placeholderIcon {
+  color: "[theme:themePrimary, default: #0078d4]";
+  color: var(--themePrimary, #0078d4);
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.placeholder h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: "[theme:neutralPrimary, default: #323130]";
+  color: var(--neutralPrimary, #323130);
+}
+
+.placeholder p {
+  margin: 0;
+  font-size: 14px;
+  color: "[theme:neutralSecondary, default: #605e5c]";
+  color: var(--neutralSecondary, #605e5c);
+  max-width: 400px;
+}
+
+// Loading state
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: "[theme:neutralLighterAlt, default: #faf9f8]";
+  background: var(--neutralLighterAlt, #faf9f8);
+  border-radius: 4px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid "[theme:neutralLight, default: #edebe9]";
+  border-color: var(--neutralLight, #edebe9);
+  border-top-color: "[theme:themePrimary, default: #0078d4]";
+  border-top-color: var(--themePrimary, #0078d4);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading p {
+  margin: 0;
+  font-size: 14px;
+  color: "[theme:neutralSecondary, default: #605e5c]";
+  color: var(--neutralSecondary, #605e5c);
+}
+
+// Error state
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: "[theme:errorBackground, default: #fde7e9]";
+  background: var(--errorBackground, #fde7e9);
+  border: 1px solid "[theme:errorText, default: #a80000]";
+  border-color: var(--errorText, #a80000);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.errorIcon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.error h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: "[theme:errorText, default: #a80000]";
+  color: var(--errorText, #a80000);
+}
+
+.error p {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: "[theme:neutralPrimary, default: #323130]";
+  color: var(--neutralPrimary, #323130);
+  max-width: 400px;
+}
+
+.retryButton {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background-color: "[theme:themePrimary, default: #0078d4]";
+  background-color: var(--themePrimary, #0078d4);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: "[theme:themeDark, default: #005a9e]";
+    background-color: var(--themeDark, #005a9e);
+  }
+
+  &:active {
+    background-color: "[theme:themeDarker, default: #004578]";
+    background-color: var(--themeDarker, #004578);
+  }
+}
+
+// Iframe container
+.iframeContainer {
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.iframe {
+  width: 100%;
+  border: none;
+  display: block;
+  background: white;
+}
+
+// Full Screen Mode
+// This breaks out of the web part container to cover the entire viewport
+.fullScreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999; // Extremely high Z-index to cover SharePoint nav
+  background: white;
+  display: flex;
+  flex-direction: column;
+
+  .iframeContainer {
+    flex: 1;
+    height: 100% !important;
+    border-radius: 0;
+  }
+
+  iframe {
+    height: 100% !important;
+  }
+}

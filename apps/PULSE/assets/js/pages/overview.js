@@ -78,6 +78,23 @@ PAGE_RENDERERS.overview = function () {
     return parent ? (parent.name || parent.id) : proj.parentProjectId;
   }
 
+  /* Money at portfolio scale needs a unit that matches its size. Dividing
+     everything by a thousand turned $68.9M into "68868K", which reads as noise.
+     One decimal below 10 units, none above, so the tile stays narrow. */
+  function formatCompactMoney(value) {
+    const raw = parseFloat(value) || 0;
+    const n = Math.abs(raw);
+    const sign = raw < 0 ? "-" : "";
+    const scale = (divisor, suffix) => {
+      const scaled = n / divisor;
+      return sign + "$" + (scaled >= 10 ? scaled.toFixed(0) : scaled.toFixed(1)) + suffix;
+    };
+    if (n >= 1e9) return scale(1e9, "B");
+    if (n >= 1e6) return scale(1e6, "M");
+    if (n >= 1e3) return sign + "$" + (n / 1e3).toFixed(0) + "K";
+    return sign + "$" + n.toFixed(0);
+  }
+
   function projectPeopleList(projId) {
     return (db.projectPeople && db.projectPeople[projId]) || [];
   }
@@ -227,8 +244,12 @@ PAGE_RENDERERS.overview = function () {
       });
     });
 
+    /* Submitted is the only status that is genuinely waiting on somebody — an
+       approved trip needs nothing from anyone. The old test also looked for a
+       "Pending" status this app has never had, which matched nothing and made
+       the filter read as broader than it is. */
     const myTravel = (db.travelRequests || []).filter(r =>
-      (r.status === "Pending" || r.status === "Submitted") && (
+      r.status === "Submitted" && (
         String(r.requester || "").toLowerCase() === myName ||
         String(r.requesterEmail || "").toLowerCase() === myEmail
       )
@@ -342,7 +363,7 @@ PAGE_RENDERERS.overview = function () {
           <table class="aewttr-table">
             <thead><tr><th>Task</th><th>Project</th><th>Due</th><th>Priority</th><th>Status</th></tr></thead>
             <tbody>
-              ${filteredTasks.map(task => `<tr data-route="projects/${escapeHtml(task.projectId)}/workspace">
+              ${filteredTasks.map(task => `<tr data-route="projects/${escapeHtml(projectRouteKeyById(task.projectId))}/workspace">
                   <td><strong>${escapeHtml(task.title || "Untitled")}</strong></td>
                   <td>${escapeHtml(task.projectName)}</td>
                   <td>${task.end ? fmtDate(task.end) : "—"}</td>
@@ -365,7 +386,7 @@ PAGE_RENDERERS.overview = function () {
             const tasks  = allProjectTasks(proj.id);
             const open   = tasks.filter(taskIsActive).length;
             const risks  = projectRiskCount(proj.id);
-            return `<button class="overview-spotlight-row" data-route="projects/${escapeHtml(proj.id)}/workspace">
+            return `<button class="overview-spotlight-row" data-route="projects/${escapeHtml(projectRouteKeyById(proj.id))}/workspace">
               <div>
                 <strong>${escapeHtml(proj.name || "Untitled project")}</strong>
                 <span>${escapeHtml(myRoleOnProject(proj) || "Member")} · ${escapeHtml(proj.team || "—")}</span>
@@ -408,7 +429,9 @@ PAGE_RENDERERS.overview = function () {
     const criticalRisks = projects.reduce((sum, p) => sum + projectCriticalRiskCount(p.id), 0);
     const totalFunded = projects.reduce((sum, p) => sum + (parseFloat(p.fundedOnContractAmount) || 0), 0);
     const totalReimb = projects.reduce((sum, p) => sum + (parseFloat(p.reimbursableAmount) || 0), 0);
-    const totalTravelCost = (db.travelRequests || []).reduce((sum, r) => sum + (parseFloat(r.estimatedCost || r.totalCost) || 0), 0);
+    /* Scoped to the same requests the tile counts. Summing every travel record
+       ever raised put an unrelated total under a queue figure. */
+    const pendingTravelCost = pendingTravel.reduce((sum, r) => sum + (parseFloat(r.estimatedCost || r.totalCost) || 0), 0);
 
     const activeProjects = projects.filter(p => {
       const s = derivedProjectStatus(p);
@@ -428,7 +451,7 @@ PAGE_RENDERERS.overview = function () {
       pendingTravel: pendingTravel.length,
       totalFunded,
       totalReimb,
-      totalTravelCost
+      pendingTravelCost
     };
   }
 
@@ -469,13 +492,13 @@ PAGE_RENDERERS.overview = function () {
           <strong>${metrics.openRisks}</strong><span>Open risks</span>${metrics.criticalRisks ? `<small style="color:var(--aewttr-red);">${metrics.criticalRisks} critical</small>` : ""}
         </div>
         <div class="ov-team-stat" ${tip("Total funded amount on contract across active portfolio")}>
-          <strong style="color:var(--aewttr-success,#27ae60);">$${metrics.totalFunded ? (metrics.totalFunded / 1000).toFixed(0) + "K" : "0"}</strong><span>Contract Funding</span><small>$${(metrics.totalReimb / 1000).toFixed(0)}K reimb</small>
+          <strong style="color:var(--aewttr-success,#27ae60);">${formatCompactMoney(metrics.totalFunded)}</strong><span>Contract Funding</span><small>${formatCompactMoney(metrics.totalReimb)} reimb</small>
         </div>
         <div class="ov-team-stat" ${tip("Document review records not yet complete")}>
           <strong>${metrics.docsInReview}</strong><span>Docs in review</span>
         </div>
         <div class="ov-team-stat" ${tip("Submitted travel requests still waiting on a charge object from finance")}>
-          <strong>${metrics.pendingTravel}</strong><span>Awaiting C/O</span><small>$${(metrics.totalTravelCost / 1000).toFixed(1)}K est</small>
+          <strong>${metrics.pendingTravel}</strong><span>Awaiting C/O</span>${metrics.pendingTravelCost ? `<small>${formatCompactMoney(metrics.pendingTravelCost)} est</small>` : ""}
         </div>
         <div class="ov-team-stats-actions">
           <button class="btn-aewttr-outline btn-aewttr-sm" data-route="projects"><i class="bx bx-briefcase"></i> All Projects</button>
@@ -607,7 +630,7 @@ PAGE_RENDERERS.overview = function () {
 
     const cardsHtml = sorted.map(({ proj, open, done, risks, health, pctDone }) => {
       const pm = projectPMDisplayName(proj);
-      return `<button class="ov-health-card ${clsMap[health]}" data-route="projects/${escapeHtml(proj.id)}/workspace">
+      return `<button class="ov-health-card ${clsMap[health]}" data-route="projects/${escapeHtml(projectRouteKeyById(proj.id))}/workspace">
         <div class="ov-health-card-head">
           <div class="ov-health-card-name">${escapeHtml(proj.name || "Untitled")}</div>
           <span class="ov-derived-status ${pillMap[health]}">${labelMap[health]}</span>
@@ -627,13 +650,13 @@ PAGE_RENDERERS.overview = function () {
       groups.push({
         icon: "bx-error-alt", label: "Critical Risks", color: "var(--aewttr-amber)",
         items: projectHealth.filter(p => p.criticalRisks.length).flatMap(p =>
-          p.criticalRisks.slice(0, 3).map(r => ({ title: r.title || r.description || "Risk", sub: p.proj.name || p.proj.id, route: `projects/${escapeHtml(p.proj.id)}/workspace` }))
+          p.criticalRisks.slice(0, 3).map(r => ({ title: r.title || r.description || "Risk", sub: p.proj.name || p.proj.id, route: `projects/${escapeHtml(projectRouteKeyById(p.proj.id))}/workspace` }))
         ).slice(0, 8)
       });
     }
     if (docsNeedingAction) {
       groups.push({
-        icon: "bx-file-blank", label: "Documents Pending", color: "var(--aewttr-muted)",
+        icon: "bx-file-blank", label: "Documents In Review", color: "var(--aewttr-muted)",
         items: [{ title: `${docsNeedingAction} document${docsNeedingAction !== 1 ? "s" : ""} awaiting review`, sub: "Open Document Review →", route: "docreview" }]
       });
     }
@@ -750,7 +773,7 @@ PAGE_RENDERERS.overview = function () {
             const s = sev(r);
             const lSev = String(r.likelihood || "").toLowerCase();
             const iSev = String(r.impact || "").toLowerCase();
-            return `<tr style="cursor:pointer;" data-route="projects/${escapeHtml(r.projectId)}/workspace">
+            return `<tr style="cursor:pointer;" data-route="projects/${escapeHtml(projectRouteKeyById(r.projectId))}/workspace">
               <td style="max-width:280px;">
                 <strong>${escapeHtml(r.title || r.description || "Risk")}</strong>
                 ${r.mitigation ? `<div style="font-size:11px;color:var(--aewttr-muted);margin-top:2px;">${escapeHtml(String(r.mitigation).slice(0, 90))}${String(r.mitigation).length > 90 ? "…" : ""}</div>` : ""}
@@ -814,8 +837,8 @@ PAGE_RENDERERS.overview = function () {
               const risks = projectRiskCount(proj.id);
               const portfolio = (Array.isArray(proj.portfolios) && proj.portfolios[0]) || "—";
               const pmName = projectPMDisplayName(proj);
-              const funded = proj.fundedOnContractAmount ? `$${Number(proj.fundedOnContractAmount).toLocaleString()}` : "—";
-              return `<tr data-route="projects/${escapeHtml(proj.id)}/workspace" style="cursor:pointer;">
+              const funded = proj.fundedOnContractAmount ? formatCompactMoney(proj.fundedOnContractAmount) : "—";
+              return `<tr data-route="projects/${escapeHtml(projectRouteKeyById(proj.id))}/workspace" style="cursor:pointer;">
                 <td><strong>${escapeHtml(proj.name || "Untitled project")}</strong></td>
                 <td>${derivedStatusPill(derivedProjectStatus(proj))}</td>
                 <td>${open || "—"}</td>
@@ -913,7 +936,7 @@ PAGE_RENDERERS.overview = function () {
                 const pa = ptasks.filter(taskIsActive).length;
                 const pr = projectRiskCount(proj.id);
                 const portfolio = (proj.portfolios && proj.portfolios[0]) || "—";
-                return `<tr data-route="projects/${escapeHtml(proj.id)}/workspace">
+                return `<tr data-route="projects/${escapeHtml(projectRouteKeyById(proj.id))}/workspace">
                   <td><strong>${escapeHtml(proj.name || "Untitled project")}</strong></td>
                   <td>${derivedStatusPill(derivedProjectStatus(proj))}</td>
                   <td>${pa}</td>
@@ -1177,96 +1200,46 @@ PAGE_RENDERERS.overview = function () {
       </div>`;
   }
 
-  /* Per-person activity outside the project graph: trips taken, leave taken,
-     requests raised, and documents actually reviewed. The graph above answers
-     "who is on what"; this answers "what has each person been doing".
+  /* Per-person activity, keyed by display name so the Resources table shows it
+     beside staffing. Matched by email where both sides have one and by name
+     otherwise: travel records carry a traveller list with optional emails and
+     reviewer records carry name and email, so neither key is always present.
 
-     Matching is by email where both sides have one and by name otherwise —
-     travel records carry a traveler list with optional emails, and reviewer
-     records carry name and email, so neither key is reliably present. */
-  function renderTeamActivityTable(people) {
-    /* Rows here come from project assignments and task assignees, which carry a
-       display name only. Travel and reviewer records may key on either, so look
-       up an email from the member list where one exists. */
-    const members = db.members || [];
-    const withEmail = (people || []).map((row) => {
-      const match = members.find((m) => String(m.name || "").trim().toLowerCase() === String(row.name || "").trim().toLowerCase());
-      return { name: row.name, email: (match && match.email) || row.email || "" };
-    });
-    people = withEmail;
+     Trips and leave count once approved or completed. Requests counts what a
+     person raised, including for others. Reviews counts documents they have
+     actually decided, not ones still sitting in their queue. */
+  function personActivityIndex(rows) {
     const travel = db.travelRequests || [];
     const docs = typeof getAllDocReviewRecords === "function" ? getAllDocReviewRecords() : [];
+    const members = db.members || [];
     const key = (value) => String(value || "").trim().toLowerCase();
-
-    function matchesPerson(person, name, email) {
-      const personEmail = key(person.email);
-      if (personEmail && key(email) === personEmail) return true;
-      return key(name) === key(person.name);
-    }
-
-    /* A person "went on" a trip if they are listed as a traveller. The
-       requester is counted separately, since raising a request for someone else
-       is not the same as travelling. */
-    function isTravellerOn(request, person) {
-      const travellers = request.travelers && request.travelers.length
-        ? request.travelers
-        : [{ name: request.requester, email: request.requesterEmail }];
-      return travellers.some((t) => t && matchesPerson(person, t.name, t.email));
-    }
-
-    const COUNTED_AS_TAKEN = ["Approved", "Completed"];
-
-    const rows = people.map((person) => {
-      const mine = travel.filter((r) => isTravellerOn(r, person));
-      const isLeave = (r) => (typeof travelCategory === "function" ? travelCategory(r) === "Leave" : false);
-      const taken = (r) => COUNTED_AS_TAKEN.includes(r.status);
-      return {
-        name: person.name,
-        trips: mine.filter((r) => !isLeave(r) && taken(r)).length,
-        leave: mine.filter((r) => isLeave(r) && taken(r)).length,
-        submitted: travel.filter((r) => matchesPerson(person, r.requester, r.requesterEmail)).length,
+    const TAKEN = ["Approved", "Completed"];
+    const isLeave = (r) => (typeof travelCategory === "function" ? travelCategory(r) === "Leave" : false);
+    const index = new Map();
+    (rows || []).forEach((row) => {
+      const member = members.find((m) => key(m.name) === key(row.name));
+      const email = key((member && member.email) || row.email);
+      const matches = (name, mail) => (email && key(mail) === email) || key(name) === key(row.name);
+      const travelled = travel.filter((r) => {
+        const list = (r.travelers && r.travelers.length) ? r.travelers : [{ name: r.requester, email: r.requesterEmail }];
+        return list.some((t) => t && matches(t.name, t.email));
+      });
+      index.set(row.name, {
+        trips: travelled.filter((r) => !isLeave(r) && TAKEN.includes(r.status)).length,
+        leave: travelled.filter((r) => isLeave(r) && TAKEN.includes(r.status)).length,
+        submitted: travel.filter((r) => matches(r.requester, r.requesterEmail)).length,
         reviewed: docs.reduce((sum, doc) => sum + ((doc.reviewers || []).some((rv) =>
-          matchesPerson(person, rv.name, rv.email) && rv.decision && rv.decision !== "Pending") ? 1 : 0), 0),
-      };
-    }).sort((a, b) => (b.trips + b.leave + b.submitted + b.reviewed) - (a.trips + a.leave + a.submitted + a.reviewed)
-      || a.name.localeCompare(b.name));
-
-    const body = rows.length
-      ? rows.map((r) => `<tr data-person-name="${escapeHtml(r.name)}">
-          <td><strong>${escapeHtml(r.name)}</strong></td>
-          <td class="ov-activity-num">${r.trips || "—"}</td>
-          <td class="ov-activity-num">${r.leave || "—"}</td>
-          <td class="ov-activity-num">${r.submitted || "—"}</td>
-          <td class="ov-activity-num">${r.reviewed || "—"}</td>
-        </tr>`).join("")
-      : `<tr><td colspan="5"><div class="empty-state">No team members yet.</div></td></tr>`;
-
-    return `<div class="ov-section-head" style="margin:26px 0 12px;">
-        <div>
-          <div class="side-panel-title">Activity by person</div>
-          <div class="overview-panel-sub">Trips and leave counted once approved or completed. Requests counts what each person raised, including for others. Reviews counts documents they have actually decided on, not ones still awaiting them.</div>
-        </div>
-      </div>
-      <div class="ov-activity-scroll">
-        <table class="aewttr-table ov-activity-tbl">
-          <thead>
-            <tr>
-              <th>Person</th>
-              <th class="ov-activity-num">Trips</th>
-              <th class="ov-activity-num">Leave</th>
-              <th class="ov-activity-num">Requests raised</th>
-              <th class="ov-activity-num">Docs reviewed</th>
-            </tr>
-          </thead>
-          <tbody>${body}</tbody>
-        </table>
-      </div>`;
+          matches(rv.name, rv.email) && rv.decision && rv.decision !== "Pending") ? 1 : 0), 0),
+      });
+    });
+    return index;
   }
 
   function renderTeamResourcesHub(projects) {
     const activeTasks = getAllTasksFlat().filter(taskIsActive);
-    const state = window.AEWTTR.state.teamResources || { view: "people", query: "", expanded: {} };
+    const state = window.AEWTTR.state.teamResources || { view: "people", query: "", expanded: {}, selectedFlowNode: null };
     if (!state.expanded) state.expanded = {};
+    if (state.selectedFlowNode === undefined) state.selectedFlowNode = null;
     window.AEWTTR.state.teamResources = state;
     const people = new Map();
     const projectIndex = new Map(projects.map((project) => [project.id, project]));
@@ -1305,7 +1278,7 @@ PAGE_RENDERERS.overview = function () {
     function personDetailHtml(row) {
       const links = [...row.projects].map((id) => {
         const project = projectIndex.get(id);
-        return `<button type="button" class="resource-detail-link" data-route="projects/${escapeHtml(id)}/workspace"><strong>${escapeHtml((project && project.name) || id)}</strong><span>Open project workspace</span><i class="bx bx-chevron-right"></i></button>`;
+        return `<button type="button" class="resource-detail-link" data-route="projects/${escapeHtml(projectRouteKeyById(id))}/workspace"><strong>${escapeHtml((project && project.name) || id)}</strong><span>Open project workspace</span><i class="bx bx-chevron-right"></i></button>`;
       }).join("");
       return `<div class="resource-detail-inline">
         <div class="resource-detail-metrics"><span><b>${row.tasks}</b> active tasks</span><span><b>${row.projects.size}</b> projects</span></div>
@@ -1319,86 +1292,63 @@ PAGE_RENDERERS.overview = function () {
         <h4>Assigned people</h4><div class="resource-detail-people">${names || `<div class="empty-state">No assignments yet.</div>`}</div>
       </div>`;
     }
-    const peopleHtml = personList.map((row) => {
-      const key = `person:${row.name}`;
-      const open = !!state.expanded[key];
-      return `<div class="resource-row-wrap">
-        <button type="button" class="resource-person-row${open ? " is-expanded" : ""}" data-resource-toggle="${escapeHtml(key)}">
-          ${userAvatarHtml(row.name, "", 40)}<span class="resource-row-copy"><strong>${escapeHtml(row.name)}</strong><small>${row.tasks} active · ${row.projects.size} project${row.projects.size === 1 ? "" : "s"}</small></span>
-          <span class="resource-row-projects">${[...row.projects].slice(0, 3).map((id) => `<em>${escapeHtml((projectIndex.get(id) || {}).name || id)}</em>`).join("")}</span>
-          <i class="bx bx-chevron-${open ? "up" : "right"}"></i>
-        </button>
-        ${open ? personDetailHtml(row) : ""}
-      </div>`;
-    }).join("") || `<div class="empty-state">No people match this search.</div>`;
-    const projectsHtml = projectList.map((row) => {
-      const key = `project:${row.id}`;
-      const open = !!state.expanded[key];
-      return `<div class="resource-row-wrap">
-        <button type="button" class="resource-project-row${open ? " is-expanded" : ""}" data-resource-toggle="${escapeHtml(key)}">
-          <span class="resource-project-mark"></span><span class="resource-row-copy"><strong>${escapeHtml(row.name)}</strong><small>${row.people.size} assigned · ${row.tasks} active</small></span>
-          <span class="resource-avatar-stack">${[...row.people].slice(0, 4).map((name) => userAvatarHtml(name, "", 28)).join("")}</span>
-          <i class="bx bx-chevron-${open ? "up" : "right"}"></i>
-        </button>
-        ${open ? projectDetailHtml(row) : ""}
-      </div>`;
-    }).join("") || `<div class="empty-state">No projects match this search.</div>`;
+    /* One dense table instead of 85px-tall rows plus a second activity table
+       underneath listing the same people again. Staffing and activity are the
+       same question asked two ways, so each person gets one row. */
+    const activity = personActivityIndex(peopleRows);
+    const peopleHtml = personList.length ? `<div class="resource-table-scroll">
+      <table class="aewttr-table resource-table">
+        <thead><tr>
+          <th>Person</th><th>Projects</th>
+          <th class="resource-num">Active</th><th class="resource-num">Trips</th>
+          <th class="resource-num">Leave</th><th class="resource-num">Requests</th>
+          <th class="resource-num">Reviews</th><th class="resource-num"></th>
+        </tr></thead>
+        <tbody>${personList.map((row) => {
+          const key = `person:${row.name}`;
+          const open = !!state.expanded[key];
+          const act = activity.get(row.name) || { trips: 0, leave: 0, submitted: 0, reviewed: 0 };
+          const names = [...row.projects].map((id) => (projectIndex.get(id) || {}).name || id);
+          return `<tr class="resource-tr${open ? " is-expanded" : ""}" data-resource-toggle="${escapeHtml(key)}">
+            <td><span class="resource-person-cell">${userAvatarHtml(row.name, "", 24)}<strong>${escapeHtml(row.name)}</strong></span></td>
+            <td><span class="resource-proj-cell">${names.slice(0, 2).map((n) => `<em>${escapeHtml(n)}</em>`).join("")}${names.length > 2 ? `<em class="resource-more">+${names.length - 2}</em>` : ""}</span></td>
+            <td class="resource-num">${row.tasks || "—"}</td>
+            <td class="resource-num">${act.trips || "—"}</td>
+            <td class="resource-num">${act.leave || "—"}</td>
+            <td class="resource-num">${act.submitted || "—"}</td>
+            <td class="resource-num">${act.reviewed || "—"}</td>
+            <td class="resource-num"><i class="bx bx-chevron-${open ? "up" : "right"}"></i></td>
+          </tr>${open ? `<tr class="resource-detail-tr"><td colspan="8">${personDetailHtml(row)}</td></tr>` : ""}`;
+        }).join("")}</tbody>
+      </table>
+    </div>` : `<div class="empty-state">No people match this search.</div>`;
+    const projectsHtml = projectList.length ? `<div class="resource-table-scroll">
+      <table class="aewttr-table resource-table">
+        <thead><tr>
+          <th>Project</th><th>Team</th>
+          <th class="resource-num">Assigned</th><th class="resource-num">Active</th><th class="resource-num"></th>
+        </tr></thead>
+        <tbody>${projectList.map((row) => {
+          const key = `project:${row.id}`;
+          const open = !!state.expanded[key];
+          return `<tr class="resource-tr${open ? " is-expanded" : ""}" data-resource-toggle="${escapeHtml(key)}">
+            <td><strong>${escapeHtml(row.name)}</strong></td>
+            <td><span class="resource-avatar-stack">${[...row.people].slice(0, 5).map((name) => userAvatarHtml(name, "", 22)).join("")}${row.people.size > 5 ? `<em class="resource-more">+${row.people.size - 5}</em>` : ""}</span></td>
+            <td class="resource-num">${row.people.size || "—"}</td>
+            <td class="resource-num">${row.tasks || "—"}</td>
+            <td class="resource-num"><i class="bx bx-chevron-${open ? "up" : "right"}"></i></td>
+          </tr>${open ? `<tr class="resource-detail-tr"><td colspan="5">${projectDetailHtml(row)}</td></tr>` : ""}`;
+        }).join("")}</tbody>
+      </table>
+    </div>` : `<div class="empty-state">No projects match this search.</div>`;
     const PROJ_COLORS = ["#3b6bcc","#e05f2b","#2b9e6a","#9b59b6","#c0392b","#16a085","#d35400","#2980b9","#8e44ad","#27ae60","#e74c3c","#1abc9c","#f39c12","#6c5ce7","#00b894"];
     const projColorMap = {};
     projectList.forEach((row, i) => { projColorMap[row.id] = PROJ_COLORS[i % PROJ_COLORS.length]; });
-    // A wide, generous design canvas — the <svg> below has no fixed pixel
-    // width/height of its own, so this coordinate space just sets the
-    // aspect ratio; CSS stretches it to fill whatever room the card
-    // actually has (previously a hardcoded 620px canvas sat inside an
-    // ~1100px+ container, wasting most of the width and reading tiny).
-    const PERSON_H = 64; const PROJ_H = 56; const LEFT_W = 260; const RIGHT_W = 260; const MID_GAP = 320; const PAD_Y = 32;
-    const svgW = LEFT_W + MID_GAP + RIGHT_W;
-    const svgH = Math.max(personList.length * PERSON_H, projectList.length * PROJ_H, 140) + PAD_Y * 2;
-    const pY = (i) => PAD_Y + i * PERSON_H + PERSON_H / 2;
-    const rY = (i) => PAD_Y + i * PROJ_H + PROJ_H / 2;
-    const curves = [];
-    personList.forEach((row, pi) => {
-      [...row.projects].forEach(projId => {
-        const ri = projectList.findIndex(r => r.id === projId);
-        if (ri < 0) return;
-        const x1 = LEFT_W, x2 = LEFT_W + MID_GAP, mx = (x1 + x2) / 2;
-        const color = projColorMap[projId] || "#3b6bcc";
-        curves.push(`<path d="M${x1},${pY(pi)} C${mx},${pY(pi)} ${mx},${rY(ri)} ${x2},${rY(ri)}" fill="none" stroke="${color}" stroke-width="2" opacity="0.4"/>`);
-      });
-    });
-    const personNodes = personList.map((row, i) => {
-      const cy = pY(i);
-      const initials = row.name.split(" ").map(w => w[0]||"").slice(0,2).join("").toUpperCase();
-      return `<g class="ov-res-person-node" data-resource-person="${escapeHtml(row.name)}" style="cursor:pointer;">
-        <circle cx="26" cy="${cy}" r="21" fill="var(--aewttr-blue)" opacity="0.12"/>
-        <text x="26" y="${cy+5}" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--aewttr-blue)">${escapeHtml(initials)}</text>
-        <text x="58" y="${cy-5}" font-size="14.5" font-weight="600" fill="var(--aewttr-text)">${escapeHtml(row.name.length > 26 ? row.name.slice(0,25)+"…" : row.name)}</text>
-        <text x="58" y="${cy+13}" font-size="12" fill="var(--aewttr-muted)">${row.projects.size} project${row.projects.size!==1?"s":""} · ${row.tasks} task${row.tasks!==1?"s":""}</text>
-      </g>`;
-    });
-    const projNodes = projectList.map((row, i) => {
-      const cy = rY(i); const color = projColorMap[row.id]; const x = LEFT_W + MID_GAP;
-      return `<g class="ov-res-proj-node" data-resource-project="${escapeHtml(row.id)}" style="cursor:pointer;">
-        <rect x="${x}" y="${cy-17}" width="10" height="34" rx="3" fill="${color}" opacity="0.85"/>
-        <text x="${x+20}" y="${cy-4}" font-size="14.5" font-weight="600" fill="var(--aewttr-text)">${escapeHtml((row.name||row.id).slice(0,34))}</text>
-        <text x="${x+20}" y="${cy+14}" font-size="12" fill="var(--aewttr-muted)">${row.people.size} assigned · ${row.tasks} active</text>
-      </g>`;
-    });
-    const legendHtml = projectList.map(row => `<span class="ov-res-legend-item"><span class="ov-res-legend-dot" style="background:${projColorMap[row.id]}"></span>${escapeHtml(row.name||row.id)}</span>`).join("");
-    const mapHtml = `<div class="ov-resources-graph-wrap">
-      ${legendHtml ? `<div class="ov-resources-legend">${legendHtml}</div>` : ""}
-      <div class="ov-resources-labels"><span>Team Members</span><span>Projects</span></div>
-      <div class="ov-resources-svg-wrap">
-        <svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" class="ov-resources-svg">
-          ${curves.join("")}${personNodes.join("")}${projNodes.join("")}
-        </svg>
-      </div>
-    </div>`;
+    const mapHtml = renderProgramFlow(projectList, personList, projectIndex, projColorMap, state.selectedFlowNode);
     const content = state.view === "projects" ? projectsHtml : state.view === "map" ? mapHtml : peopleHtml;
     return `<section class="resource-hub"><header class="resource-hub-head"><div><h3>Team Resources</h3><p>Browse staffing, active workload, and project assignments.</p></div><div class="resource-summary"><span><b>${peopleRows.length}</b> people</span><span><b>${projectRows.length}</b> projects</span><span><b>${activeTasks.length}</b> active tasks</span></div></header>
       <div class="resource-controls"><div class="resource-view-tabs">${[["people","People","bx-user"],["projects","Projects","bx-briefcase"],["map","Connections","bx-share-alt"]].map(([key,label,icon]) => `<button type="button" class="${state.view === key ? "is-active" : ""}" data-resource-view="${key}"><i class="bx ${icon}"></i>${label}</button>`).join("")}</div><label class="resource-search"><i class="bx bx-search"></i><input id="resource-search" value="${escapeHtml(state.query || "")}" placeholder="Search people or projects"></label></div>
-      <div class="resource-scroll-list">${content}</div>
-      ${renderTeamActivityTable(peopleRows)}</section>`;
+      <div class="resource-scroll-list">${content}</div></section>`;
   }
 
   function renderAllProjectsTable(projects) {
@@ -1420,7 +1370,7 @@ PAGE_RENDERERS.overview = function () {
               const active = tasks.filter(taskIsActive).length;
               const risks = projectRiskCount(proj.id);
               const portfolio = (proj.portfolios && proj.portfolios[0]) || "—";
-              return `<tr data-route="projects/${escapeHtml(proj.id)}/workspace">
+              return `<tr data-route="projects/${escapeHtml(projectRouteKeyById(proj.id))}/workspace">
                 <td><strong>${escapeHtml(proj.name || "Untitled project")}</strong></td>
                 <td>${escapeHtml(projectEndItem(proj))}</td>
                 <td>${escapeHtml(portfolio)}</td>
@@ -1441,18 +1391,78 @@ PAGE_RENDERERS.overview = function () {
       </div>`;
   }
 
+  /* Travel records disagree on field names depending on which form created them,
+     so read through the same fallbacks travelEndDate() uses rather than reaching
+     for one spelling. The Operations export was reading .startDate/.endDate only,
+     which rendered every date as a dash for requests raised on the other form. */
+  function travelStart(request) {
+    return String((request && (request.start || request.startDate || request.tdyStartDate)) || "");
+  }
+  function travelEnd(request) {
+    if (typeof travelEndDate === "function") return travelEndDate(request);
+    return String((request && (request.end || request.endDate || request.tdyReturnDate)) || "");
+  }
+
+  /* "Pending" was never a travel status in this app — the real ones are
+     Submitted / Approved / Denied / Completed / Withdrawn / Cancelled. A queue
+     filtered on it matched only Submitted while calling itself pending, so once
+     finance cleared the backlog the panel sat empty and said nothing true.
+
+     What Operations is actually asked is who is about to travel or be out, so
+     that is what this returns: everything still ahead, soonest first. Requests
+     still waiting on a charge object are called out per row rather than being
+     the whole list — the Awaiting C/O tile above already counts those. */
+  function upcomingTravelAndLeave() {
+    const isUpcoming = (r) => {
+      if (typeof isUpcomingOrCurrentTravel === "function") return isUpcomingOrCurrentTravel(r);
+      /* Same rule, inlined, so a load-order change degrades to a correct list
+         instead of an empty one. */
+      if (["Withdrawn", "Cancelled", "Denied", "Completed"].includes(r.status || "")) return false;
+      const end = travelEnd(r);
+      return !end || end >= new Date().toISOString().slice(0, 10);
+    };
+    return (db.travelRequests || [])
+      .filter(isUpcoming)
+      .sort((a, b) => {
+        /* Undated requests are still real and still ahead; sort them last rather
+           than letting an empty string sort them to the top. */
+        const sa = travelStart(a) || "9999-12-31";
+        const sb = travelStart(b) || "9999-12-31";
+        return sa.localeCompare(sb);
+      });
+  }
+
+  function isAwaitingChargeObject(request) {
+    return request.status === "Submitted" && request.chargeObjectStatus === "Pending"
+      && (typeof travelCategory !== "function" || travelCategory(request) !== "Leave");
+  }
+
+  /* The pill answers "what is the state of this trip", and blocked-with-finance
+     outranks the raw status because it is the only one anybody has to act on. */
+  function travelRowLabel(request) {
+    if (isAwaitingChargeObject(request)) return "Awaiting C/O";
+    return request.status || "Submitted";
+  }
+
+  function travelRowDetail(request) {
+    const isLeave = typeof travelCategory === "function" && travelCategory(request) === "Leave";
+    const start = travelStart(request);
+    const end = travelEnd(request);
+    const dates = [start ? fmtDate(start) : "", end ? fmtDate(end) : ""].filter(Boolean).join(" – ");
+    const where = isLeave ? "Leave" : (request.destination || "No destination");
+    return [where, dates || "Dates not set"].join(" · ");
+  }
+
   function renderOperationsQueues() {
     const docs = typeof getAllDocReviewRecords === "function" ? getAllDocReviewRecords() : [];
     const docsInReview = docs
       .filter(d => !d.isArchived && !["Review Complete", "Signed", "Archived"].includes(d._column || ""))
       .slice(0, 8);
-    const pendingTravel = (db.travelRequests || [])
-      .filter(r => r.status === "Pending" || r.status === "Submitted")
-      .slice(0, 8);
+    const upcomingTravel = upcomingTravelAndLeave().slice(0, 8);
 
     return `<div class="ov-section-head" style="margin-bottom:16px;">
         <div class="side-panel-title">Documents &amp; Travel</div>
-        <div class="overview-panel-sub">Active review queue and pending travel requests. Click any row to open the full workflow.</div>
+        <div class="overview-panel-sub">Documents still in review and trips still ahead. Click any row to open the full workflow.</div>
       </div>
       <div class="overview-mini-grid">
         <div>
@@ -1467,14 +1477,14 @@ PAGE_RENDERERS.overview = function () {
           <div style="margin-top:10px;"><button class="btn-aewttr-outline btn-aewttr-sm" data-route="docreview">Open Document Review</button></div>
         </div>
         <div>
-          <div class="overview-mini-title">Pending Travel Requests <span class="ov-queue-count">${pendingTravel.length}</span></div>
+          <div class="overview-mini-title">Upcoming Travel &amp; Leave <span class="ov-queue-count">${upcomingTravel.length}</span></div>
           <div class="overview-list-table">
-            ${pendingTravel.length
-              ? pendingTravel.map(r => `<div class="overview-list-row">
-                  <div><strong>${escapeHtml(r.id || "Request")}</strong><span>${escapeHtml(r.requester || "Unknown")} · ${escapeHtml(r.destination || "No destination")}</span></div>
-                  <span class="status-pill">${escapeHtml(r.status)}</span>
+            ${upcomingTravel.length
+              ? upcomingTravel.map(r => `<div class="overview-list-row">
+                  <div><strong>${escapeHtml(r.requester || "Unknown")}</strong><span>${escapeHtml(travelRowDetail(r))}</span></div>
+                  <span class="status-pill">${escapeHtml(travelRowLabel(r))}</span>
                 </div>`).join("")
-              : `<div class="empty-state">No pending travel requests.</div>`}
+              : `<div class="empty-state">No upcoming travel or leave.</div>`}
           </div>
           <div style="margin-top:10px;"><button class="btn-aewttr-outline btn-aewttr-sm" data-route="travel">Open Travel</button></div>
         </div>
@@ -1547,13 +1557,13 @@ PAGE_RENDERERS.overview = function () {
       ...data.docsNeedingMe.map(doc => [
         "Document Review",
         doc.title || "Untitled",
-        doc._column || "Pending",
+        doc._column || "Not Started",
         doc.submitter || doc.owner || "-"
       ]),
       ...data.myTravel.map(request => [
         "Travel",
         request.id || request.title || "Request",
-        request.status || "Pending",
+        travelRowLabel(request),
         request.destination || "-"
       ])
     ];
@@ -1833,7 +1843,7 @@ PAGE_RENDERERS.overview = function () {
     } else {
       const docs = typeof getAllDocReviewRecords === "function" ? getAllDocReviewRecords() : [];
       const docsInReview = docs.filter(doc => !doc.isArchived && !["Review Complete", "Signed", "Archived"].includes(doc._column || "")).slice(0, 8);
-      const pendingTravel = (db.travelRequests || []).filter(request => request.status === "Pending" || request.status === "Submitted").slice(0, 8);
+      const upcomingTravel = upcomingTravelAndLeave().slice(0, 8);
       sections.push({
         title: "Document Review Queue",
         note: "The active documents shown in Operations.",
@@ -1847,23 +1857,28 @@ PAGE_RENDERERS.overview = function () {
         emptyMessage: "No documents in review."
       });
       sections.push({
-        title: "Pending Travel Requests",
-        note: "The active travel requests shown in Operations.",
+        title: "Upcoming Travel & Leave",
+        note: "The trips and leave still ahead, as shown in Operations.",
         columns: [
-          { label: "Request", weight: 1.2 },
           { label: "Requester", weight: 1.5 },
+          { label: "Type", weight: 0.9 },
           { label: "Destination", weight: 1.8 },
           { label: "Dates", weight: 1.4 },
-          { label: "Status", weight: 1 }
+          { label: "Status", weight: 1.1 }
         ],
-        rows: pendingTravel.map(request => [
-          request.id || request.title || "Request",
-          request.requester || "Unknown",
-          request.destination || "-",
-          [request.startDate ? fmtDate(request.startDate) : "", request.endDate ? fmtDate(request.endDate) : ""].filter(Boolean).join(" - ") || "-",
-          request.status || "Pending"
-        ]),
-        emptyMessage: "No pending travel requests."
+        rows: upcomingTravel.map(request => {
+          const isLeave = typeof travelCategory === "function" && travelCategory(request) === "Leave";
+          const start = travelStart(request);
+          const end = travelEnd(request);
+          return [
+            request.requester || "Unknown",
+            isLeave ? "Leave" : "Travel",
+            isLeave ? "-" : (request.destination || "-"),
+            [start ? fmtDate(start) : "", end ? fmtDate(end) : ""].filter(Boolean).join(" - ") || "-",
+            travelRowLabel(request)
+          ];
+        }),
+        emptyMessage: "No upcoming travel or leave."
       });
     }
 
@@ -2099,7 +2114,7 @@ PAGE_RENDERERS.overview = function () {
                 ["Open Risks", metrics.openRisks || 0],
                 ["Team Size", metrics.teamSize || 0],
                 ["Documents In Review", metrics.documentsInReview || 0],
-                ["Pending Travel", metrics.pendingTravel || 0]
+                ["Travel Awaiting C/O", metrics.pendingTravel || 0]
               ]
             : [
                 ["Total Projects", metrics.totalProjects || 0],
@@ -2298,8 +2313,8 @@ PAGE_RENDERERS.overview = function () {
             });
 
             const docsAndTravelRows = [
-              ...myData.docsNeedingMe.map(doc => ["Document", doc.title || "Untitled", doc._column || "Pending", doc.submitter || "", doc.updatedAt || ""]),
-              ...myData.myTravel.map(req => ["Travel", req.destination || req.id || "Request", req.status || "Pending", req.requester || "", req.startDate || ""])
+              ...myData.docsNeedingMe.map(doc => ["Document", doc.title || "Untitled", doc._column || "Not Started", doc.submitter || "", doc.updatedAt || ""]),
+              ...myData.myTravel.map(req => ["Travel", req.destination || req.id || "Request", travelRowLabel(req), req.requester || "", travelStart(req)])
             ];
             sheetDefs.push({
               name: "Documents & Travel",

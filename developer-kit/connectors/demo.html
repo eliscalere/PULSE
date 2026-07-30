@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<!-- UNCLASSIFIED -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connector demo — UNCLASSIFIED</title>
+<style>
+  :root {
+    --bg: #0f1116; --panel: #171a21; --line: #262a33; --text: #e6e8ee;
+    --muted: #8b93a4; --ok: #4ec98a; --warn: #e0a83a; --err: #e06c6c; --accent: #6f9dff;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f6f7f9; --panel:#fff; --line:#dfe3ea; --text:#1b1f27; --muted:#5d6675; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--text);
+         font:14px/1.5 "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  .class-banner { text-align:center; font-weight:700; letter-spacing:.14em;
+                  font-size:12px; color:var(--muted); padding:6px 0; }
+  h1 { font-size:20px; margin:12px 0 4px; }
+  p.lead { color:var(--muted); margin:0 0 20px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px;
+           padding:16px; margin-bottom:16px; }
+  .panel h2 { font-size:14px; margin:0 0 12px; text-transform:uppercase;
+              letter-spacing:.08em; color:var(--muted); }
+  label { display:block; margin-bottom:10px; }
+  label span { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  input[type=text] { width:100%; padding:8px 10px; background:var(--bg);
+                     border:1px solid var(--line); border-radius:5px; color:var(--text);
+                     font:inherit; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  button { padding:8px 14px; border:1px solid var(--line); border-radius:5px;
+           background:var(--accent); color:#fff; font:inherit; font-weight:600;
+           cursor:pointer; }
+  button.secondary { background:transparent; color:var(--text); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .danger-zone { border-color:var(--warn); }
+  .danger-zone h2 { color:var(--warn); }
+  .check { display:flex; gap:8px; align-items:flex-start; margin-bottom:12px; }
+  .check input { margin-top:3px; }
+  .check span { font-size:13px; color:var(--muted); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line);
+           vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase;
+       letter-spacing:.06em; }
+  td.status { white-space:nowrap; font-weight:600; }
+  .ok { color:var(--ok); } .warn { color:var(--warn); } .err { color:var(--err); }
+  td.detail { color:var(--muted); font-family:ui-monospace,Menlo,Consolas,monospace;
+              font-size:12px; word-break:break-word; }
+  .scroll { overflow-x:auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="class-banner">UNCLASSIFIED</div>
+
+  <h1>Connector demo</h1>
+  <p class="lead">
+    Exercises every connector in this folder against a live SharePoint site.
+    <strong>Open this from SharePoint, not from your desktop</strong> — session auth
+    needs the SharePoint origin. Read-only unless you opt in below.
+  </p>
+
+  <div class="panel">
+    <h2>Target</h2>
+    <label>
+      <span>Site URL — leave blank to auto-detect</span>
+      <input type="text" id="siteUrl" placeholder="https://tenant.sharepoint.com/sites/YourSite">
+    </label>
+    <div class="row">
+      <button id="run">Run read-only checks</button>
+      <button id="runWrites" class="secondary" disabled>Run write checks</button>
+    </div>
+  </div>
+
+  <div class="panel danger-zone">
+    <h2>Write checks</h2>
+    <div class="check">
+      <input type="checkbox" id="allowWrites">
+      <span>
+        I understand this will <strong>create a list named
+        <code>ZZ Connector Demo</code></strong> with a few columns and one item on
+        the target site, and then delete the item. The list itself is left behind
+        for you to inspect and remove. Do not run this on a production site you do
+        not own.
+      </span>
+    </div>
+    <div class="check">
+      <input type="checkbox" id="allowEmail">
+      <span>
+        Also send <strong>one test email</strong> to the signed-in user. Some
+        tenants block outbound mail from this endpoint by policy; a failure here is
+        informative, not broken.
+      </span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Results</h2>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th style="width:200px">Check</th><th style="width:90px">Status</th><th>Detail</th></tr>
+        </thead>
+        <tbody id="results">
+          <tr><td colspan="3" class="detail">Nothing run yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="class-banner">UNCLASSIFIED</div>
+</div>
+
+<script src="sp-rest-core.js"></script>
+<script src="sp-columns.js"></script>
+<script src="sp-list-crud.js"></script>
+<script src="sp-json-store.js"></script>
+<script src="sp-files.js"></script>
+<script src="sp-email.js"></script>
+<script src="sp-identity-roles.js"></script>
+<script src="ai-openai-compatible.js"></script>
+<script src="firepit-bridge.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   UNCLASSIFIED — demo harness
+   Deliberately linear and un-clever: each check is independent, reports its own
+   outcome, and a failure never stops the run. A diagnostic page that aborts on
+   the first error tells you less than one that finishes.
+═══════════════════════════════════════════════════════════════════════════ */
+"use strict";
+
+const DEMO_LIST = "ZZ Connector Demo";
+const tbody = document.getElementById("results");
+let started = false;
+
+function reset() {
+  tbody.innerHTML = "";
+}
+
+function report(name, status, detail) {
+  const cls = status === "pass" ? "ok" : status === "skip" ? "warn" : status === "info" ? "" : "err";
+  const label = { pass: "PASS", fail: "FAIL", skip: "SKIP", info: "INFO" }[status] || status;
+  const tr = document.createElement("tr");
+  const nameCell = document.createElement("td");
+  nameCell.textContent = name;
+  const statusCell = document.createElement("td");
+  statusCell.className = `status ${cls}`;
+  statusCell.textContent = label;
+  const detailCell = document.createElement("td");
+  detailCell.className = "detail";
+  detailCell.textContent = detail == null ? "" : String(detail);
+  tr.append(nameCell, statusCell, detailCell);
+  tbody.appendChild(tr);
+  return tr;
+}
+
+/* Run one check without letting it take down the run. */
+async function check(name, fn) {
+  const row = report(name, "info", "running…");
+  try {
+    const detail = await fn();
+    row.remove();
+    report(name, "pass", detail);
+    return true;
+  } catch (err) {
+    row.remove();
+    report(name, "fail", err && err.message ? err.message : String(err));
+    return false;
+  }
+}
+
+/* ── Read-only checks ─────────────────────────────────────────────────────── */
+
+async function runReadChecks() {
+  reset();
+  const configured = document.getElementById("siteUrl").value.trim();
+
+  report("Environment", "info",
+    `${Firepit.isHosted() ? "framed (possibly a Firepit web part)" : "top-level window"}` +
+    `${Firepit.cspNonce() ? " · CSP nonce present" : ""} · origin ${location.origin}`);
+
+  const detected = await SP.detectSite(configured);
+  if (!detected) {
+    report("Site detection", "fail",
+      "No SharePoint site answered /_api/web/currentuser. If you opened this file " +
+      "from your desktop, that is expected — upload it to a document library and " +
+      "open it from there. Otherwise enter the site URL explicitly above.");
+    return;
+  }
+  report("Site detection", "pass", detected);
+
+  let user = null;
+  await check("Current user", async () => {
+    user = await SPIdentity.currentUser();
+    return `${user.displayName} <${user.email}> · spUserId ${user.spUserId} · ` +
+           `isSiteAdmin ${user.isSiteAdmin}`;
+  });
+
+  await check("Request digest", async () => {
+    const d = await SP.getDigest();
+    return `acquired, ${d.length} chars (value not shown)`;
+  });
+
+  await check("Site users (filtered to real people)", async () => {
+    const users = await SPIdentity.siteUsers();
+    return `${users.length} user(s); first: ${users.length ? users[0].displayName : "—"}`;
+  });
+
+  await check("Lists on this site", async () => {
+    const r = await SP.get("/_api/web/lists?$select=Title,BaseTemplate,ItemCount&$filter=Hidden eq false");
+    const lists = r.value || [];
+    return `${lists.length} visible list(s): ` +
+           lists.slice(0, 6).map((l) => `${l.Title} (${l.ItemCount})`).join(", ") +
+           (lists.length > 6 ? ", …" : "");
+  });
+
+  await check("Paging helper", async () => {
+    const items = await SP.getAllPages("/_api/web/siteusers?$select=Id&$top=50");
+    return `getAllPages followed nextLink to ${items.length} record(s)`;
+  });
+
+  await check("Document library root resolution", async () => {
+    const root = await SPJsonStore.resolveLibraryRoot("Site Assets");
+    return root;
+  });
+
+  await check("Folder listing", async () => {
+    const root = await SPJsonStore.resolveLibraryRoot("Site Assets");
+    const { folders, files } = await SPFiles.listFolder(root);
+    return `${folders.length} folder(s), ${files.length} file(s) in ${root}`;
+  });
+
+  await check("Role resolution (no writes)", async () => {
+    /* No roles list on a fresh site is the normal case — resolveRole is pure, so
+       we can demonstrate it against an empty set. */
+    const outcome = SPIdentity.resolveRole([], user);
+    return `role "${outcome.role}" via ${outcome.source}` + (outcome.note ? ` — ${outcome.note}` : "");
+  });
+
+  report("URL parser", "pass",
+    JSON.stringify(SPFiles.parseSharePointUrl(
+      `${detected}/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FDemo%2FShared%20Documents%2FSub`
+    )));
+
+  report("AI connector", AI.isConfigured() ? "pass" : "skip",
+    AI.isConfigured()
+      ? "configured"
+      : "no API key set — expected. Note that inside a Firepit web part the " +
+        "injected connect-src CSP will block an arbitrary AI host regardless.");
+
+  report("Firepit Dataverse proxy", Firepit.isHosted() ? "info" : "skip",
+    Firepit.isHosted()
+      ? "This page is framed. A real call needs the web part's dataverseEnvironmentUrl set."
+      : "Not framed, so the host bridge is unavailable. Expected outside a web part.");
+
+  document.getElementById("runWrites").disabled = !document.getElementById("allowWrites").checked;
+}
+
+/* ── Write checks ─────────────────────────────────────────────────────────── */
+
+async function runWriteChecks() {
+  if (!document.getElementById("allowWrites").checked) return;
+  report("— write checks —", "info", `creating list "${DEMO_LIST}"`);
+
+  let createdId = null;
+
+  await check("Create list", async () => {
+    const r = await SPColumns.ensureList(DEMO_LIST, "Created by the developer-kit connector demo. Safe to delete.");
+    return r.created ? `created (id ${r.id})` : `already existed (id ${r.id})`;
+  });
+
+  await check("Create columns with Options:28", async () => {
+    const report_ = await SPColumns.ensureColumns(DEMO_LIST, [
+      { name: "DemoCode", type: "Text", maxLength: 64 },
+      { name: "DemoStatus", type: "Choice", choices: ["Open", "Closed"] },
+      { name: "DemoDue", type: "DateTime", dateOnly: true },
+      { name: "DemoFlag", type: "Boolean", default: false },
+    ]);
+    if (report_.problems.length) {
+      throw new Error("schema problems: " + JSON.stringify(report_.problems));
+    }
+    return `created [${report_.created.join(", ") || "none new"}]; ` +
+           `default view repaired [${report_.repaired.join(", ") || "none"}]`;
+  });
+
+  await check("Verify internal names survived", async () => {
+    const fields = await SPColumns.listFields(DEMO_LIST);
+    const names = fields.map((f) => f.InternalName);
+    const wanted = ["DemoCode", "DemoStatus", "DemoDue", "DemoFlag"];
+    const missing = wanted.filter((n) => !names.includes(n));
+    if (missing.length) throw new Error(`mangled or missing: ${missing.join(", ")}`);
+    const invented = names.filter((n) => /^field_\d+$/.test(n));
+    return `all four present as written` +
+           (invented.length ? ` — but note pre-existing invented names: ${invented.join(", ")}` : "");
+  });
+
+  await check("Create item", async () => {
+    const made = await SPList.createItem(DEMO_LIST, {
+      Title: "Connector demo item",
+      DemoCode: "DEMO-001",
+      DemoStatus: "Open",
+      DemoFlag: true,
+      ...SPList.values.date("DemoDue", new Date().toISOString()),
+    });
+    createdId = made.Id;
+    return `id ${createdId}`;
+  });
+
+  await check("Read it back with the values we wrote", async () => {
+    const item = await SPList.getItem(DEMO_LIST, createdId, {
+      select: ["Id", "Title", "DemoCode", "DemoStatus", "DemoFlag", "DemoDue"],
+    });
+    if (item.DemoCode !== "DEMO-001") {
+      throw new Error(`DemoCode read back as ${JSON.stringify(item.DemoCode)} — internal name mismatch`);
+    }
+    return JSON.stringify({ DemoCode: item.DemoCode, DemoStatus: item.DemoStatus, DemoFlag: item.DemoFlag });
+  });
+
+  await check("Update item", async () => {
+    await SPList.updateItem(DEMO_LIST, createdId, { DemoStatus: "Closed" });
+    const item = await SPList.getItem(DEMO_LIST, createdId, { select: ["DemoStatus"] });
+    if (item.DemoStatus !== "Closed") throw new Error("update did not stick");
+    return "DemoStatus → Closed";
+  });
+
+  await check("JSON store round-trip", async () => {
+    const store = SPJsonStore.open({
+      libraryTitle: "Site Assets",
+      folderName: "connector-demo",
+      fileName: "demo-db.json",
+    });
+    await store.init();
+    const stamp = new Date().toISOString();
+    await store.update((current) => {
+      current.runs = (current.runs || []).slice(-4);
+      current.runs.push(stamp);
+      return current;
+    }, { initial: { runs: [] } });
+    const back = await store.read({ runs: [] });
+    if (!back.runs.includes(stamp)) throw new Error("write did not read back");
+    return `${store.path()} — ${back.runs.length} run(s) recorded, ETag-checked`;
+  });
+
+  await check("Binary-safe upload", async () => {
+    /* A tiny PNG as real bytes, to prove the binary path. A text-encoded upload
+       would return 200 here and produce a corrupt file. */
+    const png = Uint8Array.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+      0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+      0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+      0x42, 0x60, 0x82,
+    ]);
+    const root = await SPJsonStore.resolveLibraryRoot("Site Assets");
+    const folder = `${root}/connector-demo`;
+    await SPFiles.upload(folder, "one-pixel.png", png.buffer, { contentType: "image/png" });
+    const back = await SPFiles.readBuffer(`${folder}/one-pixel.png`);
+    if (back.byteLength !== png.byteLength) {
+      throw new Error(`round-trip changed size: ${png.byteLength} → ${back.byteLength} (text path corruption)`);
+    }
+    return `${png.byteLength} bytes in, ${back.byteLength} bytes out — byte-exact`;
+  });
+
+  if (document.getElementById("allowEmail").checked) {
+    const user = await SPIdentity.currentUser();
+    const outcome = await SPEmail.send({
+      to: user.email,
+      subject: "Connector demo test message (UNCLASSIFIED)",
+      body: SPEmail.layout({
+        lead: "This message was sent by the developer-kit connector demo.",
+        facts: [{ label: "Site", value: SP.site() }, { label: "Sent", value: new Date().toISOString() }],
+        footer: "UNCLASSIFIED — no action required.",
+      }),
+    });
+    report("Send email", outcome.sent ? "pass" : "skip",
+      outcome.sent ? `sent to ${user.email}` :
+      `not delivered: ${outcome.reason}` +
+      (outcome.policyBlocked ? " — this tenant most likely blocks this endpoint by policy, which is a valid configuration" : ""));
+  } else {
+    report("Send email", "skip", "not opted in");
+  }
+
+  await check("Delete item (cleanup)", async () => {
+    await SPList.deleteItem(DEMO_LIST, createdId);
+    return `item ${createdId} removed`;
+  });
+
+  report("Cleanup note", "info",
+    `The list "${DEMO_LIST}" and SiteAssets/connector-demo/ are left in place so you ` +
+    `can inspect them. Delete them by hand when you are done.`);
+}
+
+document.getElementById("run").addEventListener("click", async (e) => {
+  if (started) return;
+  started = true;
+  e.target.disabled = true;
+  try {
+    await runReadChecks();
+  } finally {
+    e.target.disabled = false;
+    started = false;
+  }
+});
+
+document.getElementById("runWrites").addEventListener("click", async (e) => {
+  e.target.disabled = true;
+  try {
+    await runWriteChecks();
+  } finally {
+    e.target.disabled = false;
+  }
+});
+
+document.getElementById("allowWrites").addEventListener("change", (e) => {
+  document.getElementById("runWrites").disabled = !e.target.checked || !SP.lastCall.url;
+});
+</script>
+<!-- UNCLASSIFIED -->
+</body>
+</html>
