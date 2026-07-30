@@ -330,6 +330,7 @@ function hydrateTravelSubmitForm(body, request) {
   set("tr-title", request.tripTitle || "");
   set("tr-dest", request.destination || "");
   set("tr-contractor-input", request.contractorCompany || "");
+  if (isContractorTravel(request)) set("tr-contractor-trip-name", request.tripTitle || "");
   set("tr-start", request.start || "");
   set("tr-end", request.end || "");
   set("tr-start-time", request.startTime || "");
@@ -1130,6 +1131,7 @@ function updateTripPanelForMode(body, formMode) {
   const leaveNotesRow = $("#tr-leave-notes-row", body);
   const leaveRequesterRow = $("#tr-leave-requester-row", body);
   const contractorBlock = $("#tr-contractor-block", body);
+  const requesterRow = $("#tr-requester-row", body);
   const isLeave = formMode === "Leave";
   const isContractor = formMode === "Contractor";
   if (titleRow) titleRow.hidden = isLeave || isContractor;
@@ -1138,6 +1140,11 @@ function updateTripPanelForMode(body, formMode) {
   if (contractorBlock) contractorBlock.hidden = !isContractor;
   if (leaveNotesRow) leaveNotesRow.hidden = !isLeave;
   if (leaveRequesterRow) leaveRequesterRow.hidden = !isLeave;
+  /* Contractor's last data step already carries the submitter implicitly —
+     the request itself, requester field and all, is theirs — and the trip
+     panel already shows who from the contractor is travelling. A second,
+     disabled "Requester" field on the budget step was redundant with that. */
+  if (requesterRow) requesterRow.hidden = isContractor;
   const leaveConcurrenceRow = $("#tr-leave-concurrence-row", body);
   if (leaveConcurrenceRow) leaveConcurrenceRow.hidden = !isLeave;
   if (budgetTitle) budgetTitle.textContent = isLeave ? "Coverage & notes" : "Estimated costs";
@@ -2937,6 +2944,7 @@ function validateTravelWizardStep(stepId, body, formMode, travelers) {
       if (formMode === "Contractor") {
         if (!travelWizardReadValue(body, "tr-contractor-input")) return { ok: false, message: "Select a contractor." };
         if (!travelers.length) return { ok: false, message: "Add at least one contractor name." };
+        if (!travelWizardReadValue(body, "tr-contractor-trip-name")) return { ok: false, message: "Trip name is required." };
         if (!travelWizardReadValue(body, "tr-start") || !travelWizardReadValue(body, "tr-end")) {
           return { ok: false, message: "Travel dates are required." };
         }
@@ -3011,9 +3019,9 @@ function buildTravelReviewHtml(body, formMode, travelers) {
     ].join("")));
   } else if (formMode === "Contractor") {
     sections.push(block("trip", "Contractor and travel dates", [
-      row("Form type", "Contractor travel"),
       row("Contractor", travelWizardReadValue(body, "tr-contractor-input")),
       row("Contractor name(s)", travelerList || "—"),
+      row("Trip name", travelWizardReadValue(body, "tr-contractor-trip-name")),
       row("Dates", dateTimeRangeText("tr-start", "tr-end", "tr-allday", "tr-start-time", "tr-end-time"))
     ].join("")));
     sections.push(block("purpose", "Purpose", [
@@ -3306,6 +3314,10 @@ function travelWizardPanelsHtml(db, editing) {
             </div>
             <p style="font-size:11.5px;color:var(--aewttr-muted);margin:6px 0 0;" id="tr-contractor-people-hint">Who from that company is travelling. Type a name that is not listed to add them.</p>
           </div>
+          <div class="form-row">
+            <label>Trip name <span class="required-star">*</span></label>
+            <input class="input-aewttr" id="tr-contractor-trip-name" placeholder="e.g. Antenna installation support">
+          </div>
         </div>
         <div class="form-row" id="tr-title-row"><label>Trip title</label><input class="input-aewttr" id="tr-title" placeholder="e.g. Ship check in San Diego"></div>
         <div class="form-grid-2" id="tr-dest-type-row">
@@ -3351,7 +3363,7 @@ function travelWizardPanelsHtml(db, editing) {
       <div class="travel-wizard-step-card">
         <p class="travel-wizard-step-card-title" id="tr-budget-title">Estimated costs</p>
         <div class="form-row" id="tr-cost-row"><label>Estimated cost ($)</label><input type="number" class="input-aewttr" id="tr-cost" min="0"></div>
-        <div class="form-row"><label>Requester</label><input class="input-aewttr" id="tr-requester" value="${escapeHtml(requester)}" disabled></div>
+        <div class="form-row" id="tr-requester-row"><label>Requester</label><input class="input-aewttr" id="tr-requester" value="${escapeHtml(requester)}" disabled></div>
         <div class="form-row"><label>Additional notes</label><textarea class="textarea-aewttr travel-wizard-textarea travel-wizard-textarea--short" id="tr-notes"></textarea></div>
       </div>
     </div>
@@ -3382,13 +3394,10 @@ async function submitTravelRequest(body, formMode, travelers, db, editing) {
     exportFileName: ""
   };
   const contractorCompany = formMode === "Contractor" ? travelWizardReadValue(body, "tr-contractor-input") : "";
-  /* Contractor travel has no trip title of its own, but the rest of the app —
-     lists, the calendar, notification subject lines — reads tripTitle, so it
-     gets one built from what it does have rather than being left blank. */
   const tripTitle = formMode === "Leave"
       ? `Leave - ${lastNameOf(req.requester) || "Request"}`
       : formMode === "Contractor"
-      ? `${contractorCompany || "Contractor"} travel`
+      ? (travelWizardReadValue(body, "tr-contractor-trip-name") || `${contractorCompany || "Contractor"} travel`)
       : travelWizardReadValue(body, "tr-title");
   req.formMode = formMode;
   req.requestType = formMode === "Leave" ? "Personal Leave" : formMode === "Contractor" ? "Contractor Travel" : formMode;
@@ -3421,7 +3430,11 @@ async function submitTravelRequest(body, formMode, travelers, db, editing) {
   req.alternatives = formMode === "Leave" ? [] : travelWizardReadValue(body, "tr-alternatives").split("\n").map((line) => line.trim()).filter(Boolean);
   req.cost = formMode === "Leave" ? 0 : (costNode ? (+costNode.value || 0) : 0);
   let travelType = "";
-  if (formMode !== "Leave") {
+  /* The #tr-type select stays in the DOM (just hidden) for Contractor, so
+     reading it here would silently stamp every contractor request with
+     whatever that select's default option happens to be — "TDY" — despite
+     the field never being shown to the user. */
+  if (formMode !== "Leave" && formMode !== "Contractor") {
     travelType = $("#tr-type", body) ? $("#tr-type", body).value : "TDY";
     if (travelType === "Other") {
       const other = travelWizardReadValue(body, "tr-type-other");
@@ -4045,22 +4058,21 @@ function openTravelDetailModal(trId, onChanged) {
   const canWithdraw = canRequesterWithdrawTravel(r);
   const canCancel = canCancelTravelRequest(r);
   const showConcur = r.status === "Submitted" && r.customerConcurrenceStatus === "Pending"
-    && canRecordConcurrence()
-    && (isLeave ? r.requiresConcurrence : true);
+    && canRecordConcurrence() && travelNeedsConcurrence(r);
   const showAssignCo = r.status === "Submitted" && r.chargeObjectStatus === "Pending"
-    && !isLeave && canAssignTravelCo();
+    && travelNeedsChargeObject(r) && canAssignTravelCo();
   const showUpdateCo = r.chargeObjectStatus === "Assigned" && canAssignTravelCo();
   const travelers = (r.travelers || []).map((traveler) => traveler.name).filter(Boolean).join(", ");
 
   function concurrenceRow() {
-    if (isLeave && !r.requiresConcurrence) return "";
+    if (!travelNeedsConcurrence(r)) return "";
     const status = r.customerConcurrenceStatus || "Pending";
     const by = r.customerConcurredBy ? ` by ${r.customerConcurredBy}` : "";
     const at = r.customerConcurredAt ? ` on ${r.customerConcurredAt.slice(0, 10)}` : "";
     return `<div class="travel-detail-row"><span class="k">Customer Concurrence</span><span class="v">${escapeHtml(status)}${status === "Concurred" ? escapeHtml(by + at) : ""}</span></div>`;
   }
   function coRow() {
-    if (isLeave) return "";
+    if (!travelNeedsChargeObject(r)) return "";
     const status = r.chargeObjectStatus || "Pending";
     const co = r.chargeObject || "";
     const by = r.chargeObjectAssignedBy ? ` by ${r.chargeObjectAssignedBy}` : "";
@@ -4105,28 +4117,38 @@ function openTravelDetailModal(trId, onChanged) {
           </div>
         </section>
 
-        ${!isLeave ? `
-        <section class="travel-detail-section">
-          <h4>Administrative status</h4>
-          <div class="travel-detail-rows">
-            ${concurrenceRow()}
-            ${coRow()}
-            ${r.exportFileUrl ? `<div class="travel-detail-row"><span class="k">Document</span><span class="v"><a href="${escapeHtml(travelExportOpenUrl(r.exportFileUrl, r.exportFileName))}" target="_blank" rel="noopener">Open travel document</a></span></div>` : ""}
-            ${r._docGenFailed ? `<div class="travel-detail-row"><span class="k">Document</span><span class="v" style="color:var(--aewttr-danger,#c0392b);">Generation failed — retry below</span></div>` : ""}
-          </div>
-        </section>
-        <section class="travel-detail-section">
-          <h4>Trip details</h4>
-          <div class="travel-detail-rows">
-            <div class="travel-detail-row"><span class="k">Type</span><span class="v">${escapeHtml(r.type || "—")}</span></div>
-          </div>
-        </section>` : (r.requiresConcurrence ? `
-        <section class="travel-detail-section">
-          <h4>Administrative status</h4>
-          <div class="travel-detail-rows">
-            ${concurrenceRow()}
-          </div>
-        </section>` : "")}
+        ${(() => {
+          if (isLeave) {
+            return r.requiresConcurrence ? `
+              <section class="travel-detail-section">
+                <h4>Administrative status</h4>
+                <div class="travel-detail-rows">${concurrenceRow()}</div>
+              </section>` : "";
+          }
+          /* Contractor travel has neither gate, so both rows come back empty
+             — the section only appears once there's something in it to say,
+             same as the document rows below. */
+          const adminRows = [
+            concurrenceRow(), coRow(),
+            r.exportFileUrl ? `<div class="travel-detail-row"><span class="k">Document</span><span class="v"><a href="${escapeHtml(travelExportOpenUrl(r.exportFileUrl, r.exportFileName))}" target="_blank" rel="noopener">Open travel document</a></span></div>` : "",
+            r._docGenFailed ? `<div class="travel-detail-row"><span class="k">Document</span><span class="v" style="color:var(--aewttr-danger,#c0392b);">Generation failed — retry below</span></div>` : ""
+          ].join("");
+          const adminSection = adminRows ? `
+            <section class="travel-detail-section">
+              <h4>Administrative status</h4>
+              <div class="travel-detail-rows">${adminRows}</div>
+            </section>` : "";
+          /* "Type" (TDY/Conference/Training) doesn't apply to contractor
+             travel — the wizard's type selector isn't even shown for it. */
+          const tripDetailsSection = isContractorTravel(r) ? "" : `
+            <section class="travel-detail-section">
+              <h4>Trip details</h4>
+              <div class="travel-detail-rows">
+                <div class="travel-detail-row"><span class="k">Type</span><span class="v">${escapeHtml(r.type || "—")}</span></div>
+              </div>
+            </section>`;
+          return adminSection + tripDetailsSection;
+        })()}
 
         <section class="travel-detail-section">
           <h4>${isLeave ? "Notes" : "Context"}</h4>
@@ -4393,7 +4415,10 @@ function drawSubmitDebrief(body) {
   const initialTr = routeQuery.tr || "";
   // A trip only drops off this list once *you* have filed for it — other
   // travelers on the same request filing their own debrief doesn't hide it.
-  const approved = db.travelRequests.filter((r) => travelNeedsDebrief(r) && (!getMyDebriefForTravel(r.id) || r.id === initialTr));
+  // And it has to be a trip you were actually on — this used to list every
+  // debrief-eligible request site-wide, so anyone could file a debrief for
+  // someone else's travel.
+  const approved = db.travelRequests.filter((r) => travelNeedsDebrief(r) && isCurrentUserOnRequest(r) && (!getMyDebriefForTravel(r.id) || r.id === initialTr));
   const selected = initialTr ? approved.find((r) => r.id === initialTr) : null;
   body.innerHTML = `
     <div class="travel-debrief-page">
@@ -4755,7 +4780,6 @@ function drawTravelCalendar(body) {
         <div class="cal-legend">
           ${legendTypes.map((type) => `<span class="li"><span class="dot" style="background:${TRAVEL_CALENDAR_COLORS[type]}"></span>${escapeHtml(type)}</span>`).join("")}
           <span class="li"><span class="dot" style="background:${TEAM_EVENT_COLOR};"></span>Team Event</span>
-          <span class="li"><span class="dot" style="background:#9AA4B2;"></span>Pending C/O assignment</span>
         </div>
       </div>
       <section class="travel-calendar-surface">
@@ -4771,10 +4795,13 @@ function drawTravelCalendar(body) {
     const travelers = (r.travelers && r.travelers.length)
       ? r.travelers
       : [{ name: r.requester, email: r.requesterEmail || "" }];
-    // Leave is visible immediately as a scheduled absence. Non-leave shows
-    // as pending (grey) until a charge object is assigned.
-    const isPending = travelCalendarTypeKey(r) !== "Leave" && r.chargeObjectStatus !== "Assigned";
-    const color = isPending ? "#9AA4B2" : travelCalendarColor(r);
+    /* Every submitted trip shows in full color as soon as it's on the
+       calendar — the C/O and customer-concurrence gates are administrative
+       follow-up, not something that should make a real, scheduled trip look
+       tentative to the rest of the team for however long finance takes to
+       assign a charge object. Contractor travel never gets a charge object
+       at all, so gating color on that status left it permanently grey. */
+    const color = travelCalendarColor(r);
     const typeLabel = travelCalendarTypeKey(r);
     const namesLabel = travelCalendarTravelerLabel(travelers, r.requester);
     // One event per request (not per traveler) — a 4-person TDY used to
@@ -4782,10 +4809,9 @@ function drawTravelCalendar(body) {
     const isAllDay = travelRequestIsAllDay(r);
     const event = {
       id: r.id,
-      title: `${namesLabel} — ${typeLabel}${(r.destination && r.destination !== typeLabel) ? ` · ${r.destination}` : ""}${isPending ? " (Pending)" : ""}`,
+      title: `${namesLabel} — ${typeLabel}${(r.destination && r.destination !== typeLabel) ? ` · ${r.destination}` : ""}`,
       color,
-      classNames: isPending ? ["travel-cal-event-pending"] : [],
-      extendedProps: { r, isPending, _kind: "travel" }
+      extendedProps: { r, _kind: "travel" }
     };
     if (isAllDay) {
       event.allDay = true;
