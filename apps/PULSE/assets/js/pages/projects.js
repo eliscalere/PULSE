@@ -918,24 +918,39 @@ function renderGroupDetail(groupName, groupType, projects) {
     function renderGroupBullets() {
       const wrap = mount.querySelector("#grp-rep-tb-wrap");
       if (!wrap) return;
+      groupCfg.techBullets = normalizeTechBullets(groupCfg.techBullets);
       const bullets = groupCfg.techBullets;
       wrap.innerHTML = '<div class="rep-tb-list">' +
-        bullets.map(function(b, i) {
-          return '<div class="rep-tb-item">' +
-            '<span class="rep-tb-dot">•</span>' +
-            '<input type="text" class="input-aewttr rep-tb-inp" data-bidx="' + i + '" value="' + escapeHtml(b) + '" placeholder="Bullet text…">' +
-            '<button type="button" class="rep-tb-del" data-bidx="' + i + '" title="Remove"><i class="bx bx-x"></i></button>' +
-            '</div>';
-        }).join("") +
+        bullets.map(function(b, i) { return techBulletRowHtml(b, i); }).join("") +
         '<button type="button" class="rep-tb-add" id="grp-rep-tb-add"><i class="bx bx-plus"></i> Add bullet</button>' +
         '</div>';
       let dt = null;
       mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-inp").forEach(function(inp) {
         inp.addEventListener("input", function() {
           const idx = parseInt(inp.dataset.bidx, 10);
-          groupCfg.techBullets[idx] = inp.value;
+          groupCfg.techBullets[idx].text = inp.value;
           clearTimeout(dt);
           dt = setTimeout(saveGroupCfg, 200);
+        });
+        inp.addEventListener("keydown", function(ev) {
+          if (ev.key !== "Tab") return;
+          const idx = parseInt(inp.dataset.bidx, 10);
+          const next = ev.shiftKey ? 0 : 1;
+          if (groupCfg.techBullets[idx].level === next) return;
+          ev.preventDefault();
+          groupCfg.techBullets[idx].level = next;
+          saveGroupCfg();
+          renderGroupBullets();
+          const again = mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-inp")[idx];
+          if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
+        });
+      });
+      mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-indent").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          const idx = parseInt(btn.dataset.bidx, 10);
+          groupCfg.techBullets[idx].level = groupCfg.techBullets[idx].level ? 0 : 1;
+          saveGroupCfg();
+          renderGroupBullets();
         });
       });
       mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-del").forEach(function(btn) {
@@ -949,7 +964,9 @@ function renderGroupDetail(groupName, groupType, projects) {
       const addBtn = mount.querySelector("#grp-rep-tb-add");
       if (addBtn) {
         addBtn.addEventListener("click", function() {
-          groupCfg.techBullets.push("");
+          groupCfg.techBullets = normalizeTechBullets(groupCfg.techBullets);
+          const prevB = groupCfg.techBullets[groupCfg.techBullets.length - 1];
+          groupCfg.techBullets.push({ text: "", level: prevB ? prevB.level : 0 });
           saveGroupCfg();
           renderGroupBullets();
           const inputs = mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-inp");
@@ -9259,7 +9276,10 @@ function drawProjectReporting(body, proj) {
           '<div class="rep-sld-qhead">Technical Status</div>' +
           '<ul class="rep-sld-blist">' +
             (techBullets.length
-              ? techBullets.map(function(b) { return '<li>' + escapeHtml(b) + '</li>'; }).join("")
+              ? techBullets.map(function(b) {
+                  var nb = normalizeTechBullet(b);
+                  return '<li' + (nb.level ? ' class="rep-slide-sub"' : '') + '>' + escapeHtml(nb.text) + '</li>';
+                }).join("")
               : '<li class="rep-sld-hint">Add bullets below</li>'
             ) +
           '</ul>' +
@@ -9295,19 +9315,30 @@ function drawProjectReporting(body, proj) {
     scaleSlidePreview();
   }
 
+  /* One row of the bullet editor. Shared by the project and group editors so an
+     indent looks and behaves the same in both. */
+  function techBulletRowHtml(bullet, index) {
+    var b = normalizeTechBullet(bullet);
+    return '<div class="rep-tb-item' + (b.level ? ' rep-tb-item--sub' : '') + '">' +
+      '<button type="button" class="rep-tb-indent" data-bidx="' + index + '" title="' +
+        (b.level ? 'Outdent to a main bullet' : 'Indent as a sub-bullet') + '" aria-label="' +
+        (b.level ? 'Outdent' : 'Indent') + '"><i class="bx ' + (b.level ? 'bx-chevron-left' : 'bx-chevron-right') + '"></i></button>' +
+      '<span class="rep-tb-dot">' + (b.level ? '–' : '•') + '</span>' +
+      '<input type="text" class="input-aewttr rep-tb-inp" data-bidx="' + index + '" value="' + escapeHtml(b.text) + '" placeholder="' +
+        (b.level ? 'Sub-bullet text…' : 'Bullet text…') + '">' +
+      '<button type="button" class="rep-tb-del" data-bidx="' + index + '" title="Remove"><i class="bx bx-x"></i></button>' +
+      '</div>';
+  }
+
   function renderTechBullets() {
     var wrap = $("#rep-tech-bullets-wrap", body);
     if (!wrap) return;
-    if (!cfg.techBullets) cfg.techBullets = [];
+    cfg.techBullets = normalizeTechBullets(cfg.techBullets);
     var bullets = cfg.techBullets;
     wrap.innerHTML =
       '<div class="rep-tb-list">' +
       bullets.map(function(b, i) {
-        return '<div class="rep-tb-item">' +
-          '<span class="rep-tb-dot">•</span>' +
-          '<input type="text" class="input-aewttr rep-tb-inp" data-bidx="' + i + '" value="' + escapeHtml(b) + '" placeholder="Bullet text…">' +
-          '<button type="button" class="rep-tb-del" data-bidx="' + i + '" title="Remove"><i class="bx bx-x"></i></button>' +
-          '</div>';
+        return techBulletRowHtml(b, i);
       }).join("") +
       '<button type="button" class="rep-tb-add" id="rep-tb-add"><i class="bx bx-plus"></i> Add bullet</button>' +
       '</div>';
@@ -9315,9 +9346,33 @@ function drawProjectReporting(body, proj) {
       var dt = null;
       inp.addEventListener("input", function() {
         var idx = parseInt(inp.dataset.bidx, 10);
-        cfg.techBullets[idx] = inp.value;
+        cfg.techBullets[idx].text = inp.value;
         clearTimeout(dt);
         dt = setTimeout(function() { saveConfig(); renderSlidePreview(); }, 25);
+      });
+      /* Tab indents, Shift+Tab outdents — the same keys as every other outliner,
+         so the buttons are a discoverable fallback rather than the only route. */
+      inp.addEventListener("keydown", function(ev) {
+        if (ev.key !== "Tab") return;
+        var idx = parseInt(inp.dataset.bidx, 10);
+        var next = ev.shiftKey ? 0 : 1;
+        if (cfg.techBullets[idx].level === next) return;
+        ev.preventDefault();
+        cfg.techBullets[idx].level = next;
+        saveConfig();
+        renderTechBullets();
+        renderSlidePreview();
+        var again = $all(".rep-tb-inp", wrap)[idx];
+        if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
+      });
+    });
+    $all(".rep-tb-indent", wrap).forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        var idx = parseInt(btn.dataset.bidx, 10);
+        cfg.techBullets[idx].level = cfg.techBullets[idx].level ? 0 : 1;
+        saveConfig();
+        renderTechBullets();
+        renderSlidePreview();
       });
     });
     $all(".rep-tb-del", wrap).forEach(function(btn) {
@@ -9332,8 +9387,11 @@ function drawProjectReporting(body, proj) {
     var addBtn = $("#rep-tb-add", wrap);
     if (addBtn) {
       addBtn.addEventListener("click", function() {
-        if (!cfg.techBullets) cfg.techBullets = [];
-        cfg.techBullets.push("");
+        cfg.techBullets = normalizeTechBullets(cfg.techBullets);
+        /* A new bullet inherits the previous one's level, so adding several
+           sub-points in a row does not mean re-indenting each time. */
+        var prev = cfg.techBullets[cfg.techBullets.length - 1];
+        cfg.techBullets.push({ text: "", level: prev ? prev.level : 0 });
         saveConfig();
         renderTechBullets();
         renderSlidePreview();

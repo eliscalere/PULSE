@@ -610,3 +610,32 @@ function aewttrResetStore() {
   window.AEWTTR.db = fresh;
   try { localStorage.removeItem(LOCAL_STORE_KEY); } catch (e) { /* ignore */ }
 }
+
+/* ---------- technical-status bullets ----------
+
+   Bullets were plain strings. Sub-bullets need an indent level, so they are now
+   { text, level } with level 0 or 1. Existing saved data is all strings, and a
+   string is simply a level-0 bullet — normalising on read means no migration and
+   no risk of losing someone's saved slide content. */
+const TECH_BULLET_MAX_LEVEL = 1;
+
+function normalizeTechBullet(bullet) {
+  if (bullet && typeof bullet === "object") {
+    const level = Math.min(TECH_BULLET_MAX_LEVEL, Math.max(0, parseInt(bullet.level, 10) || 0));
+    return { text: String(bullet.text == null ? "" : bullet.text), level };
+  }
+  return { text: String(bullet == null ? "" : bullet), level: 0 };
+}
+
+function normalizeTechBullets(list) {
+  return (Array.isArray(list) ? list : []).map(normalizeTechBullet);
+}
+
+/* Flat text, for anywhere that wants the bullet without its indent. */
+function techBulletText(bullet) {
+  return normalizeTechBullet(bullet).text;
+}
+
+function techBulletLevel(bullet) {
+  return normalizeTechBullet(bullet).level;
+}

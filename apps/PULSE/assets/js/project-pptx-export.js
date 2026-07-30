@@ -85,6 +85,23 @@
 
   /* Rough wrap estimate (Arial ≈ 0.5em average char width at 1pt ≈ 1/72").
      Returns { lines, fontSize, texts } that fit box height without mid-line clip. */
+  /* Bullets are either a plain string (legacy, level 0) or { text, level }. */
+  function techBulletTextOf(bullet) {
+    return String((bullet && typeof bullet === "object" ? bullet.text : bullet) || "");
+  }
+  function techBulletLevelOf(bullet) {
+    const level = bullet && typeof bullet === "object" ? parseInt(bullet.level, 10) : 0;
+    return level > 0 ? 1 : 0;
+  }
+
+  /* fitBulletsToBox measures strings, so callers pass text and keep the levels
+     alongside. Pre-filtering empties here keeps the two arrays index-aligned. */
+  function prepareTechBullets(list) {
+    return (list || [])
+      .map((b) => ({ text: techBulletTextOf(b).trim(), level: techBulletLevelOf(b) }))
+      .filter((b) => b.text);
+  }
+
   function fitBulletsToBox(bullets, boxW, boxH, opts) {
     const options = opts || {};
     const maxFont = options.maxFont || 11;
@@ -351,8 +368,13 @@
     /* The Reporting tab is the source of truth when a user has entered
        technical-status bullets.  Keep the exported slide in lockstep with
        the live preview instead of silently substituting generated content. */
-    if (Array.isArray(configured) && configured.some((bullet) => String(bullet || "").trim())) {
-      return configured.map((bullet) => String(bullet || "").trim()).filter(Boolean).slice(0, 8);
+    /* Configured bullets may carry an indent level (sub-bullets). Keep it so the
+       slide shows the same structure as the editor and the preview. */
+    if (Array.isArray(configured) && configured.some((bullet) => techBulletTextOf(bullet).trim())) {
+      return configured
+        .map((bullet) => ({ text: techBulletTextOf(bullet).trim(), level: techBulletLevelOf(bullet) }))
+        .filter((b) => b.text)
+        .slice(0, 8);
     }
     const bullets = [];
     bulletize(extra.handoff || "", 4).forEach((b) => bullets.push(b));
@@ -1314,13 +1336,18 @@
        Cap at 1.4 so the risk table always starts at a predictable Y. */
     const TECH_BOX_H = 1.35;
     const RISK_TABLE_Y = L.techPanel.y + TECH_BOX_H + 0.12; // ≈ 2.55
-    const techFit = fitBulletsToBox(tech, L.techPanel.w - 0.2, TECH_BOX_H - 0.1, {
+    const techItems = prepareTechBullets(tech);
+    const techFit = fitBulletsToBox(techItems.map((b) => b.text), L.techPanel.w - 0.2, TECH_BOX_H - 0.1, {
       maxFont: 10, minFont: 7, paraGap: 2, pad: 0.02
     });
     slide.addText(
       techFit.texts.map((t, idx) => ({
         text: t,
-        options: { bullet: true, breakLine: idx < techFit.texts.length - 1 }
+        options: {
+          bullet: true,
+          indentLevel: (techItems[idx] && techItems[idx].level) || 0,
+          breakLine: idx < techFit.texts.length - 1
+        }
       })),
       {
         x: L.techPanel.x + 0.1,
@@ -1548,14 +1575,18 @@
     addSectionHeading(slide, "Technical Status", L.techHead);
     const TECH_BOX_H = 1.35;
     const RISK_TABLE_Y = L.techPanel.y + TECH_BOX_H + 0.12;
-    const tech = (groupCfg.techBullets || []).map((b) => (b && b.text) || b).filter(Boolean);
-    const techFit = fitBulletsToBox(tech, L.techPanel.w - 0.2, TECH_BOX_H - 0.1, {
+    const techItems = prepareTechBullets(groupCfg.techBullets);
+    const techFit = fitBulletsToBox(techItems.map((b) => b.text), L.techPanel.w - 0.2, TECH_BOX_H - 0.1, {
       maxFont: 10, minFont: 7, paraGap: 2, pad: 0.02
     });
     slide.addText(
       (techFit.texts.length ? techFit.texts : ["No technical status entered for this configuration yet."]).map((t, idx) => ({
         text: t,
-        options: { bullet: true, breakLine: idx < (techFit.texts.length || 1) - 1 }
+        options: {
+          bullet: true,
+          indentLevel: (techItems[idx] && techItems[idx].level) || 0,
+          breakLine: idx < (techFit.texts.length || 1) - 1
+        }
       })),
       {
         x: L.techPanel.x + 0.1, y: L.techPanel.y + 0.06,

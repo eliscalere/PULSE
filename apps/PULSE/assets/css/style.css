@@ -18333,3 +18333,12 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .td-status-editor { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; margin-top: 10px; padding: 10px 12px; border: 1px solid var(--aewttr-border); border-radius: 8px; background: var(--aewttr-surface-2, #f7f8fa); }
 .td-status-editor label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--aewttr-muted); }
 .td-status-editor select { min-width: 150px; }
+
+/* Sub-bullets in the technical-status editor and slide preview. */
+.rep-tb-item { display: flex; align-items: center; gap: 6px; }
+.rep-tb-item--sub { margin-left: 22px; }
+.rep-tb-indent { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--aewttr-muted); cursor: pointer; }
+.rep-tb-indent:hover { border-color: var(--aewttr-border); color: var(--aewttr-text); background: var(--aewttr-surface); }
+.rep-tb-item--sub .rep-tb-dot { color: var(--aewttr-muted); }
+.rep-slide-sub { margin-left: 15px; list-style: none; position: relative; }
+.rep-slide-sub::before { content: "–"; position: absolute; left: -12px; color: var(--aewttr-muted); }
