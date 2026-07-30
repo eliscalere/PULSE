@@ -18307,26 +18307,6 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
   gap: 6px;
 }
 
-/* Compact milestone selector inside the Milestones card. Same projects, same
-   dates and the same Include selection as the full table below — it exists so a
-   PM can set the slide's rows without scrolling past the editor to reach the
-   control. */
-.rep-mt-mini { margin: 10px 0 4px; border: 1px solid var(--aewttr-border); border-radius: 8px; overflow: hidden; }
-.rep-mt-mini-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; background: var(--aewttr-surface-2, #f7f8fa); border-bottom: 1px solid var(--aewttr-border); }
-.rep-mt-mini-count { font-size: 11px; font-weight: 600; color: var(--aewttr-muted); }
-.rep-mt-mini-all { border: 1px solid var(--aewttr-border); border-radius: 5px; background: var(--aewttr-surface); color: var(--aewttr-text); font-size: 11px; font-weight: 600; padding: 3px 9px; cursor: pointer; }
-.rep-mt-mini-all:hover { border-color: var(--aewttr-text); }
-.rep-mt-mini-rows { max-height: 230px; overflow-y: auto; }
-.rep-mt-mini-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 7px 10px; border-bottom: 1px solid var(--aewttr-border); cursor: pointer; }
-.rep-mt-mini-row:last-child { border-bottom: 0; }
-.rep-mt-mini-row:hover { background: var(--aewttr-surface-2, #f7f8fa); }
-.rep-mt-mini-name { font-size: 12px; font-weight: 600; color: var(--aewttr-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rep-mt-mini-dates { display: flex; flex-wrap: wrap; gap: 4px 8px; justify-content: flex-end; }
-.rep-mt-mini-date { display: inline-flex; align-items: center; gap: 3px; font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--aewttr-muted); white-space: nowrap; }
-.rep-mt-mini-date i { font-style: normal; font-size: 11px; }
-.rep-mt-mini-none { font-size: 10px; color: var(--aewttr-muted); opacity: .75; }
-.rep-mt-mini-empty { margin: 8px 0 0; }
-.rep-mt-mini-sep { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--aewttr-border); }
 
 /* Inline status corrector in the travel detail modal. A modal on top of a modal
    for a single field is worse than editing in place. */
@@ -18342,3 +18322,13 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .rep-tb-item--sub .rep-tb-dot { color: var(--aewttr-muted); }
 .rep-slide-sub { margin-left: 15px; list-style: none; position: relative; }
 .rep-slide-sub::before { content: "–"; position: absolute; left: -12px; color: var(--aewttr-muted); }
+
+/* The Milestones card now carries the full per-project table, so it needs the
+   width of the whole row rather than half of it, and the table scrolls
+   horizontally inside the card on narrow screens. */
+.grp-rep-slide-content .rep-qcard:has(.rep-qcard-bd--miles) { grid-column: 1 / -1; }
+/* With Milestones spanning the row, a half-width Description left dead space
+   beside it; the rich-text editor reads better at full width anyway. */
+.grp-rep-slide-content .rep-qcard:has(#grp-rep-desc-wrap) { grid-column: 1 / -1; }
+.rep-qcard-bd--miles .rep-mt-scroll { margin-top: 10px; }
+.rep-qcard-bd--miles .rep-grp-mt-tbl { min-width: 620px; }

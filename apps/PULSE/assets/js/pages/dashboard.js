@@ -193,10 +193,6 @@ PAGE_RENDERERS.dashboard = function () {
 
   /* Quick stats */
   const activeProjects = (db.projects || []).filter((p) => p.lifecycleStatus === "Active" || (!p.lifecycleStatus && p.status !== "Complete" && p.status !== "Cancelled")).length;
-  const overdueCount = hierarchy.reduce((n, pr) => n + pr.entries.filter((e) => {
-    const due = e.task.end || e.task.dueDate;
-    return due && new Date(due) < new Date();
-  }).length, 0);
 
   $("#page-content").innerHTML = `
     <div class="dashboard-v2">
@@ -217,10 +213,6 @@ PAGE_RENDERERS.dashboard = function () {
           <div class="dash-stat">
             <span class="dash-stat-num">${subtaskCount}</span>
             <span class="dash-stat-label">Subtasks</span>
-          </div>
-          <div class="dash-stat">
-            <span class="dash-stat-num" style="${overdueCount ? "color:var(--aewttr-red)" : ""}">${overdueCount}</span>
-            <span class="dash-stat-label">Overdue</span>
           </div>
         </div>
         <section class="dash-apps-section">

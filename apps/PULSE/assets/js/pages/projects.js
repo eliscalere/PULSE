@@ -925,54 +925,44 @@ function renderGroupDetail(groupName, groupType, projects) {
               <span class="rep-qcard-pos">↘ Bottom Right</span>
               <span class="rep-qcard-name">Milestones</span>
             </div>
-            <div class="rep-qcard-bd">
-              <p class="rep-qcard-hint">Tick a project to put its milestone row on the combined slide. Dates come from each project's own Contract/FAT/SAT/etc. fields — edit them in the full table below or on the project's own Reporting tab.</p>
-              <div class="rep-mt-mini" id="grp-rep-mt-mini"></div>
-              <p class="rep-qcard-sub rep-mt-mini-sep">Extra ${escapeHtml(groupLabel)} milestones</p>
-              <p class="rep-qcard-hint">Named milestones belonging to the ${escapeHtml(groupLabel)} itself, not to any one project. These show as additional rows on the slide.</p>
-              <div id="grp-rep-om-wrap"></div>
+            <div class="rep-qcard-bd rep-qcard-bd--miles">
+              <p class="rep-qcard-hint">Each project's own Contract/FAT/SAT/ADD/Fielding/Completion dates — editing here updates that project directly. A category column only appears on the slide once a date is entered. Include controls which projects go into the PowerPoint export.</p>
+              <div class="rep-mt-scroll">
+                <table class="aewttr-table rep-grp-mt-tbl">
+                  <thead>
+                    <tr>
+                      <th class="rep-mt-th--include">Include</th>
+                      <th>Project</th>
+                      ${PROJECT_MILESTONE_CATEGORIES.map(function(c) {
+                        return `<th class="rep-mt-th--date" style="--mc:${c.color}"><span class="rep-mt-sym" style="color:${c.color}">${c.sym}</span>${c.short}</th>`;
+                      }).join("")}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${projects.length ? projects.map(function(proj) {
+                      const pm = typeof getProjectMilestones === "function" ? getProjectMilestones(proj) : {};
+                      const canEditThis = typeof canEditProject === "function" ? canEditProject(proj) : true;
+                      const isIncluded = includedIds().includes(proj.id);
+                      return `<tr data-proj-id="${escapeHtml(proj.id)}">
+                        <td class="rep-mt-td--include"><input type="checkbox" class="rep-mt-include-ctrl" data-proj-id="${escapeHtml(proj.id)}" ${isIncluded ? "checked" : ""}${tip("Include this project in the PowerPoint export")}></td>
+                        <td><strong>${escapeHtml(proj.name || "Untitled project")}</strong></td>
+                        ${PROJECT_MILESTONE_CATEGORIES.map(function(c) {
+                          const val = pm[c.key] || "";
+                          return `<td>
+                            <input type="date" class="rep-mt-date rep-grp-mt-date${val ? " rep-mt-date--set" : ""}"
+                              data-proj-id="${escapeHtml(proj.id)}" data-col="${c.key}"
+                              value="${escapeHtml(val)}" style="--mc:${c.color}"${canEditThis ? "" : " disabled"}>
+                          </td>`;
+                        }).join("")}
+                      </tr>`;
+                    }).join("") : `<tr><td colspan="${PROJECT_MILESTONE_CATEGORIES.length + 2}"><div class="empty-state">No projects in this group.</div></td></tr>`}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>` : ""}
 
-        <div class="aewttr-card grp-rep-milestones">
-          <div class="grp-rep-milestones-head">
-            <h3 class="grp-rep-milestones-title">Milestones across ${escapeHtml(groupLabel)}</h3>
-            <p class="grp-rep-milestones-sub">Each project's own Contract/FAT/SAT/ADD/Fielding/Completion dates — editing here updates that project directly. A category column only appears on the slide once a date is entered. The Include column controls which projects go into the PowerPoint export.</p>
-          </div>
-          <div class="rep-mt-scroll">
-            <table class="aewttr-table rep-grp-mt-tbl">
-              <thead>
-                <tr>
-                  <th class="rep-mt-th--include">Include</th>
-                  <th>Project</th>
-                  ${PROJECT_MILESTONE_CATEGORIES.map(function(c) {
-                    return `<th class="rep-mt-th--date" style="--mc:${c.color}"><span class="rep-mt-sym" style="color:${c.color}">${c.sym}</span>${c.short}</th>`;
-                  }).join("")}
-                </tr>
-              </thead>
-              <tbody>
-                ${projects.length ? projects.map(function(proj) {
-                  const pm = typeof getProjectMilestones === "function" ? getProjectMilestones(proj) : {};
-                  const canEditThis = typeof canEditProject === "function" ? canEditProject(proj) : true;
-                  const isIncluded = includedIds().includes(proj.id);
-                  return `<tr data-proj-id="${escapeHtml(proj.id)}">
-                    <td class="rep-mt-td--include"><input type="checkbox" class="rep-mt-include-ctrl" data-proj-id="${escapeHtml(proj.id)}" ${isIncluded ? "checked" : ""}${tip("Include this project in the PowerPoint export")}></td>
-                    <td><strong>${escapeHtml(proj.name || "Untitled project")}</strong></td>
-                    ${PROJECT_MILESTONE_CATEGORIES.map(function(c) {
-                      const val = pm[c.key] || "";
-                      return `<td>
-                        <input type="date" class="rep-mt-date rep-grp-mt-date${val ? " rep-mt-date--set" : ""}"
-                          data-proj-id="${escapeHtml(proj.id)}" data-col="${c.key}"
-                          value="${escapeHtml(val)}" style="--mc:${c.color}"${canEditThis ? "" : " disabled"}>
-                      </td>`;
-                    }).join("")}
-                  </tr>`;
-                }).join("") : `<tr><td colspan="${PROJECT_MILESTONE_CATEGORIES.length + 2}"><div class="empty-state">No projects in this group.</div></td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        </div>
       </div>`;
 
     // Slide-content editor (combined End Item Config slide only)
@@ -1194,9 +1184,7 @@ function renderGroupDetail(groupName, groupType, projects) {
           saveGroupCfg();
         });
       }
-      renderMilestoneMini();
-      const omWrap = mount.querySelector("#grp-rep-om-wrap");
-      if (omWrap) renderOtherMilestonesEditor(omWrap, groupCfg.otherMilestones, saveGroupCfg);
+
     }
 
     // Wire the cross-project milestone table (each project's own dates)
@@ -1208,8 +1196,6 @@ function renderGroupDetail(groupName, groupType, projects) {
         proj.updated = new Date().toISOString().slice(0, 10);
         if (typeof Repo !== "undefined" && Repo && typeof Repo.save === "function") Repo.save("project", proj);
         inp.classList.toggle("rep-mt-date--set", !!inp.value);
-        /* Keep the compact table in the Milestones card showing the same dates. */
-        if (typeof renderMilestoneMini === "function") renderMilestoneMini();
       });
     });
 
@@ -1221,64 +1207,17 @@ function renderGroupDetail(groupName, groupType, projects) {
       groupCfg.includedProjectIds = checkedIds.length === projects.length ? [] : checkedIds.slice();
       saveGroupCfg();
       const included = includedIds();
-      mount.querySelectorAll(".rep-mt-include-ctrl, .rep-mt-mini-ctrl").forEach(function(box) {
+      mount.querySelectorAll(".rep-mt-include-ctrl").forEach(function(box) {
         box.checked = included.includes(box.dataset.projId);
       });
       const summaryEl = mount.querySelector(".grp-rep-b3-summary");
       if (summaryEl) summaryEl.textContent = included.length + " of " + projects.length + " project" + (projects.length === 1 ? "" : "s") + " included";
-      const miniCount = mount.querySelector(".rep-mt-mini-count");
-      if (miniCount) miniCount.textContent = included.length + " of " + projects.length + " on the slide";
     }
 
     function collectChecked(selector) {
       return Array.from(mount.querySelectorAll(selector)).map(function(c) { return c.dataset.projId; });
     }
 
-    /* Compact milestone table inside the Milestones card: the same projects and
-       the same dates as the full table, so a PM can set the slide's rows without
-       scrolling past the editor to find the control. */
-    function renderMilestoneMini() {
-      const wrap = mount.querySelector("#grp-rep-mt-mini");
-      if (!wrap) return;
-      if (!projects.length) {
-        wrap.innerHTML = '<p class="rep-qcard-hint rep-mt-mini-empty">No projects in this ' + escapeHtml(groupLabel) + ' yet.</p>';
-        return;
-      }
-      const included = includedIds();
-      wrap.innerHTML =
-        '<div class="rep-mt-mini-head">' +
-          '<span class="rep-mt-mini-count">' + included.length + ' of ' + projects.length + ' on the slide</span>' +
-          '<button type="button" class="rep-mt-mini-all" id="rep-mt-mini-all">' +
-            (included.length === projects.length ? 'Clear all' : 'Select all') +
-          '</button>' +
-        '</div>' +
-        '<div class="rep-mt-mini-rows">' +
-        projects.map(function(proj) {
-          const pm = typeof getProjectMilestones === "function" ? getProjectMilestones(proj) : {};
-          const dates = PROJECT_MILESTONE_CATEGORIES.map(function(c) {
-            const val = pm[c.key] || "";
-            return val
-              ? '<span class="rep-mt-mini-date" title="' + escapeHtml(c.short) + '"><i style="color:' + c.color + '">' + c.sym + '</i>' + escapeHtml(val) + '</span>'
-              : "";
-          }).filter(Boolean).join("");
-          return '<label class="rep-mt-mini-row">' +
-            '<input type="checkbox" class="rep-mt-mini-ctrl" data-proj-id="' + escapeHtml(proj.id) + '"' + (included.includes(proj.id) ? " checked" : "") + '>' +
-            '<span class="rep-mt-mini-name">' + escapeHtml(proj.name || "Untitled project") + '</span>' +
-            '<span class="rep-mt-mini-dates">' + (dates || '<span class="rep-mt-mini-none">No dates set</span>') + '</span>' +
-            '</label>';
-        }).join("") +
-        '</div>';
-
-      wrap.querySelectorAll(".rep-mt-mini-ctrl").forEach(function(box) {
-        box.addEventListener("change", function() { applyInclusion(collectChecked(".rep-mt-mini-ctrl:checked")); });
-      });
-      const allBtn = wrap.querySelector("#rep-mt-mini-all");
-      if (allBtn) allBtn.addEventListener("click", function() {
-        const allOn = includedIds().length === projects.length;
-        applyInclusion(allOn ? [] : projects.map(function(p) { return p.id; }));
-        renderMilestoneMini();
-      });
-    }
 
     // Wire per-project Include checkboxes in the full table below.
     mount.querySelectorAll(".rep-mt-include-ctrl").forEach(function(ctrl) {
@@ -9052,50 +8991,6 @@ function projectGroupMemberships(proj) {
    Reporting tab (editing directly) and, compactly, on the Reporting tab of
    any project that belongs to that group — the list itself always lives on
    the shared groupReportConfig record, never on the project. */
-function otherMilestonesListHtml(list) {
-  return (list || []).map(function(m, i) {
-    return `<div class="rep-om-item" data-om-idx="${i}">
-      <input type="text" class="input-aewttr rep-om-label" data-om-field="label" data-om-idx="${i}" placeholder="Milestone name…" value="${escapeHtml(m.label || "")}">
-      <input type="date" class="input-aewttr rep-om-date" data-om-field="date" data-om-idx="${i}" value="${escapeHtml(m.date || "")}">
-      <button type="button" class="rep-om-del" data-om-idx="${i}" title="Remove"><i class="bx bx-x"></i></button>
-    </div>`;
-  }).join("");
-}
-function renderOtherMilestonesEditor(container, list, onChange) {
-  container.innerHTML = `
-    <div class="rep-om-list">
-      ${otherMilestonesListHtml(list)}
-      <button type="button" class="rep-tb-add rep-om-add"><i class="bx bx-plus"></i> Add milestone</button>
-    </div>
-  `;
-  let dt = null;
-  container.querySelectorAll(".rep-om-label, .rep-om-date").forEach(function(inp) {
-    inp.addEventListener("input", function() {
-      const idx = parseInt(inp.dataset.omIdx, 10);
-      if (!list[idx]) return;
-      list[idx][inp.dataset.omField] = inp.value;
-      clearTimeout(dt);
-      dt = setTimeout(onChange, 200);
-    });
-  });
-  container.querySelectorAll(".rep-om-del").forEach(function(btn) {
-    btn.addEventListener("click", function() {
-      list.splice(parseInt(btn.dataset.omIdx, 10), 1);
-      onChange();
-      renderOtherMilestonesEditor(container, list, onChange);
-    });
-  });
-  const addBtn = container.querySelector(".rep-om-add");
-  if (addBtn) {
-    addBtn.addEventListener("click", function() {
-      list.push({ id: uid("om"), label: "", date: "" });
-      onChange();
-      renderOtherMilestonesEditor(container, list, onChange);
-      const inputs = container.querySelectorAll(".rep-om-label");
-      if (inputs.length) inputs[inputs.length - 1].focus();
-    });
-  }
-}
 
 /* A compact rich-text box (Bold/Italic/Bullet list/Clear formatting) for
    group-level Description content — plain textarea can't distinguish an EIC's
@@ -9597,22 +9492,6 @@ function drawProjectReporting(body, proj) {
 
         </div><!-- /rep-cards-only -->
 
-        ${(function() {
-          const memberships = projectGroupMemberships(proj);
-          if (!memberships.length) return "";
-          return `<div class="rep-om-groups">
-            <p class="rep-qcard-hint" style="margin:0 0 2px;">Milestones that belong to a Portfolio, Program, or End Item Config itself — not to this project — live here. They never appear on this project's own slide, but do show up when exporting that group's combined slide.</p>
-            ${memberships.map(function(m, i) {
-              return `<div class="rep-om-group-card">
-                <div class="rep-om-group-hd">
-                  <span class="rep-om-group-kind">${escapeHtml(m.label)}</span>
-                  <span class="rep-om-group-name">${escapeHtml(m.name)}</span>
-                </div>
-                <div id="rep-om-group-wrap-${i}"></div>
-              </div>`;
-            }).join("")}
-          </div>`;
-        })()}
     </div><!-- /rep-shell -->
   `;
 
@@ -9621,14 +9500,6 @@ function drawProjectReporting(body, proj) {
   renderSlidePreview();
   renderTechBullets();
 
-  projectGroupMemberships(proj).forEach(function(m, i) {
-    const wrap = $("#rep-om-group-wrap-" + i, body);
-    if (!wrap) return;
-    const gcfg = ensureGroupReportConfig(m.type, m.name);
-    renderOtherMilestonesEditor(wrap, gcfg.otherMilestones, function() {
-      if (typeof Repo !== "undefined" && Repo && typeof Repo.save === "function") Repo.save("groupReportConfig", gcfg);
-    });
-  });
 
   const RAG_CYCLE = ["", "Green", "Yellow", "Red"];
   $all(".rep-risk-rag-btn", body).forEach(function(btn) {

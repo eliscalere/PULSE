@@ -358,10 +358,6 @@ function fmtDate(d) {
   if (isNaN(dt)) return d;
   return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
-function isOverdue(dateStr) {
-  if (!dateStr) return false;
-  return new Date(dateStr + "T00:00:00") < new Date(new Date().toDateString());
-}
 function ragPill(rag) {
   return `<span class="rag-pill rag-${rag}"><span class="dot"></span>${rag}</span>`;
 }
@@ -463,7 +459,7 @@ function issuePriority(p) {
 
 /* ---------- configurable RAG logic ---------- */
 function ragConfigDefaults() {
-  return { overdueAmber: 1, overdueRed: 3, behindAmber: 1, behindRed: 2, completionAmberBelow: 60, completionRedBelow: 25 };
+  return { behindAmber: 1, behindRed: 2, completionAmberBelow: 60, completionRedBelow: 25 };
 }
 function getRagConfig() {
   return ragConfigDefaults();

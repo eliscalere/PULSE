@@ -1637,11 +1637,13 @@
 
     /* Bottom-right: milestones — every project in the config always shows
        as its own row (each using its own Contract/FAT/SAT/etc. dates), plus
-       any ad-hoc milestones entered for the config itself as extra rows. */
+       one row per member project. */
     addSectionHeading(slide, "Milestones", L.milesHead);
+    /* Milestone rows come from the member projects' own dates. Ad-hoc
+       group-level milestones were removed from the editor, so nothing feeds
+       customRows any more. */
     drawMcMilestoneChart(slide, shapes, null, L.milesBody.x, L.milesBody.y, L.milesBody.w, L.milesBody.h, {
-      rows: eicProjects,
-      customRows: groupCfg.otherMilestones
+      rows: eicProjects
     });
 
     slide.addText(`As of ${todayLabel()}`, {

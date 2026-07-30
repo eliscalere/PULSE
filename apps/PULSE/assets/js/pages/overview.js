@@ -26,10 +26,6 @@ PAGE_RENDERERS.overview = function () {
     return !taskIsDone(task);
   }
 
-  function taskIsOverdue(task) {
-    return taskIsActive(task) && !!(task.end) && isOverdue(task.end);
-  }
-
   function taskIsBlocked(task) {
     if (!taskIsActive(task)) return false;
     const s = String(task.status || "").toLowerCase();

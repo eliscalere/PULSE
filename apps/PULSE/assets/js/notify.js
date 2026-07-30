@@ -875,20 +875,13 @@ function collectOpenActionItemsByMember() {
   return byEmail;
 }
 
-function actionItemDigestIsOverdue(due, status) {
-  if (!due || ACTION_ITEM_DIGEST_CLOSED_STATUSES.includes(status)) return false;
-  return typeof isOverdue === "function" ? isOverdue(String(due).slice(0, 10)) : false;
-}
-
 function buildActionItemDigestContent(items) {
   const rows = items.map((item) => {
-    const overdue = actionItemDigestIsOverdue(item.due, item.status);
     const dueLabel = item.due ? (typeof fmtDate === "function" ? fmtDate(String(item.due).slice(0, 10)) : item.due) : "No due date";
     const project = item.projectTitle ? ` — ${escapeHtml(item.projectTitle)}` : "";
-    const flag = overdue ? ` <strong style="color:#DC2626;">(Overdue)</strong>` : "";
     return {
-      html: `<li><strong>${escapeHtml(item.title)}</strong>${project}<br><span style="color:#64748b;font-size:12.5px;">${escapeHtml(item.status || "")} · Due ${escapeHtml(dueLabel)}${flag}</span></li>`,
-      text: `- ${item.title}${item.projectTitle ? ` (${item.projectTitle})` : ""} — ${item.status || ""}, due ${dueLabel}${overdue ? " (OVERDUE)" : ""}`
+      html: `<li><strong>${escapeHtml(item.title)}</strong>${project}<br><span style="color:#64748b;font-size:12.5px;">${escapeHtml(item.status || "")} · Due ${escapeHtml(dueLabel)}</span></li>`,
+      text: `- ${item.title}${item.projectTitle ? ` (${item.projectTitle})` : ""} — ${item.status || ""}, due ${dueLabel}`
     };
   });
   return {
