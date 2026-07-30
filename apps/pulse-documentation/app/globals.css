@@ -4,7 +4,6 @@
 * { box-sizing:border-box; } html { scroll-behavior:smooth; } body { margin:0; background:var(--mist); color:var(--ink); font-family:Inter, Arial, Helvetica, sans-serif; } button, input { font:inherit; } button { cursor:pointer; }
 
 /* PULSE source-library boot state */
-.pulse-app-shell--booting { pointer-events:none; }
 .pulse-doc-loader {
   position:fixed;
   inset:0;
@@ -18,7 +17,15 @@
   transform:scale(1);
   transition:opacity 240ms cubic-bezier(.4,0,.2,1), transform 240ms cubic-bezier(.4,0,.2,1);
 }
-.pulse-doc-loader--exiting { opacity:0; transform:scale(.985); }
+.pulse-doc-loader--exiting { opacity:0; transform:scale(.985); pointer-events:none; }
+/* Last-resort dismissal with no JavaScript involved at all. If scripts are
+   blocked or hydration never finishes, the overlay still clears and the
+   server-rendered page underneath becomes usable. */
+.pulse-doc-loader { animation:pulse-doc-loader-autohide 6s cubic-bezier(.4,0,.2,1) forwards; }
+@keyframes pulse-doc-loader-autohide {
+  0%, 93% { opacity:1; pointer-events:auto; }
+  100% { opacity:0; pointer-events:none; visibility:hidden; }
+}
 .pulse-svgl-wrap { width:min(88vw,720px); }
 .pulse-svgl { display:block; width:100%; height:auto; overflow:visible; font-family:Inter,Arial,Helvetica,sans-serif; }
 .pulse-svgl-wordmark {

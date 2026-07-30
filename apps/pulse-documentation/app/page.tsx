@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DocumentPage, parsePage } from "./document-reader";
 import focusedFigures from "./generated/figures/09_PULSE_Focused_Tools_and_Package_Delivery.json";
 import devscaleFigures from "./generated/figures/10_PULSE_Development_Environment_and_Scale_Validation.json";
@@ -150,6 +150,18 @@ function downloadPdf(doc: Document) {
   window.setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
+/* The packaged build carries every document inline, so the reader can populate
+   itself before the first paint rather than after an effect. */
+function readInlinedSource(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const inlined = (window as unknown as { __PULSE_SOURCE_TEXT__?: Record<string, string> }).__PULSE_SOURCE_TEXT__;
+  if (!inlined) return {};
+  const entries = documents
+    .map((doc) => [doc.id, inlined[`/source-text/${doc.textFile}`]] as const)
+    .filter((entry): entry is readonly [string, string] => typeof entry[1] === "string");
+  return Object.fromEntries(entries);
+}
+
 function hasAsset(url: string): boolean {
   if (typeof window === "undefined") return false;
   const assets = (window as unknown as { __PULSE_ASSETS__?: Record<string, string> }).__PULSE_ASSETS__;
@@ -161,8 +173,11 @@ export default function Home() {
   const [active, setActive] = useState("overview");
   const [view, setView] = useState<"docs" | "brand">("docs");
   const [query, setQuery] = useState("");
+  /* Starts empty so the first client render matches the server HTML — the server
+     has no inlined text, and seeding state from it here is a hydration mismatch
+     (React #418), which throws away the server tree. A layout effect fills it in
+     before the browser paints, so there is still no flash of empty state. */
   const [source, setSource] = useState<Record<string, string>>({});
-  const [bootPhase, setBootPhase] = useState<"loading" | "exiting" | "ready">("loading");
   const [isSearching, setIsSearching] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   /* The whole document renders in one scroll. activeSection is what the reader
@@ -181,58 +196,26 @@ export default function Home() {
     setPdfsBundled(hasAsset(`/source-pdfs/${documents[1].pdfFile}`));
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    let readyTimer: number | undefined;
-
-    const finish = () => {
-      if (cancelled) return;
-      setBootPhase((phase) => (phase === "loading" ? "exiting" : phase));
-      readyTimer = window.setTimeout(() => {
-        if (!cancelled) setBootPhase("ready");
-      }, 50);
-    };
-
-    /* The packaged single-file build carries every source document inline, so
-       read it straight off the global instead of round-tripping through fetch.
-       Only the dev server needs the network path. */
-    const inlined = (window as unknown as { __PULSE_SOURCE_TEXT__?: Record<string, string> }).__PULSE_SOURCE_TEXT__;
-    if (inlined) {
-      const loaded = documents
-        .map((doc) => [doc.id, inlined[`/source-text/${doc.textFile}`]] as const)
-        .filter((entry): entry is readonly [string, string] => typeof entry[1] === "string");
-      if (loaded.length) {
-        setSource(Object.fromEntries(loaded));
-        finish();
-        return () => {
-          cancelled = true;
-          if (readyTimer) window.clearTimeout(readyTimer);
-        };
-      }
-    }
-
-    /* Never let a stalled or failed source load strand the reader behind the
-       boot overlay — reveal the shell regardless and let content fill in. */
-    const safety = window.setTimeout(finish, 4000);
-
-    Promise.all(documents.map(async (doc) => [doc.id, await fetch(`/source-text/${doc.textFile}`).then((r) => r.text())] as const))
-      .then((loaded) => {
-        if (!cancelled) setSource(Object.fromEntries(loaded));
-      })
-      .catch((error) => {
-        console.error("Unable to load the PULSE documentation source library.", error);
-      })
-      .finally(() => {
-        window.clearTimeout(safety);
-        finish();
-      });
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(safety);
-      if (readyTimer) window.clearTimeout(readyTimer);
-    };
+  /* Populate from the inlined text before paint, then tell the static loader the
+     app is live. The loader also clears itself on its own schedule, so this only
+     makes it leave sooner. */
+  useLayoutEffect(() => {
+    const inlined = readInlinedSource();
+    if (Object.keys(inlined).length) setSource(inlined);
+    const signal = (window as unknown as { __PULSE_APP_READY__?: () => void }).__PULSE_APP_READY__;
+    if (typeof signal === "function") signal();
   }, []);
+
+  /* Dev server only: the packaged build has the text inline, so this never runs
+     there. Kept so `npm run dev` still shows real documents. */
+  useEffect(() => {
+    if (Object.keys(source).length) return;
+    let cancelled = false;
+    Promise.all(documents.map(async (doc) => [doc.id, await fetch(`/source-text/${doc.textFile}`).then((response) => response.text())] as const))
+      .then((loaded) => { if (!cancelled) setSource(Object.fromEntries(loaded)); })
+      .catch((error) => { console.error("Unable to load the PULSE documentation source library.", error); });
+    return () => { cancelled = true; };
+  }, [source]);
 
   const scrollToSection = useCallback((page: number, behavior: ScrollBehavior = "smooth") => {
     const target = document.getElementById(`section-${page}`);
@@ -372,9 +355,27 @@ export default function Home() {
   }
 
   return <>
-    {bootPhase !== "ready" && <PulseBootLoader exiting={bootPhase === "exiting"} />}
     {lightbox && <FigureLightbox figure={lightbox} onClose={() => setLightbox(null)} />}
-    <main className={bootPhase === "ready" ? "pulse-app-shell" : "pulse-app-shell pulse-app-shell--booting"} aria-hidden={bootPhase === "ready" ? undefined : true}>
+    {/* Rendered unconditionally so the server HTML contains it — React hydrates
+        the whole document, so anything injected afterwards is a mismatch. It is
+        never re-rendered and never gates the shell; a plain script removes it
+        (and a CSS animation hides it if no script runs at all). */}
+    <div id="pulse-doc-boot" className="pulse-doc-loader" role="status" aria-live="polite" aria-label="Loading PULSE Documentation">
+      <div className="pulse-svgl-wrap">
+        <svg className="pulse-svgl" viewBox="0 0 960 360" aria-hidden="true">
+          <g className="pulse-svgl-wordmark">
+            <text className="pulse-svgl-letter pulse-svgl-letter--p" x="120" y="180">P</text>
+            <text className="pulse-svgl-letter pulse-svgl-letter--u" x="300" y="180">U</text>
+            <text className="pulse-svgl-letter pulse-svgl-letter--l" x="480" y="180">L</text>
+            <text className="pulse-svgl-letter pulse-svgl-letter--s" x="660" y="180">S</text>
+            <text className="pulse-svgl-letter pulse-svgl-letter--e" x="840" y="180">E</text>
+          </g>
+          <circle className="pulse-svgl-dot pulse-svgl-dot--upper" cx="300" cy="76" r="14" />
+          <circle className="pulse-svgl-dot pulse-svgl-dot--lower" cx="660" cy="258" r="14" />
+        </svg>
+      </div>
+    </div>
+    <main className="pulse-app-shell">
     <aside className={`sidebar ${mobileOpen ? "open" : ""}`}>
       <a className="brand" href="#top" onClick={() => choose("overview")}><img suppressHydrationWarning src={getAssetUrl("/brand-assets/PULSE_Wordmark_White_Transparent.png")} alt="PULSE" /></a>
       <div className="side-label">Documentation</div>
@@ -428,24 +429,6 @@ export default function Home() {
   </>;
 }
 
-function PulseBootLoader({ exiting }: { exiting: boolean }) {
-  return <div className={exiting ? "pulse-doc-loader pulse-doc-loader--exiting" : "pulse-doc-loader"} role="status" aria-live="polite" aria-label="Loading PULSE Documentation">
-    <div className="pulse-svgl-wrap">
-      <svg className="pulse-svgl" viewBox="0 0 960 360" aria-hidden="true">
-        <g className="pulse-svgl-wordmark">
-          <text className="pulse-svgl-letter pulse-svgl-letter--p" x="120" y="180">P</text>
-          <text className="pulse-svgl-letter pulse-svgl-letter--u" x="300" y="180">U</text>
-          <text className="pulse-svgl-letter pulse-svgl-letter--l" x="480" y="180">L</text>
-          <text className="pulse-svgl-letter pulse-svgl-letter--s" x="660" y="180">S</text>
-          <text className="pulse-svgl-letter pulse-svgl-letter--e" x="840" y="180">E</text>
-        </g>
-        <circle className="pulse-svgl-dot pulse-svgl-dot--upper" cx="300" cy="76" r="14" />
-        <circle className="pulse-svgl-dot pulse-svgl-dot--lower" cx="660" cy="258" r="14" />
-      </svg>
-    </div>
-    <span className="pulse-loader-sr">Loading the PULSE documentation library</span>
-  </div>;
-}
 
 
 

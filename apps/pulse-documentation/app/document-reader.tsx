@@ -317,11 +317,8 @@ function renderBlock(block: TextBlock, key: string, figures?: ReactNode[]): Reac
   return <div className="doc-table-wrap" key={key}><table>{block.header && <thead><tr>{block.rows[0].map((cell, index) => <th key={`${key}-h-${index}`}>{cell}</th>)}</tr></thead>}<tbody>{bodyRows.map((row, rowIndex) => <tr key={`${key}-r-${rowIndex}`}>{row.map((cell, cellIndex) => <td key={`${key}-${rowIndex}-${cellIndex}`}>{cell}</td>)}</tr>)}</tbody></table></div>;
 }
 
-export function DocumentPage({ raw, pageNumber, documentTitle, figures }: { raw: string; pageNumber: number; documentTitle: string; figures?: ReactNode }) {
+export function DocumentPage({ raw, pageNumber, documentTitle, figures }: { raw: string; pageNumber: number; documentTitle: string; figures?: ReactNode[] }) {
   const parsed = parsePage(raw);
-  /* Figures arrive as a single node containing one child per figure, in document
-     order; split it so each slot receives its own. */
-  const figureNodes = Array.isArray(figures) ? figures : figures ? [figures] : [];
   return <article className="formatted-page" id={`page-${pageNumber}`}>
     <header className="formatted-page-header">
       <span>{documentTitle}</span>

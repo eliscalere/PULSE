@@ -268,6 +268,51 @@ function bundleClient(html, manifestFiles) {
   };
 }
 
+/* The boot overlay is deliberately NOT a React component.
+
+   It used to be, and that was the "it just will not load" failure in Firepit:
+   the overlay only disappeared once React had hydrated and an effect had run,
+   and while it was up the app shell also carried pointer-events:none and
+   aria-hidden. Any stall in hydration inside the SharePoint iframe left a
+   permanent splash screen over a page that was actually already rendered.
+
+   Now it is static markup with three independent ways out, in order of how
+   early they fire:
+     1. an inline script that removes it as soon as the body is parsed,
+     2. a ready signal from the app, if it gets there first,
+     3. a CSS animation that hides it after 6s even if no JS runs at all.
+   The last one is the important one: no amount of script failure, CSP blocking,
+   or hydration trouble can keep it on screen. */
+function bootOverlayScript() {
+  return `<script>
+(function () {
+  var gone = false;
+  /* Looked up lazily: this script runs from <head>, before the overlay exists,
+     so its timers start at page start rather than after the whole document has
+     parsed. On a slow link that is the difference between a 4s backstop and a
+     13s one. */
+  function dismiss() {
+    if (gone) return;
+    var el = document.getElementById("pulse-doc-boot");
+    if (!el) return;
+    gone = true;
+    el.style.pointerEvents = "none";
+    el.className += " pulse-doc-loader--exiting";
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 260);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1400);
+  }
+  window.__PULSE_APP_READY__ = dismiss;
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", dismiss, { once: true });
+  } else {
+    dismiss();
+  }
+  window.addEventListener("load", dismiss, { once: true });
+  setTimeout(dismiss, 4000);
+}());
+</script>`;
+}
+
 function inlineStyles(html, manifestFiles) {
   /* Records every stylesheet we fold into the document so the RSC payload can
      be re-pointed at a self-contained copy (see neutralizeExternalAssetRefs). */
@@ -350,6 +395,12 @@ async function buildPackage() {
   const styled = inlineStyles(html, manifestFiles);
   html = styled.html;
   html = neutralizeExternalAssetRefs(html, styled.cssDataUris);
+  if (!html.includes('id="pulse-doc-boot"')) {
+    throw new Error("Boot overlay missing from the rendered HTML — it must be server-rendered so hydration matches.");
+  }
+  /* In <head>, so its timers start at page start. The element is looked up
+     lazily inside the handler, so running before the body is parsed is fine. */
+  html = html.replace(/<\/head>/i, `${bootOverlayScript()}</head>`);
   html = html
     .replace(/<link\b(?=[^>]*\brel=["'](?:modulepreload|preload)["'])[^>]*>/gi, "")
     .replace(/<meta\b(?=[^>]*\b(?:property|name)=["'](?:og:image|twitter:image)["'])[^>]*>/gi, "");
