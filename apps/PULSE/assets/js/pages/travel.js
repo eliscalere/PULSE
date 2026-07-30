@@ -529,7 +529,7 @@ function drawTravelList(body, forcedView) {
         </tr>`;
     }).join("") : `<tr><td colspan="7"><div class="empty-state">${statusFilt === "Upcoming" ? "No upcoming travel." : (isAll ? "No travel requests match your filters." : "No travel requests yet — you'll see anything you submit or are a traveler on here.")}</div></td></tr>`;
 
-    $all("[data-view]", $("#travel-list-tbody", body)).forEach((b) => b.addEventListener("click", () => openTravelDetailModal(b.dataset.view)));
+    $all("[data-view]", $("#travel-list-tbody", body)).forEach((b) => b.addEventListener("click", () => openTravelDetailModal(b.dataset.view, renderRows)));
     $all("[data-edit]", $("#travel-list-tbody", body)).forEach((b) => b.addEventListener("click", () => navigate(`travel/edit/${b.dataset.edit}`)));
     $all("[data-revoke]", $("#travel-list-tbody", body)).forEach((b) => b.addEventListener("click", () => revokeTravelRequest(b.dataset.revoke, renderRows)));
     $all("[data-cancel]", $("#travel-list-tbody", body)).forEach((b) => b.addEventListener("click", () => cancelTravelRequest(b.dataset.cancel, renderRows)));
@@ -659,7 +659,7 @@ function openTravelFromRouteQuery(body, redrawFn) {
   if (!trId) return;
   const request = (window.AEWTTR.db.travelRequests || []).find((r) => r.id === trId);
   if (!request) return;
-  if (typeof openTravelDetailModal === "function") openTravelDetailModal(trId);
+  if (typeof openTravelDetailModal === "function") openTravelDetailModal(trId, redrawFn);
   else if (typeof redrawFn === "function") redrawFn();
 }
 
@@ -3712,7 +3712,12 @@ async function recordCustomerConcurrence(trId, onDone) {
   if (typeof onDone === "function") onDone();
 }
 
-function openTravelDetailModal(trId) {
+/* onChanged is the caller's own redraw — the list passes renderRows. Actions in
+   here must never re-render the whole route: renderTravelPage forces the list
+   view from the route ("travel/mine" forces My Travel), so a full re-render
+   throws an admin who had switched to All Travel back to My Travel. Redraw the
+   rows in place instead. */
+function openTravelDetailModal(trId, onChanged) {
   const db = window.AEWTTR.db;
   const r = db.travelRequests.find(x => x.id === trId);
   if (!r) return;
@@ -3928,8 +3933,13 @@ function openTravelDetailModal(trId) {
       notifyRequesterTravelStatusUpdate(r);
       refreshTravelNotifications();
       toast(`${r.id} set to ${next}.`, "success");
+      /* Which footer actions apply is computed from the status when the modal
+         renders, so patching a label in place would leave the rest stale.
+         Reopen the same request instead: the route never changes, so the admin
+         stays exactly where they were, and the record shows its new state. */
+      if (typeof onChanged === "function") onChanged();
       closeModal();
-      if (typeof renderPage === "function") renderPage();
+      openTravelDetailModal(trId, onChanged);
     });
   });
 
@@ -3976,7 +3986,7 @@ function openTravelDetailModal(trId) {
     refreshTravelNotifications();
     toast(`${r.id} deleted.`, "success");
     closeModal();
-    if (typeof renderPage === "function") renderPage();
+    if (typeof onChanged === "function") onChanged();
   });
 
   const openDocBtn = $("#td-open-export", modal);
