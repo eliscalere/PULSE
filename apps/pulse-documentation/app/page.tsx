@@ -367,18 +367,32 @@ export default function Home() {
         never re-rendered and never gates the shell; a plain script removes it
         (and a CSS animation hides it if no script runs at all). */}
     <div id="pulse-doc-boot" className="pulse-doc-loader" role="status" aria-live="polite" aria-label="Loading PULSE Documentation">
-      <div className="pulse-svgl-wrap">
-        <svg className="pulse-svgl" viewBox="0 0 960 360" aria-hidden="true">
-          <g className="pulse-svgl-wordmark">
-            <text className="pulse-svgl-letter pulse-svgl-letter--p" x="120" y="180">P</text>
-            <text className="pulse-svgl-letter pulse-svgl-letter--u" x="300" y="180">U</text>
-            <text className="pulse-svgl-letter pulse-svgl-letter--l" x="480" y="180">L</text>
-            <text className="pulse-svgl-letter pulse-svgl-letter--s" x="660" y="180">S</text>
-            <text className="pulse-svgl-letter pulse-svgl-letter--e" x="840" y="180">E</text>
-          </g>
-          <circle className="pulse-svgl-dot pulse-svgl-dot--upper" cx="300" cy="76" r="14" />
-          <circle className="pulse-svgl-dot pulse-svgl-dot--lower" cx="660" cy="258" r="14" />
-        </svg>
+      <div className="pulse-doc-loader-stack">
+        <div className="pulse-svgl-wrap">
+          <svg className="pulse-svgl" viewBox="0 0 960 360" aria-hidden="true">
+            <g className="pulse-svgl-wordmark">
+              <text className="pulse-svgl-letter pulse-svgl-letter--p" x="120" y="180">P</text>
+              <text className="pulse-svgl-letter pulse-svgl-letter--u" x="300" y="180">U</text>
+              <text className="pulse-svgl-letter pulse-svgl-letter--l" x="480" y="180">L</text>
+              <text className="pulse-svgl-letter pulse-svgl-letter--s" x="660" y="180">S</text>
+              <text className="pulse-svgl-letter pulse-svgl-letter--e" x="840" y="180">E</text>
+            </g>
+            <circle className="pulse-svgl-dot pulse-svgl-dot--upper" cx="300" cy="76" r="14" />
+            <circle className="pulse-svgl-dot pulse-svgl-dot--lower" cx="660" cy="258" r="14" />
+          </svg>
+        </div>
+        {/* Static at 0% for the server-rendered/no-JS state. The packaged
+            build's boot script (see bootOverlayScript in
+            build-sharepoint-package.mjs) is what actually animates this —
+            not React, for the same reason the overlay itself isn't a React
+            component: it has to keep moving even before hydration runs. */}
+        <div className="pulse-boot-ring-wrap" aria-hidden="true">
+          <svg className="pulse-boot-ring" viewBox="0 0 128 128">
+            <circle className="pulse-boot-ring-track" cx="64" cy="64" r="54" />
+            <circle id="pulse-boot-ring-progress" className="pulse-boot-ring-progress" cx="64" cy="64" r="54" />
+          </svg>
+          <div id="pulse-boot-percent" className="pulse-boot-percent">0%</div>
+        </div>
       </div>
     </div>
     <main className="pulse-app-shell">

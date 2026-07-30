@@ -1510,9 +1510,13 @@
      Photos tab; Milestones (BR) always shows one row per project in the
      config, plus any ad-hoc milestones entered for the config itself, same
      chart used on the single-project slide. */
-  async function buildEicMilestoneSlide(pptx, shapes, eicName, eicProjects, logos, pageNum, cfg) {
+  async function buildEicMilestoneSlide(pptx, shapes, eicName, eicProjects, logos, pageNum, cfg, groupKey) {
     cfg = cfg || {};
-    const groupCfg = (window.AEWTTR.db.groupReportConfigs && window.AEWTTR.db.groupReportConfigs["eic:" + eicName]) || {
+    /* Defaults to the End Item Config's own content, but any group type can
+       supply its key — a Portfolio or Program edits the same four quadrants on
+       its Reporting page and gets its own combined slide from them. */
+    const key = groupKey || ("eic:" + eicName);
+    const groupCfg = (window.AEWTTR.db.groupReportConfigs && window.AEWTTR.db.groupReportConfigs[key]) || {
       techBullets: [],
       description: "",
       otherMilestones: [],
@@ -2114,6 +2118,17 @@
        The concise output stops here; a full briefing can add focused
        appendices below. */
     if (!isProjectSlide && cfg.exportGroupBy === "eic") {
+      /* A Portfolio or Program leads with its own combined slide, built from
+         the content edited on its Reporting page, and then breaks down into a
+         slide per End Item Config underneath. An End Item Config is its own
+         group, so it goes straight to the breakdown and is not repeated. */
+      const ownKey = cfg.groupType && cfg.groupType !== "eic" && cfg.groupName
+        ? cfg.groupType + ":" + cfg.groupName
+        : "";
+      if (ownKey && window.AEWTTR.db.groupReportConfigs && window.AEWTTR.db.groupReportConfigs[ownKey]) {
+        await buildEicMilestoneSlide(pptx, S, cfg.groupName, selectedProjects, logos, page, cfg, ownKey);
+        page++;
+      }
       const groups = groupProjectsByEic(selectedProjects);
       const sortedNames = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
       for (const eicName of sortedNames) {

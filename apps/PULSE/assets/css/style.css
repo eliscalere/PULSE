@@ -2276,12 +2276,11 @@ a.btn-travel-action {
    A fixed-size canvas the user pans/scrolls, not a stretch-to-fit SVG — at
    five columns, shrinking everything to fit the card width makes long
    program/portfolio names illegible. */
-.ov-flow-wrap { display: flex; flex-direction: column; gap: 10px; }
-.ov-flow-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-.ov-flow-toolbar .btn-aewttr-outline { flex-shrink: 0; }
+.ov-flow-wrap { display: flex; flex-direction: column; gap: 8px; }
+.ov-flow-toolbar { display: flex; align-items: center; justify-content: flex-end; }
 .ov-flow-scroll {
   position: relative;
-  max-height: 620px;
+  max-height: 640px;
   overflow: auto;
   border: 1px solid var(--aewttr-border);
   border-radius: 8px;
@@ -2290,20 +2289,30 @@ a.btn-travel-action {
 }
 .ov-flow-scroll.is-dragging { cursor: grabbing; }
 .ov-flow-canvas { position: relative; }
-.ov-flow-col-header {
+/* One sticky row (not five) — five independently-sticky header elements
+   are each their own block box and stack vertically instead of sitting
+   side by side, which used to overlap the first row of node cards. */
+.ov-flow-headers-row {
   position: sticky;
   top: 0;
-  z-index: 2;
-  padding: 8px 4px 7px;
+  left: 0;
+  z-index: 3;
+  height: 40px;
   background: var(--aewttr-surface-2);
   border-bottom: 1px solid var(--aewttr-border);
+}
+.ov-flow-col-header {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  padding: 0 4px;
   font-size: 11.5px;
   font-weight: 700;
   color: var(--aewttr-muted);
   text-transform: uppercase;
   letter-spacing: .04em;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
 }
 .ov-flow-col-header small { font-weight: 600; color: var(--aewttr-border-strong); text-transform: none; letter-spacing: 0; }
@@ -2341,7 +2350,6 @@ a.btn-travel-action {
   cursor: pointer; font-size: 12px;
 }
 .ov-flow-open-link:hover { background: var(--aewttr-blue-tint); color: var(--aewttr-blue); }
-.ov-flow-hint { margin: 0; padding: 0 2px; font-size: 12px; color: var(--aewttr-muted); }
 
 /* Team Resources — operational browsing surface */
 .resource-hub { min-height: 0; border: 1px solid var(--aewttr-border); border-radius: var(--aewttr-radius-md); background: var(--aewttr-surface); overflow: hidden; }
@@ -16990,7 +16998,12 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .grp-photo-pick-actions { display: flex; gap: 6px; }
 
 .grp-photo-modal-sections { display: flex; flex-direction: column; gap: 18px; max-height: 60vh; overflow-y: auto; }
-.grp-photo-modal-section-head { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--aewttr-muted); margin-bottom: 8px; }
+/* The upload button sits on the section head, so each project's row carries
+   its own control and there is never a doubt about which project a photo
+   lands in. */
+.grp-photo-modal-section-head { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--aewttr-muted); margin-bottom: 8px; }
+.grp-photo-modal-section-head > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grp-photo-modal-upload { flex: none; text-transform: none; letter-spacing: 0; }
 .grp-photo-modal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
 .grp-photo-modal-thumb-btn {
   position: relative;

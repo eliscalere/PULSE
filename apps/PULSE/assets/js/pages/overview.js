@@ -1346,7 +1346,7 @@ PAGE_RENDERERS.overview = function () {
     projectList.forEach((row, i) => { projColorMap[row.id] = PROJ_COLORS[i % PROJ_COLORS.length]; });
     const mapHtml = renderProgramFlow(projectList, personList, projectIndex, projColorMap, state.selectedFlowNode);
     const content = state.view === "projects" ? projectsHtml : state.view === "map" ? mapHtml : peopleHtml;
-    return `<section class="resource-hub"><header class="resource-hub-head"><div><h3>Team Resources</h3><p>Browse staffing, active workload, and project assignments.</p></div><div class="resource-summary"><span><b>${peopleRows.length}</b> people</span><span><b>${projectRows.length}</b> projects</span><span><b>${activeTasks.length}</b> active tasks</span></div></header>
+    return `<section class="resource-hub">
       <div class="resource-controls"><div class="resource-view-tabs">${[["people","People","bx-user"],["projects","Projects","bx-briefcase"],["map","Connections","bx-share-alt"]].map(([key,label,icon]) => `<button type="button" class="${state.view === key ? "is-active" : ""}" data-resource-view="${key}"><i class="bx ${icon}"></i>${label}</button>`).join("")}</div><label class="resource-search"><i class="bx bx-search"></i><input id="resource-search" value="${escapeHtml(state.query || "")}" placeholder="Search people or projects"></label></div>
       <div class="resource-scroll-list">${content}</div></section>`;
   }
@@ -1421,7 +1421,7 @@ PAGE_RENDERERS.overview = function () {
         cardOf: (n) => ({ title: n.name, sub: `${n.projects.size} project${n.projects.size !== 1 ? "s" : ""}` }) }
     ];
 
-    const COL_W = 264, COL_GAP = 140, ROW_H = 74, PAD_Y = 52, PAD_X = 32;
+    const COL_W = 264, COL_GAP = 140, ROW_H = 96, PAD_Y = 56, PAD_X = 32;
     const nodePos = new Map();
     COLS.forEach((col, ci) => {
       const x = PAD_X + ci * (COL_W + COL_GAP);
@@ -1489,14 +1489,17 @@ PAGE_RENDERERS.overview = function () {
       });
     });
 
-    const headerPositions = COLS.map((col, ci) => ({ label: col.label, x: PAD_X + ci * (COL_W + COL_GAP), w: COL_W }));
-    const headers = headerPositions.map((h) => `<div class="ov-flow-col-header" style="left:${h.x}px;width:${h.w}px;">${escapeHtml(h.label)}<small>${COLS[headerPositions.indexOf(h)].nodes.length}</small></div>`).join("");
+    const headerPositions = COLS.map((col, ci) => ({ label: col.label, x: PAD_X + ci * (COL_W + COL_GAP), w: COL_W, count: col.nodes.length }));
+    // A single sticky row containing absolutely-positioned labels — five
+    // separate sticky elements would each be a block box in normal flow and
+    // stack vertically on top of each other (and the node cards below them)
+    // instead of sitting side by side.
+    const headers = `<div class="ov-flow-headers-row">${headerPositions.map((h) => `<div class="ov-flow-col-header" style="left:${h.x}px;width:${h.w}px;">${escapeHtml(h.label)}<small>${h.count}</small></div>`).join("")}</div>`;
 
     window.AEWTTR.state.teamResources._flowExport = { canvasW, canvasH, headers: headerPositions, nodes: exportNodes, edges: exportEdges };
 
     return `<div class="ov-flow-wrap">
       <div class="ov-flow-toolbar">
-        <p class="ov-flow-hint">Click any node to trace its chain from Program down to the people staffed on it. Drag to pan.</p>
         <button type="button" class="btn-aewttr-outline btn-aewttr-sm" data-flow-export><i class="bx bx-image"></i> Export PNG</button>
       </div>
       <div class="ov-flow-scroll" id="ov-flow-scroll">

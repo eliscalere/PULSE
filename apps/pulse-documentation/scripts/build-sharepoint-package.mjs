@@ -320,11 +320,78 @@ function bundleClient(html, manifestFiles) {
      2. a ready signal from the app, if it gets there first,
      3. a CSS animation that hides it after 6s even if no JS runs at all.
    The last one is the important one: no amount of script failure, CSP blocking,
-   or hydration trouble can keep it on screen. */
+   or hydration trouble can keep it on screen.
+
+   The ring's percentage is not a measurement of anything — there is no
+   in-page way to observe how many bytes of a single inlined HTML document
+   have arrived (see pdfAssetUrls above for why that specifically can't be a
+   network request). It is a climbing estimate that asymptotically eases
+   toward 90% and never claims 100% on its own; only dismiss() firing — the
+   same real readiness signal that already ends the boot state — pushes it
+   the rest of the way, so the number can climb but can never lie about being
+   done. */
 function bootOverlayScript() {
   return `<script>
 (function () {
   var gone = false;
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var RADIUS = 54;
+  var CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+  var CEILING = 90;
+  var TAU = 1400;
+  var progress = 0;
+  var trickleHandle = 0;
+  var trickleStart = null;
+
+  function paint(value) {
+    var ring = document.getElementById("pulse-boot-ring-progress");
+    var label = document.getElementById("pulse-boot-percent");
+    if (ring) ring.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - value / 100));
+    if (label) label.textContent = Math.round(value) + "%";
+  }
+
+  function trickle(now) {
+    if (trickleStart === null) trickleStart = now;
+    progress = CEILING * (1 - Math.exp(-(now - trickleStart) / TAU));
+    paint(progress);
+    trickleHandle = window.requestAnimationFrame(trickle);
+  }
+  if (!reduceMotion) trickleHandle = window.requestAnimationFrame(trickle);
+
+  /* Ties the ring off at 100% before the overlay starts fading, so the
+     number itself always reads "done" rather than freezing mid-climb.
+
+     requestAnimationFrame is fully suspended by the browser while the tab
+     is hidden/backgrounded — not a corner case worth ignoring, since that's
+     exactly the state a prefetched or not-yet-focused tab is in. A plain
+     timer still fires there, so it forces the tween's end state directly,
+     skipping the animation nobody is watching rather than stalling behind
+     it. Without this, the one guarantee this file exists to make — nothing
+     can keep the overlay on screen — would depend on tab visibility. */
+  function finish(onDone) {
+    if (trickleHandle) window.cancelAnimationFrame(trickleHandle);
+    var done = false;
+    function finishOnce() {
+      if (done) return;
+      done = true;
+      onDone();
+    }
+    if (reduceMotion) { paint(100); finishOnce(); return; }
+    var from = progress;
+    var start = null;
+    var DURATION = 240;
+    function step(now) {
+      if (done) return;
+      if (start === null) start = now;
+      var t = Math.min(1, (now - start) / DURATION);
+      paint(from + (100 - from) * t);
+      if (t < 1) window.requestAnimationFrame(step);
+      else finishOnce();
+    }
+    window.requestAnimationFrame(step);
+    setTimeout(function () { if (!done) { paint(100); finishOnce(); } }, 320);
+  }
+
   /* Looked up lazily: this script runs from <head>, before the overlay exists,
      so its timers start at page start rather than after the whole document has
      parsed. On a slow link that is the difference between a 4s backstop and a
@@ -334,10 +401,12 @@ function bootOverlayScript() {
     var el = document.getElementById("pulse-doc-boot");
     if (!el) return;
     gone = true;
-    el.style.pointerEvents = "none";
-    el.className += " pulse-doc-loader--exiting";
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 260);
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1400);
+    finish(function () {
+      el.style.pointerEvents = "none";
+      el.className += " pulse-doc-loader--exiting";
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 260);
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1400);
+    });
   }
   window.__PULSE_APP_READY__ = dismiss;
   if (document.readyState === "loading") {

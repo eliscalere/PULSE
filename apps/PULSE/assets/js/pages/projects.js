@@ -1001,11 +1001,12 @@ function renderGroupDetail(groupName, groupType, projects) {
       return groupCfg.includedProjectIds.length ? groupCfg.includedProjectIds : projects.map(function(p) { return p.id; });
     }
 
-    // The full slide-content editor only makes sense on an End Item Config's
-    // own page — a Portfolio/Program can span several distinct configs, each
-    // needing its own content — so it only shows there; every project in the
-    // group always appears as its own row on the combined slide regardless.
-    const showEicSlideEditor = groupType === "eic";
+    // Every group type edits its own combined slide here. A Portfolio or
+    // Program leads its deck with that slide and then breaks down into one
+    // slide per End Item Config it spans, each of which carries its own
+    // content edited on its own page — so this content never collides with an
+    // EIC's, and every project in the group still appears as its own row.
+    const showEicSlideEditor = true;
     const includedCount = includedIds().length;
 
     mount.innerHTML = `
@@ -1013,7 +1014,9 @@ function renderGroupDetail(groupName, groupType, projects) {
         <div class="aewttr-card grp-rep-summary-card">
           <div>
             <h3 class="grp-rep-b3-title"><i class="bx bxs-slideshow"></i> PowerPoint briefing</h3>
-            <p class="grp-rep-b3-sub">Cover slide + one combined slide per End Item Config. Choose which projects to include in the table below, then generate.</p>
+            <p class="grp-rep-b3-sub">${groupType === "eic"
+              ? "Cover slide + this configuration's combined slide."
+              : `Cover slide + this ${escapeHtml(groupLabel.toLowerCase())}'s slide + one per End Item Config it spans.`} Choose which projects to include in the table below, then generate.</p>
             <p class="grp-rep-b3-summary">${includedCount} of ${projects.length} project${projects.length === 1 ? "" : "s"} included</p>
           </div>
           <div class="grp-rep-summary-actions">
@@ -1026,7 +1029,7 @@ function renderGroupDetail(groupName, groupType, projects) {
 
         ${groupType !== "eic" ? `
         <div class="aewttr-card" style="padding:14px 16px;">
-          <p class="rep-qcard-hint" style="margin:0;">This ${escapeHtml(groupLabel)} may span more than one End Item Config, so each combined slide's Technical Status, Risk Summary, Description, and Photo are edited from that config's own page — open <strong>End Item Configs</strong> and pick the specific config to customize its slide.</p>
+          <p class="rep-qcard-hint" style="margin:0;">The content below becomes this ${escapeHtml(groupLabel)}'s own slide. The deck then adds one slide per End Item Config it spans — those are edited on each config's page under <strong>End Item Configs</strong>.</p>
         </div>` : ""}
 
         ${showEicSlideEditor ? `
@@ -1185,11 +1188,16 @@ function renderGroupDetail(groupName, groupType, projects) {
           <button class="aewttr-modal-close">&times;</button>
         </div>
         <div class="aewttr-modal-body">
-          <p class="rep-qcard-hint" style="margin:0 0 14px;">Pick one photo from any project in this ${escapeHtml(groupLabel)} to represent it on the combined slide.</p>
+          <p class="rep-qcard-hint" style="margin:0 0 14px;">Pick one photo from any project in this ${escapeHtml(groupLabel)} to represent it on the combined slide, or upload a new one straight into a project's Photos tab.</p>
           <div class="grp-photo-modal-sections">
             ${projects.map(function(proj) {
+              const canAdd = typeof canEditProject === "function" ? canEditProject(proj) : true;
               return `<div class="grp-photo-modal-section" data-section-proj-id="${escapeHtml(proj.id)}">
-                <div class="grp-photo-modal-section-head">${escapeHtml(proj.name || "Untitled project")}</div>
+                <div class="grp-photo-modal-section-head">
+                  <span>${escapeHtml(proj.name || "Untitled project")}</span>
+                  ${canAdd ? `<button type="button" class="btn-aewttr-outline btn-aewttr-sm grp-photo-modal-upload" data-upload-proj-id="${escapeHtml(proj.id)}"><i class="bx bx-upload"></i> Upload</button>
+                  <input type="file" accept="image/*" multiple class="grp-photo-modal-file" data-file-proj-id="${escapeHtml(proj.id)}" style="display:none;">` : ""}
+                </div>
                 <div class="grp-photo-modal-grid" data-grid-proj-id="${escapeHtml(proj.id)}"><div class="project-docs-loading">Loading photos…</div></div>
               </div>`;
             }).join("")}
@@ -1211,27 +1219,63 @@ function renderGroupDetail(groupName, groupType, projects) {
         });
       }
 
-      // Fetch every project's photo folder in parallel; render each section
-      // as its own fetch resolves instead of waiting on the slowest one.
-      projects.forEach(function(proj) {
+      /* Same list the Photos tab shows, cover included — a picker that
+         disagreed with the gallery it points at is why this looked broken. */
+      function loadSection(proj) {
         const grid = modal.querySelector(`.grp-photo-modal-grid[data-grid-proj-id="${CSS.escape(proj.id)}"]`);
-        if (!grid) return;
-        Promise.resolve()
-          /* Same list the Photos tab shows, cover included — a picker that
-             disagreed with the gallery it points at is why this looked
-             broken. */
-          .then(function() { return listProjectPhotos(proj); })
+        if (!grid) return Promise.resolve();
+        grid.innerHTML = `<div class="project-docs-loading">Loading photos…</div>`;
+        return listProjectPhotos(proj)
           .then(function(photos) {
             if (!grid.isConnected) return;
             grid.innerHTML = photos.length
               ? photos.map(function(photo) { return groupPhotoThumbHtml(proj, photo); }).join("")
-              : `<div class="empty-state">No photos in this project yet — add them in the project's Photos tab.</div>`;
+              : `<div class="empty-state">No photos in this project yet — upload one above.</div>`;
             wirePicks(grid);
           })
           .catch(function(e) {
             if (!grid.isConnected) return;
             grid.innerHTML = `<div class="empty-state">Could not load photos. ${escapeHtml((e && e.friendly) || (e && e.message) || String(e))}</div>`;
           });
+      }
+
+      // Fetch every project's photo folder in parallel; render each section
+      // as its own fetch resolves instead of waiting on the slowest one.
+      projects.forEach(loadSection);
+
+      /* Uploading here writes to the project's own _photos folder — the same
+         place the Photos tab uses — so a picture added while choosing one is a
+         real project photo, not something that exists only in this modal. */
+      $all(".grp-photo-modal-upload", modal).forEach(function(btn) {
+        const projId = btn.dataset.uploadProjId;
+        const input = modal.querySelector(`.grp-photo-modal-file[data-file-proj-id="${CSS.escape(projId)}"]`);
+        if (!input) return;
+        btn.addEventListener("click", function() { input.click(); });
+        input.addEventListener("change", async function() {
+          const proj = projects.find(function(x) { return x.id === projId; });
+          const files = Array.from(input.files || []).filter(function(f) {
+            return (typeof isPhotoFile === "function" && isPhotoFile(f.name)) || String(f.type || "").startsWith("image/");
+          });
+          input.value = "";
+          if (!proj || !files.length) {
+            if (!files.length) toast("Choose image files to upload.", "error");
+            return;
+          }
+          const label = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = `<i class="bx bx-loader-alt bx-spin"></i> Uploading…`;
+          try {
+            const res = await resolveProjectPhotosFolder(proj);
+            for (const file of files) {
+              await sharePointAdapter.uploadPulseDocumentsFile(res.siteUrl, res.folderUrl, file);
+            }
+            toast(`Uploaded ${files.length} photo${files.length === 1 ? "" : "s"}.`, "success");
+            await loadSection(proj);
+          } catch (e) {
+            toast((e && e.friendly) || (e && e.message) || "Upload failed.", "error");
+          }
+          if (btn.isConnected) { btn.disabled = false; btn.innerHTML = label; }
+        });
       });
     }
     function renderGroupRiskRows() {
