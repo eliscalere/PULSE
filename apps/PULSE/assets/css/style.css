@@ -15932,11 +15932,14 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
   .proj-list-row { flex-wrap: wrap; }
   .proj-list-meta, .proj-list-date { flex: 0 0 auto; }
 }
-/* The content column scrolls inside this panel, so the panel needs a bounded
-   height for that to work. Without one it grew past its own clipped box and the
-   last stretch of a long tab — the Reporting tab's milestone table especially —
-   was cut off with no way to reach it. */
-.pgroup-workspace { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 590px; max-height: calc(100vh - 178px); background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 28px rgba(21, 38, 64, .07); }
+/* This panel used to be a fixed-height box with its own inner scroller. That
+   clipped the end of any long tab — the Reporting tab most of all — because the
+   panel's height and its content's height were set by different things, and the
+   overflow:hidden that rounds the corners cut off whatever did not fit. The page
+   already scrolls (.aewttr-content), so the panel simply grows and nothing is
+   ever out of reach. The nav column carries its own left-side radius now that
+   the parent no longer clips. */
+.pgroup-workspace { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 590px; background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: 14px; overflow: visible; box-shadow: 0 8px 28px rgba(21, 38, 64, .07); }
 .pgroup-workspace-sidebar { display: flex; flex-direction: column; gap: 18px; padding: 20px 14px; background: var(--aewttr-surface-2); border-right: 1px solid var(--aewttr-border); }
 .pgroup-workspace-identity { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 0 6px; }
 .pgroup-workspace-identity .pgroup-kicker { margin: 0; }
@@ -15947,7 +15950,7 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .pgroup-workspace-health--green { color: var(--aewttr-green); }
 .pgroup-workspace-summary { display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--aewttr-border); border-bottom: 1px solid var(--aewttr-border); padding: 10px 6px; gap: 7px; color: var(--aewttr-muted); font-size: 12px; }
 .pgroup-workspace-summary b { color: var(--aewttr-text); font-size: 13px; }
-.pgroup-workspace-nav { display: flex; flex-direction: column; gap: 3px; }
+.pgroup-workspace-nav { border-radius: 14px 0 0 14px; display: flex; flex-direction: column; gap: 3px; }
 .pgroup-workspace-nav-btn { width: 100%; border: 0; border-radius: 7px; background: transparent; color: var(--aewttr-muted); cursor: pointer; display: flex; align-items: center; gap: 9px; min-height: 36px; padding: 0 9px; font-size: 13px; font-weight: 600; text-align: left; }
 .pgroup-workspace-nav-btn i { font-size: 17px; }
 .pgroup-workspace-nav-btn span { margin-left: auto; min-width: 20px; padding: 1px 6px; border-radius: 10px; background: var(--aewttr-surface); color: inherit; font-size: 11px; text-align: center; }
@@ -15962,9 +15965,7 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .pgroup-workspace-head .pgroup-kicker { margin-bottom: 3px; }
 .pgroup-workspace-head h3 { margin: 0; color: var(--aewttr-text); font-size: 18px; }
 .pgroup-workspace-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-/* min-height:0 is what actually lets a grid item scroll; without it the item's
-   automatic minimum size is its content, so overflow:auto never engages. */
-.pgroup-workspace-content { flex: 1; min-width: 0; min-height: 0; padding: 20px 22px 26px; overflow: auto; }
+.pgroup-workspace-content { flex: 1; min-width: 0; min-height: 0; padding: 20px 22px 26px; overflow: visible; }
 .pgroup-people-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 10px; }
 .pgroup-person-row { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 12px; background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: 9px; text-align: left; color: var(--aewttr-text); }
 .pgroup-person-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
@@ -16092,12 +16093,14 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
    embedded project editor taller than the viewport had nowhere to go and was
    silently cut off instead of becoming scrollable. Letting content flow
    naturally and scrolling here instead fixes that. */
+/* This used to force its own scroller so a long Reporting tab had somewhere to
+   go. That only half-worked: the panel above it was a clipped fixed-height box,
+   so the inner scroller was itself cut off and the last stretch of the tab was
+   unreachable. The panel now grows with its content and the page scrolls, so
+   this only needs to drop the padding — a second scroller here is what was
+   hiding the bottom. */
 .pgroup-reporting-full {
   padding: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  flex: 1 1 0 !important;
-  min-height: 0 !important;
 }
 
 .grp-rep-root { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
@@ -18330,10 +18333,14 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 /* The Milestones card now carries the full per-project table, so it needs the
    width of the whole row rather than half of it, and the table scrolls
    horizontally inside the card on narrow screens. */
-.grp-rep-slide-content .rep-qcard:has(.rep-qcard-bd--miles) { grid-column: 1 / -1; }
-/* With Milestones spanning the row, a half-width Description left dead space
-   beside it; the rich-text editor reads better at full width anyway. */
-.grp-rep-slide-content .rep-qcard:has(#grp-rep-desc-wrap) { grid-column: 1 / -1; }
+/* Four quadrants matching the slide they describe: Photos top-left, Technical
+   Status top-right, Description bottom-left, Milestones bottom-right. The
+   milestone table scrolls horizontally inside its quadrant rather than forcing
+   the card to the full width of the page. */
+.grp-rep-slide-content { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+.grp-rep-slide-content > .rep-qcard { min-width: 0; }
+.rep-qcard-bd--miles { min-width: 0; }
+.rep-qcard-bd--miles .rep-mt-scroll { overflow-x: auto; }
 .rep-qcard-bd--miles .rep-mt-scroll { margin-top: 10px; }
 .rep-qcard-bd--miles .rep-grp-mt-tbl { min-width: 620px; }
 
@@ -18369,3 +18376,13 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .acct-theme-btn.active { border-color: var(--aewttr-blue, #2f66ff); background: color-mix(in srgb, var(--aewttr-blue, #2f66ff) 8%, transparent); }
 .acct-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px 18px; border-top: 1px solid var(--aewttr-border); }
 .acct-settings-btn { flex: 1; justify-content: center; }
+
+/* The milestone table lives in a half-width quadrant now, so it is compacted to
+   fit as many date columns as possible before the horizontal scroll kicks in. */
+.rep-qcard-bd--miles .rep-grp-mt-tbl { min-width: 0; table-layout: auto; }
+.rep-qcard-bd--miles .rep-grp-mt-tbl th,
+.rep-qcard-bd--miles .rep-grp-mt-tbl td { padding: 7px 6px; font-size: 11.5px; }
+.rep-qcard-bd--miles .rep-mt-th--date { white-space: nowrap; font-size: 9.5px; }
+.rep-qcard-bd--miles .rep-mt-date { width: 100%; min-width: 108px; padding: 4px 5px; font-size: 11px; }
+.rep-qcard-bd--miles .rep-mt-td--include { width: 44px; }
+.rep-qcard-bd--miles .rep-grp-mt-tbl td:nth-child(2) { min-width: 96px; }
