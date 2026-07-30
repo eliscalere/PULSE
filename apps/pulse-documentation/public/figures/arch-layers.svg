@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 306" width="620" height="306" role="img" aria-label="How the PULSE codebase layers: 10 entry points, 12 services, 2 stores, 2 external">
+<style>
+    .b { stroke-width:1; }
+    .lbl { fill:#070708; font:600 11px Inter,Arial,Helvetica,sans-serif; }
+    .sub { fill:#51545a; font:9px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .tier { fill:#51545a; font:700 9px Inter,Arial,Helvetica,sans-serif; letter-spacing:1.4px; }
+    .cnt { fill:#a4a8b0; font:9px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .ed { fill:#51545a; font:9px Inter,Arial,Helvetica,sans-serif; }
+  </style>
+<defs><marker id="ar-layers" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#51545a"/></marker></defs>
+<text class="tier" x="0" y="24">ENTRY POINTS</text>
+<text class="sub" x="0" y="40">10 nodes</text>
+<g>
+    <rect class="b" x="132" y="4" width="488" height="52" rx="2" fill="#eaf0ff" stroke="#2f66ff"/>
+    <text class="lbl" x="143" y="34">Pages and packages a user opens</text>
+    
+    
+  </g>
+<line x1="376" y1="56" x2="376" y2="83" stroke="#51545a" stroke-width="1.5" marker-end="url(#ar-layers)"/>
+<text class="tier" x="0" y="106">SERVICES</text>
+<text class="sub" x="0" y="122">12 nodes</text>
+<g>
+    <rect class="b" x="132" y="86" width="488" height="52" rx="2" fill="#ffffff" stroke="#d5d7dc"/>
+    <text class="lbl" x="143" y="116">Feature modules, data layer, builders</text>
+    
+    
+  </g>
+<line x1="376" y1="138" x2="376" y2="165" stroke="#51545a" stroke-width="1.5" marker-end="url(#ar-layers)"/>
+<text class="tier" x="0" y="188">STORES</text>
+<text class="sub" x="0" y="204">2 nodes</text>
+<g>
+    <rect class="b" x="132" y="168" width="488" height="52" rx="2" fill="#e7f2ed" stroke="#2b7a5e"/>
+    <text class="lbl" x="143" y="198">Where records and files live</text>
+    
+    
+  </g>
+<line x1="376" y1="220" x2="376" y2="247" stroke="#51545a" stroke-width="1.5" marker-end="url(#ar-layers)"/>
+<text class="tier" x="0" y="270">EXTERNAL</text>
+<text class="sub" x="0" y="286">2 nodes</text>
+<g>
+    <rect class="b" x="132" y="250" width="488" height="52" rx="2" fill="#ecedef" stroke="#9aa0a8" stroke-dasharray="4 3"/>
+    <text class="lbl" x="143" y="280">Platforms PULSE depends on</text>
+    
+    
+  </g>
+</svg>

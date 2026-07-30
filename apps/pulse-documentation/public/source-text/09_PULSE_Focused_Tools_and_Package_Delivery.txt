@@ -255,7 +255,47 @@ ticket with the page address attached.
 PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
 
 
-08 / PUBLISHING AND VERIFYING A TOOL PAGE
+08 / HOW THE CODEBASE FITS TOGETHER
+
+A scan of the source finds 26 components joined by 35 relationships: 10 entry points a user can
+open, 12 service modules, 2 stores, and 2 external platforms. Every component in the scan
+carries a source path, and all of them were checked to exist before these figures were
+published.
+
+FIGURE  How the codebase layers
+Source: codebase scan of apps/
+
+The layering explains why a change to one shared module reaches every package: the entry points
+are thin, and almost all behaviour lives in the service tier they share.
+
+THE PATH THAT CARRIES THE RISK
+
+Feature pages never talk to SharePoint directly. They call the SharePoint data layer, which owns
+the REST transport, the record mapping, the schema, and the audit trail. That is the whole
+surface where paging ceilings, the view threshold, and permission behaviour apply.
+
+FIGURE  The SharePoint request path
+Source: codebase scan, SharePoint Data Layer group
+
+MAINTENANCE RULE
+
+A change to the adapter, the repository, or the schema affects every package and every area at
+once. Treat those three files as shared infrastructure, not as page-level code.
+
+The scan groups components into 3 clusters — Build & Packaging, PULSE Dashboard Pages,
+SharePoint Data Layer — and classifies each relationship as one of triggers, calls, writes,
+reads. The interactive version of this map, where every component and relationship can be
+filtered and inspected, is available from the documentation site's Codebase scan view.
+
+                                            PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 09
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
+
+
+09 / PUBLISHING AND VERIFYING A TOOL PAGE
 
 This is the short form of the controlled procedure. The authoritative steps, verification,
 cautions, and records are in Standard Operating Procedures, SOP 9.
@@ -280,6 +320,6 @@ A rendered page proves routing and layout only. It does not prove SharePoint ide
 permissions, notification delivery, or administrator-only control. Those require a controlled
 transaction on an approved site.
 
-                                            PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 09
+                                            PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 10
 
                                             UNCLASSIFIED

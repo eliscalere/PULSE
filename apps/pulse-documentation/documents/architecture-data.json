@@ -1,0 +1,463 @@
+{
+ "NODES": [
+  {
+   "id": "pulse-code",
+   "label": "PULSE CODE",
+   "kind": "entry",
+   "sub": "Web IDE · index.html",
+   "sourceRef": "apps/PULSE-CODE/index.html",
+   "detail": "Monaco-based in-browser IDE that reads/writes files in a SharePoint document library over the user's existing session.",
+   "x": 40,
+   "y": 40
+  },
+  {
+   "id": "svc-code-sp-client",
+   "label": "SP file client",
+   "kind": "service",
+   "sub": "read/write files in IDE",
+   "sourceRef": "apps/PULSE-CODE/index.html",
+   "x": 270,
+   "y": 40
+  },
+  {
+   "id": "svc-build-wfc",
+   "label": "WFC package builder",
+   "kind": "service",
+   "sub": "→ releases/*.html",
+   "sourceRef": "apps/PULSE/scripts/build-sharepoint-package.js",
+   "detail": "Inlines every local script/stylesheet/asset into one self-contained HTML file with a WFC-MANIFEST header — the file uploaded to SharePoint.",
+   "x": 40,
+   "y": 450,
+   "group": "Build & Packaging"
+  },
+  {
+   "id": "svc-build-forge",
+   "label": "Forge web part builder",
+   "kind": "service",
+   "sub": "srcdoc iframe bundle",
+   "sourceRef": "apps/PULSE/scripts/build-forge.js",
+   "detail": "Base64-encodes the packaged app and injects it into a Forge platform template's srcdoc iframe for embedding on a SharePoint page.",
+   "x": 40,
+   "y": 534,
+   "group": "Build & Packaging"
+  },
+  {
+   "id": "svc-build-docs",
+   "label": "Docs site builder",
+   "kind": "service",
+   "sub": "esbuild + inline dist/",
+   "sourceRef": "apps/pulse-documentation/scripts/build-sharepoint-package.mjs",
+   "x": 40,
+   "y": 618,
+   "group": "Build & Packaging"
+  },
+  {
+   "id": "pulse-docs-site",
+   "label": "PULSE Documentation",
+   "kind": "entry",
+   "sub": "Next.js handoff site",
+   "sourceRef": "apps/pulse-documentation/app/page.tsx",
+   "detail": "Interactive technical handoff / SOP / user-guide site; also packaged as a WFC HTML upload for SharePoint.",
+   "x": 500,
+   "y": 124
+  },
+  {
+   "id": "pulse-dashboard",
+   "label": "PULSE Dashboard",
+   "kind": "entry",
+   "sub": "SPA · index.html",
+   "sourceRef": "apps/PULSE/index.html",
+   "detail": "Main IPT dashboard: single-file SPA with a hash router, deployed as a self-contained HTML upload or a Forge web part iframe.",
+   "x": 730,
+   "y": 292
+  },
+  {
+   "id": "svc-export",
+   "label": "PPTX export",
+   "kind": "service",
+   "sub": "overview + project decks",
+   "sourceRef": "apps/PULSE/assets/js/export.js",
+   "x": 500,
+   "y": 450
+  },
+  {
+   "id": "svc-issue-reporting",
+   "label": "Issue reporting",
+   "kind": "service",
+   "sub": "in-app bug capture",
+   "sourceRef": "apps/PULSE/assets/js/issue-reporting.js",
+   "x": 500,
+   "y": 534
+  },
+  {
+   "id": "store-sp-doclib",
+   "label": "SP Document Library",
+   "kind": "store",
+   "sub": "SiteAssets + files",
+   "x": 500,
+   "y": 230
+  },
+  {
+   "id": "page-weekly",
+   "label": "Weekly Meetings",
+   "kind": "entry",
+   "sub": "/weekly",
+   "sourceRef": "apps/PULSE/assets/js/pages/weekly.js",
+   "x": 960,
+   "y": 208,
+   "group": "PULSE Dashboard Pages"
+  },
+  {
+   "id": "page-travel",
+   "label": "Travel & Debriefs",
+   "kind": "entry",
+   "sub": "/travel",
+   "sourceRef": "apps/PULSE/assets/js/pages/travel.js",
+   "x": 960,
+   "y": 292,
+   "group": "PULSE Dashboard Pages"
+  },
+  {
+   "id": "page-projects",
+   "label": "Projects & Tracker",
+   "kind": "entry",
+   "sub": "/projects",
+   "sourceRef": "apps/PULSE/assets/js/pages/projects.js",
+   "x": 960,
+   "y": 376,
+   "group": "PULSE Dashboard Pages"
+  },
+  {
+   "id": "page-docreview",
+   "label": "Document Review",
+   "kind": "entry",
+   "sub": "/docreview",
+   "sourceRef": "apps/PULSE/assets/js/pages/docreview.js",
+   "x": 960,
+   "y": 460,
+   "group": "PULSE Dashboard Pages"
+  },
+  {
+   "id": "page-admin",
+   "label": "Admin & Roles",
+   "kind": "entry",
+   "sub": "/admin",
+   "sourceRef": "apps/PULSE/assets/js/pages/admin.js",
+   "x": 960,
+   "y": 544,
+   "group": "PULSE Dashboard Pages"
+  },
+  {
+   "id": "page-overview",
+   "label": "Overview & Reporting",
+   "kind": "entry",
+   "sub": "/overview",
+   "sourceRef": "apps/PULSE/assets/js/pages/overview.js",
+   "x": 960,
+   "y": 628,
+   "group": "PULSE Dashboard Pages"
+  },
+  {
+   "id": "svc-sp-repo",
+   "label": "SharePoint repo",
+   "kind": "service",
+   "sub": "business read/write layer",
+   "sourceRef": "apps/PULSE/assets/js/sharepoint-repo.js",
+   "detail": "Business-logic read/write layer over 10 SP lists: projects, travel requests/debriefs, meetings, documents, issues, roles, audit log, notification and location config.",
+   "x": 1230,
+   "y": 376,
+   "group": "SharePoint Data Layer"
+  },
+  {
+   "id": "svc-sp-adapter",
+   "label": "SharePoint adapter",
+   "kind": "service",
+   "sub": "REST + digest calls",
+   "sourceRef": "apps/PULSE/assets/js/sharepoint-adapter.js",
+   "detail": "Low-level SP REST calls: fetches a contextinfo digest for writes, uses odata=nometadata for lean reads, and calls Microsoft Graph for people/group search.",
+   "x": 1230,
+   "y": 460,
+   "group": "SharePoint Data Layer"
+  },
+  {
+   "id": "svc-sp-schema",
+   "label": "SharePoint schema",
+   "kind": "service",
+   "sub": "list defs + seeding",
+   "sourceRef": "apps/PULSE/assets/js/sharepoint-schema.js",
+   "x": 1460,
+   "y": 376,
+   "group": "SharePoint Data Layer"
+  },
+  {
+   "id": "svc-audit-log",
+   "label": "Audit log",
+   "kind": "service",
+   "sub": "rotates every 1000 items",
+   "sourceRef": "apps/PULSE/assets/js/audit-log.js",
+   "x": 1460,
+   "y": 460,
+   "group": "SharePoint Data Layer"
+  },
+  {
+   "id": "svc-notify",
+   "label": "Notifications",
+   "kind": "service",
+   "sub": "email via SharePoint",
+   "sourceRef": "apps/PULSE/assets/js/notify.js",
+   "x": 1460,
+   "y": 544
+  },
+  {
+   "id": "ext-sharepoint",
+   "label": "SharePoint Online",
+   "kind": "external",
+   "sub": "Flank Speed tenant",
+   "x": 1690,
+   "y": 544
+  },
+  {
+   "id": "ext-msgraph",
+   "label": "Microsoft Graph",
+   "kind": "external",
+   "sub": "dod-graph.microsoft.us",
+   "x": 1690,
+   "y": 460
+  },
+  {
+   "id": "store-sp-lists",
+   "label": "SharePoint Lists",
+   "kind": "store",
+   "sub": "10 PULSE lists",
+   "detail": "Projects, Travel Requests, Travel Debriefs, Meetings, Documents, Issues, App Roles, Audit Log, Notification Config, Location Config.",
+   "x": 1690,
+   "y": 292
+  },
+  {
+   "id": "pulse-calendar",
+   "label": "PULSE Calendar",
+   "kind": "entry",
+   "sub": "Travel calendar",
+   "sourceRef": "apps/PULSE-TRAVEL-CALENDAR/index.html",
+   "x": 1690,
+   "y": 124
+  },
+  {
+   "id": "svc-calendar",
+   "label": "Calendar logic",
+   "kind": "service",
+   "sub": "FullCalendar travel view",
+   "sourceRef": "apps/PULSE-TRAVEL-CALENDAR/assets/js/calendar.js",
+   "x": 1690,
+   "y": 208
+  }
+ ],
+ "EDGES": [
+  {
+   "from": "pulse-dashboard",
+   "to": "page-projects",
+   "kind": "triggers"
+  },
+  {
+   "from": "pulse-dashboard",
+   "to": "page-weekly",
+   "kind": "triggers"
+  },
+  {
+   "from": "pulse-dashboard",
+   "to": "page-travel",
+   "kind": "triggers"
+  },
+  {
+   "from": "pulse-dashboard",
+   "to": "page-docreview",
+   "kind": "triggers"
+  },
+  {
+   "from": "pulse-dashboard",
+   "to": "page-admin",
+   "kind": "triggers"
+  },
+  {
+   "from": "pulse-dashboard",
+   "to": "page-overview",
+   "kind": "triggers"
+  },
+  {
+   "from": "page-projects",
+   "to": "svc-sp-repo",
+   "kind": "calls"
+  },
+  {
+   "from": "page-weekly",
+   "to": "svc-sp-repo",
+   "kind": "calls"
+  },
+  {
+   "from": "page-travel",
+   "to": "svc-sp-repo",
+   "kind": "calls"
+  },
+  {
+   "from": "page-docreview",
+   "to": "svc-sp-repo",
+   "kind": "calls"
+  },
+  {
+   "from": "page-admin",
+   "to": "svc-sp-repo",
+   "kind": "calls"
+  },
+  {
+   "from": "page-overview",
+   "to": "svc-sp-repo",
+   "kind": "calls"
+  },
+  {
+   "from": "page-overview",
+   "to": "svc-export",
+   "kind": "calls",
+   "label": "overview deck"
+  },
+  {
+   "from": "page-projects",
+   "to": "svc-export",
+   "kind": "calls",
+   "label": "project deck"
+  },
+  {
+   "from": "page-admin",
+   "to": "svc-sp-schema",
+   "kind": "calls",
+   "label": "seeds lists"
+  },
+  {
+   "from": "svc-sp-repo",
+   "to": "svc-audit-log",
+   "kind": "calls",
+   "label": "logs every write"
+  },
+  {
+   "from": "pulse-dashboard",
+   "to": "svc-issue-reporting",
+   "kind": "triggers",
+   "label": "bug report widget"
+  },
+  {
+   "from": "svc-issue-reporting",
+   "to": "store-sp-lists",
+   "kind": "writes",
+   "label": "PULSE Issues"
+  },
+  {
+   "from": "page-docreview",
+   "to": "store-sp-lists",
+   "kind": "writes",
+   "label": "AiSuggestionsJson"
+  },
+  {
+   "from": "svc-notify",
+   "to": "ext-sharepoint",
+   "kind": "calls",
+   "label": "SP SendEmail API"
+  },
+  {
+   "from": "svc-sp-repo",
+   "to": "svc-sp-adapter",
+   "kind": "calls"
+  },
+  {
+   "from": "svc-sp-schema",
+   "to": "svc-sp-adapter",
+   "kind": "calls"
+  },
+  {
+   "from": "svc-audit-log",
+   "to": "svc-sp-adapter",
+   "kind": "calls"
+  },
+  {
+   "from": "svc-sp-adapter",
+   "to": "store-sp-lists",
+   "kind": "reads"
+  },
+  {
+   "from": "svc-sp-adapter",
+   "to": "store-sp-lists",
+   "kind": "writes",
+   "label": "contextinfo digest"
+  },
+  {
+   "from": "svc-sp-adapter",
+   "to": "ext-msgraph",
+   "kind": "calls",
+   "label": "people/group search"
+  },
+  {
+   "from": "svc-sp-adapter",
+   "to": "ext-sharepoint",
+   "kind": "calls",
+   "label": "session auth"
+  },
+  {
+   "from": "svc-build-wfc",
+   "to": "pulse-dashboard",
+   "kind": "reads",
+   "label": "inlines assets"
+  },
+  {
+   "from": "svc-build-forge",
+   "to": "pulse-dashboard",
+   "kind": "reads",
+   "label": "base64s into Forge"
+  },
+  {
+   "from": "svc-build-docs",
+   "to": "pulse-docs-site",
+   "kind": "reads",
+   "label": "inline dist/"
+  },
+  {
+   "from": "pulse-code",
+   "to": "svc-code-sp-client",
+   "kind": "triggers"
+  },
+  {
+   "from": "svc-code-sp-client",
+   "to": "store-sp-doclib",
+   "kind": "reads",
+   "label": "list/open files"
+  },
+  {
+   "from": "svc-code-sp-client",
+   "to": "store-sp-doclib",
+   "kind": "writes",
+   "label": "save edits"
+  },
+  {
+   "from": "pulse-calendar",
+   "to": "svc-calendar",
+   "kind": "triggers"
+  },
+  {
+   "from": "svc-calendar",
+   "to": "store-sp-lists",
+   "kind": "reads",
+   "label": "Travel lists"
+  }
+ ],
+ "TOP_INTEGRATIONS": [
+  {
+   "id": "ext-sharepoint",
+   "label": "SharePoint Online",
+   "initial": "S",
+   "color": "blue"
+  },
+  {
+   "id": "ext-msgraph",
+   "label": "Microsoft Graph",
+   "initial": "M",
+   "color": "blue"
+  }
+ ]
+}

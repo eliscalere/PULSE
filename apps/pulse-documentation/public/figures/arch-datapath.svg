@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 614 288" width="614" height="288" role="img" aria-label="The SharePoint request path: feature pages call the SharePoint Data Layer, which reads and writes SharePoint Lists and the document library">
+<style>
+    .b { stroke-width:1; }
+    .lbl { fill:#070708; font:600 11px Inter,Arial,Helvetica,sans-serif; }
+    .sub { fill:#51545a; font:9px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .tier { fill:#51545a; font:700 9px Inter,Arial,Helvetica,sans-serif; letter-spacing:1.4px; }
+    .cnt { fill:#a4a8b0; font:9px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .ed { fill:#51545a; font:9px Inter,Arial,Helvetica,sans-serif; }
+  </style>
+<defs><marker id="ar-path" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#51545a"/></marker></defs>
+<text class="tier" x="0" y="12">PAGES</text>
+<g>
+    <rect class="b" x="0" y="30" width="178" height="54" rx="2" fill="#eaf0ff" stroke="#2f66ff"/>
+    <text class="lbl" x="11" y="50">Feature pages</text>
+    <text class="sub" x="11" y="64">6 dashboard pages</text>
+    
+  </g>
+<line x1="178" y1="159" x2="215" y2="159" stroke="#51545a" stroke-width="1.5" marker-end="url(#ar-path)"/>
+<text class="tier" x="218" y="12">SHAREPOINT DATA LAYER</text>
+<g>
+    <rect class="b" x="218" y="30" width="178" height="54" rx="2" fill="#ffffff" stroke="#d5d7dc"/>
+    <text class="lbl" x="229" y="50">SharePoint repo</text>
+    <text class="sub" x="229" y="64">sharepoint-repo.js</text>
+    
+  </g>
+<g>
+    <rect class="b" x="218" y="98" width="178" height="54" rx="2" fill="#ffffff" stroke="#d5d7dc"/>
+    <text class="lbl" x="229" y="118">SharePoint adapter</text>
+    <text class="sub" x="229" y="132">sharepoint-adapter.js</text>
+    
+  </g>
+<g>
+    <rect class="b" x="218" y="166" width="178" height="54" rx="2" fill="#ffffff" stroke="#d5d7dc"/>
+    <text class="lbl" x="229" y="186">SharePoint schema</text>
+    <text class="sub" x="229" y="200">sharepoint-schema.js</text>
+    
+  </g>
+<g>
+    <rect class="b" x="218" y="234" width="178" height="54" rx="2" fill="#ffffff" stroke="#d5d7dc"/>
+    <text class="lbl" x="229" y="254">Audit log</text>
+    <text class="sub" x="229" y="268">audit-log.js</text>
+    
+  </g>
+<line x1="396" y1="159" x2="433" y2="159" stroke="#51545a" stroke-width="1.5" marker-end="url(#ar-path)"/>
+<text class="tier" x="436" y="12">STORES &amp; PLATFORM</text>
+<g>
+    <rect class="b" x="436" y="30" width="178" height="54" rx="2" fill="#e7f2ed" stroke="#2b7a5e"/>
+    <text class="lbl" x="447" y="61">SP Document Library</text>
+    
+    
+  </g>
+<g>
+    <rect class="b" x="436" y="98" width="178" height="54" rx="2" fill="#e7f2ed" stroke="#2b7a5e"/>
+    <text class="lbl" x="447" y="129">SharePoint Lists</text>
+    
+    
+  </g>
+<g>
+    <rect class="b" x="436" y="166" width="178" height="54" rx="2" fill="#ecedef" stroke="#9aa0a8" stroke-dasharray="4 3"/>
+    <text class="lbl" x="447" y="197">SharePoint Online</text>
+    
+    
+  </g>
+<g>
+    <rect class="b" x="436" y="234" width="178" height="54" rx="2" fill="#ecedef" stroke="#9aa0a8" stroke-dasharray="4 3"/>
+    <text class="lbl" x="447" y="265">Microsoft Graph</text>
+    
+    
+  </g>
+</svg>

@@ -9,6 +9,8 @@
    Block kinds: h4, p, ul, ol, table, callout. Keep prose factual and specific;
    this document is read as a controlled internal reference. */
 
+import { scanSummary } from "./architecture.mjs";
+
 export const meta = {
   number: "09",
   slug: "09_PULSE_Focused_Tools_and_Package_Delivery",
@@ -213,8 +215,38 @@ export const pages = [
     ],
   },
   {
+    kicker: "SYSTEM MAP",
+    title: "08 / HOW THE CODEBASE FITS TOGETHER",
+    blocks: [
+      { kind: "p", text: `A scan of the source finds ${scanSummary.nodes} components joined by ${scanSummary.edges} relationships: ${scanSummary.entries} entry points a user can open, ${scanSummary.services} service modules, ${scanSummary.stores} stores, and ${scanSummary.externals} external platforms. Every component in the scan carries a source path, and all of them were checked to exist before these figures were published.` },
+      {
+        kind: "figure",
+        file: "/figures/arch-layers.svg",
+        caption: "How the codebase layers",
+        hideCaption: true,
+        meta: "Source: codebase scan of apps/",
+      },
+      { kind: "p", text: "The layering explains why a change to one shared module reaches every package: the entry points are thin, and almost all behaviour lives in the service tier they share." },
+      { kind: "h4", text: "THE PATH THAT CARRIES THE RISK" },
+      { kind: "p", text: `Feature pages never talk to SharePoint directly. They call the ${scanSummary.groups.includes("SharePoint Data Layer") ? "SharePoint data layer" : "data layer"}, which owns the REST transport, the record mapping, the schema, and the audit trail. That is the whole surface where paging ceilings, the view threshold, and permission behaviour apply.` },
+      {
+        kind: "figure",
+        file: "/figures/arch-datapath.svg",
+        caption: "The SharePoint request path",
+        hideCaption: true,
+        meta: "Source: codebase scan, SharePoint Data Layer group",
+      },
+      {
+        kind: "callout",
+        label: "MAINTENANCE RULE",
+        text: "A change to the adapter, the repository, or the schema affects every package and every area at once. Treat those three files as shared infrastructure, not as page-level code.",
+      },
+      { kind: "p", text: `The scan groups components into ${scanSummary.groups.length} clusters — ${scanSummary.groups.join(", ")} — and classifies each relationship as one of ${scanSummary.edgeKinds.join(", ")}. The interactive version of this map, where every component and relationship can be filtered and inspected, is available from the documentation site's Codebase scan view.` },
+    ],
+  },
+  {
     kicker: "PROCEDURE",
-    title: "08 / PUBLISHING AND VERIFYING A TOOL PAGE",
+    title: "09 / PUBLISHING AND VERIFYING A TOOL PAGE",
     blocks: [
       { kind: "p", text: "This is the short form of the controlled procedure. The authoritative steps, verification, cautions, and records are in Standard Operating Procedures, SOP 9." },
       {

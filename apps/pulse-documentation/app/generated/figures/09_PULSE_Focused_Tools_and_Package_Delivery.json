@@ -14,5 +14,19 @@
       "meta": "Source: getSiteUrl in the SharePoint adapter",
       "hideCaption": true
     }
+  ],
+  "9": [
+    {
+      "file": "/figures/arch-layers.svg",
+      "caption": "How the codebase layers",
+      "meta": "Source: codebase scan of apps/",
+      "hideCaption": true
+    },
+    {
+      "file": "/figures/arch-datapath.svg",
+      "caption": "The SharePoint request path",
+      "meta": "Source: codebase scan, SharePoint Data Layer group",
+      "hideCaption": true
+    }
   ]
 }

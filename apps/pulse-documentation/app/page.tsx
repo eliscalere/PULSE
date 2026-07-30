@@ -89,7 +89,7 @@ const documents: Document[] = [
   { id: "sop", number: "06", title: "Standard Operating Procedures", type: "Controlled procedure", audience: "Users and administrators", pages: 20, description: "Eight operating procedures covering projects, meetings, travel, reviews, tickets, administration, exports, and evidence.", topics: ["SOP", "Document Review", "Tickets"], textFile: "06_PULSE_Standard_Operating_Procedures.txt", pdfFile: "06_PULSE_Standard_Operating_Procedures.pdf" },
   { id: "governance", number: "07", title: "Documentation Verification & Governance", type: "Assurance package", audience: "Documentation owners", pages: 11, description: "Verification standards, controlled-document governance, traceability, release controls, and review criteria.", topics: ["Governance", "Verification", "Traceability"], textFile: "07_PULSE_Documentation_Verification_and_Governance.txt", pdfFile: "07_PULSE_Documentation_Verification_and_Governance.pdf" },
   { id: "packaging", number: "08", title: "Codebase Setup & Firepit Packaging", type: "Technical orientation", audience: "Developers and release owners", pages: 11, description: "How the source is organized, prepared, packaged, validated, and released as a SharePoint/Firepit-ready file.", topics: ["Codebase", "Packaging", "Release"], textFile: "08_PULSE_Codebase_Setup_and_Firepit_Packaging_Guide.txt", pdfFile: "08_PULSE_Codebase_Setup_and_Firepit_Packaging_Guide.pdf" },
-  { id: "focused", number: "09", title: "Focused Tools & Package Delivery", type: "Technical orientation", audience: "Site owners and release owners", pages: 9, description: "The eight delivered packages, what My Travel, the travel calendar, Tickets, and PULSE CODE are for, how a focused tool resolves its SharePoint site, and how to publish and verify one.", topics: ["Packages", "Travel", "Hosting"], textFile: "09_PULSE_Focused_Tools_and_Package_Delivery.txt", pdfFile: "09_PULSE_Focused_Tools_and_Package_Delivery.pdf" },
+  { id: "focused", number: "09", title: "Focused Tools & Package Delivery", type: "Technical orientation", audience: "Site owners and release owners", pages: 10, description: "The eight delivered packages, what My Travel, the travel calendar, Tickets, and PULSE CODE are for, how the codebase layers and where the SharePoint request path runs, how a focused tool resolves its site, and how to publish and verify one.", topics: ["Packages", "Architecture", "Hosting"], textFile: "09_PULSE_Focused_Tools_and_Package_Delivery.txt", pdfFile: "09_PULSE_Focused_Tools_and_Package_Delivery.pdf" },
   { id: "devscale", number: "10", title: "Development Environment & Scale Validation", type: "Follow-on work", audience: "Developers and maintainers", pages: 9, description: "PULSE has no development environment. How to stand up a disposable development site, load it past the paging and view-threshold ceilings already in the code, measure what breaks, and evaluate Dataverse as an alternative store.", topics: ["Development", "Scale", "Dataverse"], textFile: "10_PULSE_Development_Environment_and_Scale_Validation.txt", pdfFile: "10_PULSE_Development_Environment_and_Scale_Validation.pdf" },
   { id: "interface", number: "11", title: "Interface Reference", type: "Visual reference", audience: "All PULSE users", pages: 7, description: "Eighteen captures of the shipping build, grouped the way the application is navigated, for checking that a written step matches what a user actually sees.", topics: ["Interface", "Screens", "Reference"], textFile: "11_PULSE_Interface_Reference.txt", pdfFile: "11_PULSE_Interface_Reference.pdf" },
   { id: "flows", number: "12", title: "Process Flows", type: "Visual reference", audience: "All PULSE users", pages: 6, description: "How a travel request, a document review, a support ticket, and site resolution in a web part each move from entry point to closed state, drawn from the values the application displays.", topics: ["Flows", "Travel", "Review"], textFile: "12_PULSE_Process_Flows.txt", pdfFile: "12_PULSE_Process_Flows.pdf" },
@@ -171,7 +171,7 @@ function hasAsset(url: string): boolean {
 
 export default function Home() {
   const [active, setActive] = useState("overview");
-  const [view, setView] = useState<"docs" | "brand">("docs");
+  const [view, setView] = useState<"docs" | "brand" | "scan">("docs");
   const [query, setQuery] = useState("");
   /* Starts empty so the first client render matches the server HTML — the server
      has no inlined text, and seeding state from it here is a hydration mismatch
@@ -346,6 +346,7 @@ export default function Home() {
     setActiveSection(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  function openScan() { setView("scan"); setQuery(""); setIsSearching(false); setMobileOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); }
   function openBrand() { setView("brand"); setQuery(""); setIsSearching(false); setMobileOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); }
   function search(value: string) { setQuery(value); setIsSearching(Boolean(value.trim())); }
   function goToSection(page: number) {
@@ -384,10 +385,11 @@ export default function Home() {
         return <div className="nav-group" key={doc.id}><button className={isActive ? "nav-item active" : "nav-item"} onClick={() => choose(doc.id)}><span>{doc.number}</span><b>{doc.title}</b></button>{isActive && selectedSections.length > 0 && <div className="subnav" aria-label={`${doc.title} sections`}>{selectedSections.map((section) => <button className={activeSection === section.page ? "subnav-item active" : "subnav-item"} aria-current={activeSection === section.page ? "true" : undefined} key={section.page} onClick={() => goToSection(section.page)}><span>{String(section.page).padStart(2, "0")}</span><b>{section.title.replace(/^\d+(?:\.\d+)?\s*\/\s*/, "")}</b></button>)}</div>}</div>;
       })}</nav>
       <div className="side-footer"><span className="status-dot" /> Complete source library<br /><small>{documents.reduce((sum, doc) => sum + doc.pages, 0)} pages · July 2026</small></div>
+      <button className={view === "scan" ? "brand-button active" : "brand-button"} onClick={openScan}><img suppressHydrationWarning src={getAssetUrl("/brand-assets/PULSE_Dot_Mark_White_Transparent.png")} alt="" /><span><b>Codebase scan</b><small>Interactive system map</small></span><strong>→</strong></button>
       <button className={view === "brand" ? "brand-button active" : "brand-button"} onClick={openBrand}><img suppressHydrationWarning src={getAssetUrl("/brand-assets/PULSE_Dot_Mark_White_Transparent.png")} alt="" /><span><b>Brand guidelines</b><small>Identity & assets</small></span><strong>→</strong></button>
     </aside>
     <section className="content" id="top">
-      <header className="topbar"><button className="menu" aria-label="Open documentation navigation" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><div className="crumb">PULSE / <span>{isSearching ? "Search" : view === "brand" ? "Brand guidelines" : `${selected.title}${currentSection ? ` / ${currentSection.title.replace(/^\d+(?:\.\d+)?\s*\/\s*/, "")}` : ""}`}</span></div>{view === "brand" ? <a suppressHydrationWarning className="source-link" href={getAssetUrl("/brand-assets/PULSE_Brand_Identity_Guide_v1.3.pdf")} download>Download guide PDF ↓</a> : <button type="button" className="source-link source-link--action" onClick={() => (pdfsBundled ? downloadPdf(selected) : window.print())}>{pdfsBundled ? "Download PDF ↓" : "Print ↓"}</button>}</header>
+      <header className="topbar"><button className="menu" aria-label="Open documentation navigation" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><div className="crumb">PULSE / <span>{isSearching ? "Search" : view === "brand" ? "Brand guidelines" : view === "scan" ? "Codebase scan" : `${selected.title}${currentSection ? ` / ${currentSection.title.replace(/^\d+(?:\.\d+)?\s*\/\s*/, "")}` : ""}`}</span></div>{view === "brand" ? <a suppressHydrationWarning className="source-link" href={getAssetUrl("/brand-assets/PULSE_Brand_Identity_Guide_v1.3.pdf")} download>Download guide PDF ↓</a> : view === "scan" ? <span className="source-link source-link--static">Generated from apps/</span> : <button type="button" className="source-link source-link--action" onClick={() => (pdfsBundled ? downloadPdf(selected) : window.print())}>{pdfsBundled ? "Download PDF ↓" : "Print ↓"}</button>}</header>
       <div className="hero"><div className="eyebrow">PULSE KNOWLEDGE BASE <i /></div><h1>Search PULSE documentation.</h1><p>Ask a plain-language question, find the relevant section, and verify it against the exact source page.</p>
         <label className="search"><span>⌕</span><input ref={searchInputRef} value={query} onChange={(event) => search(event.target.value)} placeholder="Ask anything: How do I submit travel? What lists does PULSE use?" aria-label="Search the PULSE documentation source library" />{query ? <button type="button" className="search-clear" onClick={() => search("")} aria-label="Clear search">✕</button> : <kbd>⌘ K</kbd>}</label>
         <div className="quick">Try: <button onClick={() => search("document review")}>document review</button><button onClick={() => search("project tracker")}>project tracker</button><button onClick={() => search("Firepit package")}>Firepit package</button></div>
@@ -404,7 +406,7 @@ export default function Home() {
             
           </article>)}
         </div>)}</div>
-      </section> : view === "brand" ? <BrandPage /> : <>
+      </section> : view === "brand" ? <BrandPage /> : view === "scan" ? <ScanPage /> : <>
         <section className="document-header"><div><div className="section-kicker">DOCUMENT {selected.number} · {selected.type}</div><h2>{selected.title}</h2><p>{selected.description}</p><div className="meta"><span>{selected.pages} pages</span><span>{selected.audience}</span></div></div><div className="doc-actions">
             {pdfsBundled
               ? <button type="button" className="doc-action doc-action--primary" onClick={() => downloadPdf(selected)}><span>PDF</span><b>Download this document</b><small>Controlled PDF · UNCLASSIFIED on every page</small></button>
@@ -431,6 +433,20 @@ export default function Home() {
 
 
 
+
+/* The codebase scan is a self-contained page of its own. It is embedded rather
+   than reimplemented, in an iframe fed from the inlined asset, so it keeps its
+   own interactivity without any external request. */
+function ScanPage() {
+  const src = getAssetUrl("/embeds/codebase-scan.html");
+  return <section className="scan-page">
+    <div className="brand-intro"><div><div className="section-kicker">CODEBASE SCAN</div><h2>The system map, interactively</h2><p>Every entry point, service, store, and external platform found in the source, with the relationships between them. Filter by kind, or select a component to see what calls it and what it calls. The static version of this map, and what it means for maintenance, is in document 09.</p></div></div>
+    <div className="scan-frame">
+      <iframe suppressHydrationWarning src={src} title="AEWTTR PULSE codebase scan" loading="lazy" sandbox="allow-scripts" />
+    </div>
+    <div className="scan-note">Generated by scanning <code>apps/</code>. Every component in the map carries its source path, and each one was verified to exist before publication.</div>
+  </section>;
+}
 
 function BrandPage() {
   const assets = [
