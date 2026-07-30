@@ -1751,6 +1751,10 @@ PAGE_RENDERERS.docreview = function () {
   const pending = typeof consumePendingRouteAction === "function" ? consumePendingRouteAction() : null;
   const docId = (pending && pending.doc) || query.doc;
   const mode = String((pending && pending.mode) || query.mode || "").toLowerCase();
+  // Same reason as travel's equivalent: leaving ?doc=&mode= in the URL after
+  // opening from it means the next full re-render of this route reopens the
+  // modal right after the user closes it.
+  if ((query.doc || query.mode) && typeof clearRouteQueryParams === "function") clearRouteQueryParams(["doc", "mode"]);
   if (docId && getDocById(docId)) {
     window.AEWTTR.state.docToolView = mode === "sign" ? "Sign" : "Review";
   }

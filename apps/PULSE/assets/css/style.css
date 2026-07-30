@@ -559,6 +559,41 @@ html[data-theme="dark"] .pulse-static-logo::before {
   .pulse-loader-impact { display: none; }
 }
 
+/* In-context "PULSE" generating state — same wordmark-and-dots language as
+   the full-page boot loader, but a looping breathe instead of a one-shot
+   reveal burst, since this covers an indefinite wait (document generation,
+   upload, revision bookkeeping) rather than a fixed page-load moment. Used
+   both in the C/O assignment modal and the travel wizard's Save flow, so a
+   document regenerating always looks the same regardless of what triggered
+   it. */
+.co-gen-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 48px 20px; }
+/* Covers the wizard panel in place while a save is in flight, so the user
+   stays on the page and watches the document regenerate instead of being
+   sent to My Travel before the upload and revision bookkeeping finish. */
+.travel-wizard-gen-overlay { position: absolute; inset: 0; z-index: 5; background: var(--aewttr-surface, #fff); border-radius: inherit; }
+.co-gen-svg { color: var(--aewttr-text); }
+.co-gen-letter { font-family: "Inter", "Segoe UI", ui-sans-serif, sans-serif; font-size: 30px; font-weight: 700; letter-spacing: -.02em; fill: currentColor; animation: co-gen-letter-breathe 1.6s ease-in-out infinite; }
+.co-gen-letter:nth-child(1) { animation-delay: 0s; }
+.co-gen-letter:nth-child(2) { animation-delay: .08s; }
+.co-gen-letter:nth-child(3) { animation-delay: .16s; }
+.co-gen-letter:nth-child(4) { animation-delay: .24s; }
+.co-gen-letter:nth-child(5) { animation-delay: .32s; }
+.co-gen-dot { fill: var(--aewttr-blue, #2F5FE0); animation: co-gen-dot-breathe 1.6s ease-in-out infinite; }
+.co-gen-dot--upper { animation-delay: .1s; }
+.co-gen-dot--lower { animation-delay: .42s; }
+.co-gen-label { font-size: 13px; color: var(--aewttr-muted); text-align: center; }
+@keyframes co-gen-letter-breathe {
+  0%, 100% { opacity: .35; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}
+@keyframes co-gen-dot-breathe {
+  0%, 100% { opacity: .3; transform: scale(.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .co-gen-letter, .co-gen-dot { animation: none !important; opacity: 1; }
+}
+
 .aewttr-nav { flex: 1; min-width: 0; display: flex; align-items: stretch; overflow-x: auto; scrollbar-width: none; height: 100%; }
 .aewttr-nav::-webkit-scrollbar { display: none; }
 .aewttr-nav-item {

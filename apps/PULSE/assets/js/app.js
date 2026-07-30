@@ -1543,6 +1543,28 @@ function navigate(path, query) {
   if (location.hash === nextHash) { renderPage(); return; }
   location.hash = nextHash; // triggers the hashchange listener -> renderPage()
 }
+/* A one-time deep-link query param (?tr=..., ?doc=...) that opens a modal on
+   arrival has to be removed from the URL once it's been read — otherwise the
+   NEXT full re-render of that route (a background refresh, or the user
+   revisiting the same nav item) reads the same param and reopens the modal
+   right after the user closed it. That reopen-after-close looked exactly like
+   "the close button doesn't work" — the button did close it, it just came
+   right back.
+
+   history.replaceState rather than location.hash so this doesn't fire another
+   hashchange/renderPage() cycle or add a back-button entry — it just corrects
+   the address bar to match what's already on screen. */
+function clearRouteQueryParams(keys) {
+  const legacy = parseLegacyHashRoute();
+  const remaining = Object.assign({}, legacy.query);
+  (keys || []).forEach((key) => { delete remaining[key]; });
+  const queryString = Object.keys(remaining)
+    .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(String(remaining[key]))}`)
+    .join("&");
+  const nextHash = `#/${legacy.path}${queryString ? `?${queryString}` : ""}`;
+  if (location.hash === nextHash) return;
+  history.replaceState(null, "", nextHash);
+}
 function consumePendingRouteAction() {
   const action = window.AEWTTR.pendingRouteAction || null;
   window.AEWTTR.pendingRouteAction = null;

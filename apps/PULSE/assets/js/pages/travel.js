@@ -716,6 +716,10 @@ function openTravelFromRouteQuery(body, redrawFn) {
   const pending = typeof consumePendingRouteAction === "function" ? consumePendingRouteAction() : null;
   const trId = (pending && pending.tr) || query.tr;
   if (!trId) return;
+  // Consumed — drop it from the URL now so the next full re-render of this
+  // route (background refresh, revisiting the same nav item) doesn't read it
+  // again and pop the modal back open right after the user closes it.
+  if (query.tr && typeof clearRouteQueryParams === "function") clearRouteQueryParams(["tr"]);
   const request = (window.AEWTTR.db.travelRequests || []).find((r) => r.id === trId);
   if (!request) return;
   if (typeof openTravelDetailModal === "function") openTravelDetailModal(trId, redrawFn);
@@ -2482,6 +2486,14 @@ async function saveTravelExportToSharePoint(request, opts) {
   }
   const modeLabel = String(request.formMode || "Standard").toLowerCase().replace(/\s+/g, "-");
   const baseId = String(request.id || "travel-request").replace(/[^A-Za-z0-9._-]+/g, "-");
+  /* A revision re-upload used the exact same filename every time, which in
+     SharePoint means "replace the file that's there" — every doc.revisions
+     entry ended up pointing at the same URL, so Rev 1 stopped being openable
+     the moment Rev 2 was generated even though its own metadata record still
+     existed. opts.revisionNumber, when the caller knows it's writing a new
+     revision (not the first generation), makes each one a distinct file so
+     every past revision stays retrievable at its own link. */
+  const revSuffix = opts.revisionNumber ? `-rev${opts.revisionNumber}` : "";
 
   let docxBlob;
   if (typeof window.createTravelDocxBlob === "function") {
@@ -2494,7 +2506,7 @@ async function saveTravelExportToSharePoint(request, opts) {
 
   const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
   if (docxBlob) {
-    const fileName = `${baseId}-${modeLabel}-travel-request.docx`;
+    const fileName = `${baseId}-${modeLabel}-travel-request${revSuffix}.docx`;
     const file = new File([docxBlob], fileName, { type: DOCX_MIME, lastModified: Date.now() });
     const result = await sharePointAdapter.uploadProjectDocument(currentSiteUrl(), "Travel Requests", request.id || "Travel Request", file);
     request.exportFileUrl = result.fileUrl || "";
@@ -2505,7 +2517,7 @@ async function saveTravelExportToSharePoint(request, opts) {
 
   // Fallback: HTML
   const htmlBlob = createTravelHtmlBlob(request);
-  const fileName = `${baseId}-${modeLabel}-export.html`;
+  const fileName = `${baseId}-${modeLabel}-export${revSuffix}.html`;
   const file = new File([htmlBlob], fileName, { type: "text/html", lastModified: Date.now() });
   const result = await sharePointAdapter.uploadProjectDocument(currentSiteUrl(), "Travel Requests", request.id || "Travel Request", file);
   request.exportFileUrl = result.fileUrl || "";
@@ -3496,55 +3508,62 @@ async function submitTravelRequest(body, formMode, travelers, db, editing) {
   if (!editing) notifyRequesterTravelSubmitted(req);
   refreshTravelNotifications();
 
+  /* Awaited, not fire-and-forget: the caller (the wizard's Save button and
+     the Review step's submit button both run trySubmit) needs to know when
+     this is actually done so it can hold the user on screen with a loading
+     state instead of navigating away while the upload is still in flight —
+     navigating away used to make the regeneration invisible, which read as
+     "did this even happen?" even though it was working in the background. */
   if (editing && hasCo && req.docReviewId && isSharePointMode()) {
-    (async () => {
-      try {
-        await saveTravelExportToSharePoint(req, { force: true });
+    try {
+      const allDocs = Object.values(db.docs || {}).flat();
+      const doc = allDocs.find((d) => d.id === req.docReviewId);
+      if (doc) {
+        // Computed before the upload so the new file's name can carry its
+        // own revision number — see saveTravelExportToSharePoint for why
+        // that matters.
+        const nextNum = typeof nextDocRevisionNumber === "function"
+          ? nextDocRevisionNumber(doc)
+          : ((doc.revisions || []).length + 1);
+        await saveTravelExportToSharePoint(req, { force: true, revisionNumber: nextNum });
         await Repo.save("travelRequest", req);
-        const allDocs = Object.values(db.docs || {}).flat();
-        const doc = allDocs.find((d) => d.id === req.docReviewId);
-        if (doc) {
-          const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-          const nextNum = typeof nextDocRevisionNumber === "function"
-            ? nextDocRevisionNumber(doc)
-            : ((doc.revisions || []).length + 1);
-          const newRevision = {
-            id: uid("REV"),
-            number: nextNum,
-            fileUrl: req.exportFileUrl || "",
-            serverRelativeUrl: "",
-            fileName: req.exportFileName || `${req.id}-travel-request.docx`,
-            fileType: (req.exportFileName || "").endsWith(".docx") ? "docx" : "html",
-            mimeType: req.exportMimeType || DOCX_MIME,
-            uploadedBy: typeof currentUserIdentity === "function" ? (currentUserIdentity().name || "") : "",
-            uploadedDate: typeof todayIsoDate === "function" ? todayIsoDate() : new Date().toISOString().slice(0, 10),
-            source: "Travel Request Updated"
-          };
-          if (typeof resetReviewersForNewRevision === "function") resetReviewersForNewRevision(doc);
-          doc.revisions = doc.revisions || [];
-          doc.revisions.unshift(newRevision);
-          if (typeof setDocActiveRevision === "function") setDocActiveRevision(doc, newRevision.id);
-          if (req.travelers && req.travelers.length) {
-            const existingEmails = new Set((doc.reviewers || []).map((r) => (r.email || "").toLowerCase()));
-            req.travelers.forEach((t) => {
-              if (t.email && !existingEmails.has(t.email.toLowerCase())) {
-                doc.reviewers = doc.reviewers || [];
-                doc.reviewers.push({ name: t.name || "", email: t.email, decision: "Pending", reviewedAt: "", note: "", lastNotifiedAt: "" });
-              }
-            });
-          }
-          if (typeof saveDocReview === "function") {
-            await saveDocReview(doc, { action: "Revision Added", text: `Travel request ${req.id} was updated — new document revision uploaded.` });
-          }
-          if (typeof notifyPendingReviewers === "function") {
-            await notifyPendingReviewers(doc, { kind: "revision", force: true });
-          }
+        const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        const newRevision = {
+          id: uid("REV"),
+          number: nextNum,
+          fileUrl: req.exportFileUrl || "",
+          serverRelativeUrl: "",
+          fileName: req.exportFileName || `${req.id}-travel-request-rev${nextNum}.docx`,
+          fileType: (req.exportFileName || "").endsWith(".docx") ? "docx" : "html",
+          mimeType: req.exportMimeType || DOCX_MIME,
+          uploadedBy: typeof currentUserIdentity === "function" ? (currentUserIdentity().name || "") : "",
+          uploadedDate: typeof todayIsoDate === "function" ? todayIsoDate() : new Date().toISOString().slice(0, 10),
+          source: "Travel Request Updated"
+        };
+        if (typeof resetReviewersForNewRevision === "function") resetReviewersForNewRevision(doc);
+        doc.revisions = doc.revisions || [];
+        doc.revisions.unshift(newRevision);
+        if (typeof setDocActiveRevision === "function") setDocActiveRevision(doc, newRevision.id);
+        if (req.travelers && req.travelers.length) {
+          const existingEmails = new Set((doc.reviewers || []).map((r) => (r.email || "").toLowerCase()));
+          req.travelers.forEach((t) => {
+            if (t.email && !existingEmails.has(t.email.toLowerCase())) {
+              doc.reviewers = doc.reviewers || [];
+              doc.reviewers.push({ name: t.name || "", email: t.email, decision: "Pending", reviewedAt: "", note: "", lastNotifiedAt: "" });
+            }
+          });
         }
-      } catch (revErr) {
-        console.warn("PULSE: doc review revision after travel update failed.", revErr);
-        toast(`${req.id} saved, but the Document Review revision could not be updated.`, "warn");
+        if (typeof saveDocReview === "function") {
+          await saveDocReview(doc, { action: "Revision Added", text: `Travel request ${req.id} was updated — new document revision uploaded.` });
+        }
+        if (typeof notifyPendingReviewers === "function") {
+          await notifyPendingReviewers(doc, { kind: "revision", force: true });
+        }
       }
-    })();
+    } catch (revErr) {
+      console.warn("PULSE: doc review revision after travel update failed.", revErr);
+      toast(`${req.id} saved, but the Document Review revision could not be updated.`, "warn");
+    }
   }
 
   if (editing) {
@@ -3609,13 +3628,25 @@ function drawSubmitRequest(body, initialMode, editId) {
     <div class="travel-wizard travel-wizard--fit">
       ${editing && editing.chargeObjectStatus === "Assigned" ? `<div class="travel-wizard-banner travel-wizard-banner--info"><i class="bx bx-info-circle"></i> Saving changes to a request with an assigned charge object will generate a new document revision — all Document Review reviewers will be notified.</div>` : ""}
       <div class="travel-wizard-progress" id="tw-progress"></div>
-      <div class="travel-wizard-panel aewttr-card aewttr-card-pad travel-wizard-panel--compact">
+      <div class="travel-wizard-panel aewttr-card aewttr-card-pad travel-wizard-panel--compact" style="position:relative;">
         <div class="travel-wizard-step-head travel-wizard-step-head--compact">
           <span class="travel-wizard-eyebrow" id="tw-eyebrow"></span>
           <h2 id="tw-step-title"></h2>
           <p id="tw-step-desc"></p>
         </div>
         <div id="tw-form-root">${travelWizardPanelsHtml(db, editing)}</div>
+        <div class="co-gen-state travel-wizard-gen-overlay" id="tw-gen-overlay" hidden>
+          <svg class="co-gen-svg" viewBox="0 0 156 48" width="156" height="48" aria-hidden="true">
+            <text class="co-gen-letter" x="4"  y="36">P</text>
+            <text class="co-gen-letter" x="36" y="36">U</text>
+            <text class="co-gen-letter" x="68" y="36">L</text>
+            <text class="co-gen-letter" x="100" y="36">S</text>
+            <text class="co-gen-letter" x="132" y="36">E</text>
+            <circle class="co-gen-dot co-gen-dot--upper" cx="50" cy="6"  r="5"/>
+            <circle class="co-gen-dot co-gen-dot--lower" cx="118" cy="42" r="5"/>
+          </svg>
+          <span class="co-gen-label" id="tw-gen-label">Saving…</span>
+        </div>
         <div class="travel-wizard-actions">
           <div class="tw-back-group">
             <button type="button" class="btn-aewttr-ghost" id="tw-back" style="visibility:hidden;"${tip("Go to the previous step")}><i class="bx bx-chevron-left"></i> Back</button>
@@ -3796,10 +3827,23 @@ function drawSubmitRequest(body, initialMode, editId) {
     }
     travelerPicker.refresh();
     if (triggerBtn) triggerBtn.disabled = true;
+    /* submitTravelRequest now awaits the whole revision upload before it
+       navigates away, so this loading state stays up for exactly as long as
+       that takes — only shown when a revision is actually going out, since
+       a first submission or an edit with no charge object yet finishes
+       near-instantly and has nothing to watch. */
+    const willRegenerate = !!(editing && editing.chargeObjectStatus === "Assigned");
+    const overlay = willRegenerate ? $("#tw-gen-overlay", body) : null;
+    if (overlay) {
+      const label = $("#tw-gen-label", body);
+      if (label) label.textContent = "Regenerating the travel document and uploading a new revision…";
+      overlay.hidden = false;
+    }
     try {
       await submitTravelRequest(body, formMode, travelers, db, editing);
     } finally {
       if (triggerBtn) triggerBtn.disabled = false;
+      if (overlay) overlay.hidden = true;
     }
   }
 
@@ -3965,24 +4009,34 @@ function openCoAssignModal(trId, onDone) {
     if (isSharePointMode()) {
       let docGenFailed = false;
       try {
-        await saveTravelExportToSharePoint(r, { force: true });
+        // Same reason as the wizard's Save path: known before the upload so
+        // the re-uploaded file gets its own name instead of overwriting the
+        // previous revision's.
+        let updatingDoc = null;
+        let nextNum = null;
+        if (!isFirstCo && r.docReviewId) {
+          const allDocs = Object.values(db.docs || {}).flat();
+          updatingDoc = allDocs.find(d => d.id === r.docReviewId) || null;
+          if (updatingDoc) {
+            nextNum = typeof nextDocRevisionNumber === "function" ? nextDocRevisionNumber(updatingDoc) : ((updatingDoc.revisions || []).length + 1);
+          }
+        }
+        await saveTravelExportToSharePoint(r, { force: true, revisionNumber: nextNum || undefined });
         await Repo.save("travelRequest", r);
         if (isFirstCo && !r.docReviewId) {
           const docReview = await createTravelDocReview(r);
           r.docReviewId = docReview.id;
           await Repo.save("travelRequest", r);
-        } else if (!isFirstCo && r.docReviewId) {
-          const allDocs = Object.values(db.docs || {}).flat();
-          const doc = allDocs.find(d => d.id === r.docReviewId);
-          if (doc) {
+        } else if (updatingDoc) {
+          const doc = updatingDoc;
+          {
             const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-            const nextNum = typeof nextDocRevisionNumber === "function" ? nextDocRevisionNumber(doc) : ((doc.revisions || []).length + 1);
             const newRevision = {
               id: uid("REV"),
               number: nextNum,
               fileUrl: r.exportFileUrl || "",
               serverRelativeUrl: "",
-              fileName: r.exportFileName || `${r.id}-travel-request.docx`,
+              fileName: r.exportFileName || `${r.id}-travel-request-rev${nextNum}.docx`,
               fileType: (r.exportFileName || "").endsWith(".docx") ? "docx" : "html",
               mimeType: r.exportMimeType || DOCX_MIME,
               uploadedBy: typeof currentUserIdentity === "function" ? (currentUserIdentity().name || "") : "",
