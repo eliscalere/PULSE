@@ -2623,7 +2623,7 @@ function renderShell() {
             </button>
             <div class="aewttr-notify-panel" id="user-notify-panel" hidden></div>
           </div>
-          <button type="button" class="aewttr-topnav-user" id="topnav-user-btn"${tip("Notification settings")} aria-label="${escapeHtml(db.user.name)}, ${escapeHtml(currentAppRole())}. Open notification settings">
+          <button type="button" class="aewttr-topnav-user" id="topnav-user-btn"${tip("Your account and settings")} aria-label="${escapeHtml(db.user.name)}, ${escapeHtml(currentAppRole())}. Open account menu">
             <div class="av ${photoUrl ? "has-photo" : ""}">
               ${photoUrl ? `<img class="av-photo" src="${escapeHtml(photoUrl)}" alt="${escapeHtml(db.user.name)} profile photo" onerror="this.remove(); this.parentElement.classList.remove('has-photo');">` : ""}
               <span class="av-fallback">${escapeHtml(initials(db.user.name))}</span>
@@ -2665,217 +2665,120 @@ function renderShell() {
 }
 
 /* ---------- User settings modal ---------- */
+/* The account menu.
+
+   This used to be a second settings editor: channel toggles, area toggles and
+   Document Review delivery, all duplicated from the Settings page with a
+   per-section edit affordance, plus a link to the real page at the bottom. Two
+   editors for one set of preferences meant two places to keep in sync and no
+   clear answer to where a setting actually lives.
+
+   It is now what a profile menu should be — who you are signed in as, what PULSE
+   will do for you, and the way to change it. Everything shown is read-only and
+   links into Settings. */
 function openUserSettingsModal() {
   const db = window.AEWTTR.db;
   const user = db.user || {};
-  const prefs = typeof normalizeNotificationPrefs === "function" ? normalizeNotificationPrefs(user.notificationPrefs) : (user.notificationPrefs || {});
+  const prefs = typeof normalizeNotificationPrefs === "function"
+    ? normalizeNotificationPrefs(user.notificationPrefs)
+    : (user.notificationPrefs || {});
   const photoUrl = typeof currentUserProfilePhotoUrl === "function" ? currentUserProfilePhotoUrl() : "";
   const role = typeof currentAppRole === "function" ? currentAppRole() : "";
   const member = typeof currentUserMember === "function" ? currentUserMember() : null;
   const initStr = typeof initials === "function" ? initials(user.name) : (user.name || "?").slice(0, 2).toUpperCase();
 
-  let editingSection = null;
-  let saveTimer = null;
-
-  function setSettingsSaveStatus(text, isErr) {
-    const el = modal.querySelector("#uset-save-status");
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = isErr ? "var(--aewttr-red)" : "var(--aewttr-muted)";
+  function startupLabel() {
+    const options = window.DEFAULT_PAGE_OPTIONS || [];
+    if (prefs.defaultPage) {
+      const chosen = options.find((opt) => opt.route === prefs.defaultPage);
+      return chosen ? chosen.label : prefs.defaultPage;
+    }
+    const route = user.isAdmin ? "overview"
+      : user.isFinanceAdmin ? "travel/finance"
+      : user.isDocAdmin ? "docreview"
+      : "dashboard";
+    const match = options.find((opt) => opt.route === route);
+    return `${match ? match.label : "Dashboard"} (role default)`;
   }
 
-  function autoSave() {
-    setSettingsSaveStatus("Saving…");
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(async () => {
-      const liveDb = window.AEWTTR.db;
-      liveDb.user.notificationPrefs = prefs;
-      const liveMember = typeof currentUserMember === "function" ? currentUserMember() : null;
-      if (liveMember) liveMember.notificationPrefs = prefs;
-      if (typeof isSharePointMode === "function" && isSharePointMode() && typeof sharePointAdapter !== "undefined") {
-        try {
-          await sharePointAdapter.saveCurrentUserNotificationPrefs(window.AEWTTR.siteUrl, window.AEWTTR.currentSpUser, prefs);
-        } catch (e) {
-          setSettingsSaveStatus("Save failed", true);
-          return;
-        }
-      }
-      setSettingsSaveStatus("Saved");
-      setTimeout(() => setSettingsSaveStatus(""), 2000);
-    }, 500);
+  function channelsLabel() {
+    const on = [];
+    if (prefs.channels && prefs.channels.email) on.push("Email");
+    if (prefs.channels && prefs.channels.teams) on.push("Teams");
+    return on.length ? on.join(" + ") : "Off";
   }
 
-  const CHANNEL_META = [
-    { key: "email", label: "Email", icon: "bx-envelope" },
-    { key: "teams", label: "Teams", icon: "bx-chat" },
-    { key: "inApp", label: "In-app", icon: "bx-bell" }
-  ];
-
-  const AREA_META = typeof NOTIFICATION_AREA_META !== "undefined"
-    ? Object.entries(NOTIFICATION_AREA_META).map(([key, v]) => ({ key, label: v.label || key }))
-    : [
-      { key: "Travel", label: "Travel" },
-      { key: "Documents", label: "Documents" },
-      { key: "Projects", label: "Projects" },
-      { key: "Weekly", label: "Weekly meeting" }
-    ];
-
-  function channelViewHtml() {
-    return CHANNEL_META.map((c) => {
-      const on = prefs.channels && prefs.channels[c.key];
-      return `<span class="uset-channel-chip ${on ? "uset-channel-chip--on" : ""}"><i class="bx ${c.icon}"></i> ${c.label}: <strong>${on ? "On" : "Off"}</strong></span>`;
-    }).join("");
+  function areasLabel() {
+    if (prefs.everything) return "All areas";
+    const count = (prefs.areas || []).length;
+    if (!count) return "None";
+    const total = (typeof NOTIFICATION_AREAS !== "undefined" ? NOTIFICATION_AREAS.length : count);
+    return count === total ? "All areas" : `${count} of ${total} areas`;
   }
 
-  function channelEditHtml() {
-    return CHANNEL_META.map((c) => {
-      const on = prefs.channels && prefs.channels[c.key];
-      return `<label class="uset-toggle-row"><span class="uset-toggle-label"><i class="bx ${c.icon}"></i> ${c.label}</span><input type="checkbox" class="uset-channel-toggle" data-channel="${c.key}" ${on ? "checked" : ""}></label>`;
-    }).join("");
-  }
+  const themeNow = typeof getCurrentTheme === "function" ? getCurrentTheme() : "light";
 
-  function areaViewHtml() {
-    if (prefs.everything) return `<span class="uset-area-chip uset-area-chip--on">Everything</span>`;
-    const areas = prefs.areas || [];
-    return AREA_META.map((a) => {
-      const on = areas.includes(a.key);
-      return `<span class="uset-area-chip ${on ? "uset-area-chip--on" : ""}">${a.label}</span>`;
-    }).join("");
-  }
-
-  function areaEditHtml() {
-    const areas = prefs.areas || [];
-    return `<label class="uset-toggle-row"><span class="uset-toggle-label"><strong>Everything</strong> <small>(all events)</small></span><input type="checkbox" id="uset-everything" ${prefs.everything ? "checked" : ""}></label>
-    <div id="uset-areas-list" ${prefs.everything ? 'style="opacity:.4;pointer-events:none;"' : ""}>
-      ${AREA_META.map((a) => `<label class="uset-toggle-row"><span class="uset-toggle-label">${a.label}</span><input type="checkbox" class="uset-area-cb" data-area="${a.key}" ${areas.includes(a.key) ? "checked" : ""}></label>`).join("")}
-    </div>`;
-  }
-
-  function sectionHtml(id, title, viewContent, isEditing) {
-    return `
-      <div class="uset-section" id="uset-sec-${id}">
-        <div class="uset-section-head">
-          <span class="uset-section-title">${title}</span>
-          <button type="button" class="uset-edit-btn" data-edit-section="${id}" title="Edit">
-            <i class="bx ${isEditing ? "bx-check" : "bx-pencil"}"></i>
-            ${isEditing ? "Done" : "Edit"}
-          </button>
-        </div>
-        <div class="uset-section-body">
-          ${isEditing ? viewContent.edit : viewContent.view}
-        </div>
-      </div>`;
-  }
-
-  function renderModal() {
-    const content = modal.querySelector(".uset-content");
-    if (!content) return;
-    content.innerHTML = `
-      <div class="uset-profile">
-        <div class="av ${photoUrl ? "has-photo" : ""}" style="width:52px;height:52px;font-size:18px;">
+  const modal = openModal(`
+    <div class="acct-menu">
+      <div class="acct-head">
+        <div class="av acct-av ${photoUrl ? "has-photo" : ""}">
           ${photoUrl ? `<img class="av-photo" src="${escapeHtml(photoUrl)}" alt="">` : ""}
           <span class="av-fallback">${escapeHtml(initStr)}</span>
         </div>
-        <div>
-          <div class="uset-profile-name">${escapeHtml(user.name || "")}</div>
-          <div class="uset-profile-role">${escapeHtml(member ? member.email || "" : "")}${role ? ` · ${escapeHtml(role)}` : ""}</div>
+        <div class="acct-id">
+          <div class="acct-name">${escapeHtml(user.name || "")}</div>
+          ${member && member.email ? `<div class="acct-email">${escapeHtml(member.email)}</div>` : ""}
+          ${role ? `<span class="acct-role">${escapeHtml(role)}</span>` : ""}
+        </div>
+        <button type="button" class="aewttr-modal-close" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="acct-facts">
+        <button type="button" class="acct-fact" data-go="settings">
+          <span class="acct-fact-k"><i class="bx bx-log-in-circle"></i> Opens on</span>
+          <span class="acct-fact-v">${escapeHtml(startupLabel())}</span>
+        </button>
+        <button type="button" class="acct-fact" data-go="settings">
+          <span class="acct-fact-k"><i class="bx bx-bell"></i> Notifications</span>
+          <span class="acct-fact-v">${escapeHtml(channelsLabel())} · ${escapeHtml(areasLabel())}</span>
+        </button>
+      </div>
+
+      <div class="acct-theme">
+        <span class="acct-theme-k">Appearance</span>
+        <div class="acct-theme-row" id="acct-theme-row">
+          ${[{ key: "light", label: "Light", icon: "bx-sun" }, { key: "dark", label: "Dark", icon: "bx-moon" }].map((t) => `
+            <button type="button" class="acct-theme-btn${themeNow === t.key ? " active" : ""}" data-theme="${t.key}">
+              <i class="bx ${t.icon}"></i><span>${t.label}</span>
+            </button>`).join("")}
         </div>
       </div>
-      ${sectionHtml("channels", "Notification channels",
-        { view: channelViewHtml(), edit: channelEditHtml() },
-        editingSection === "channels")}
-      ${sectionHtml("areas", "Notification areas",
-        { view: areaViewHtml(), edit: areaEditHtml() },
-        editingSection === "areas")}
-      ${sectionHtml("delivery", "Document delivery",
-        {
-          view: `<span class="uset-area-chip uset-area-chip--on">${prefs.documents && prefs.documents.delivery === "digest" ? "Digest" : "Immediate"}</span>`,
-          edit: `<div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <label class="uset-radio-row"><input type="radio" name="uset-delivery" value="immediate" ${(!prefs.documents || prefs.documents.delivery !== "digest") ? "checked" : ""}> Immediate</label>
-            <label class="uset-radio-row"><input type="radio" name="uset-delivery" value="digest" ${prefs.documents && prefs.documents.delivery === "digest" ? "checked" : ""}> Digest</label>
-          </div>`
-        },
-        editingSection === "delivery")}
-      <div class="uset-actions">
-        <a href="#" id="uset-full-settings">Open full notification settings →</a>
+
+      <div class="acct-actions">
+        <button type="button" class="btn-aewttr acct-settings-btn" data-go="settings"><i class="bx bx-cog"></i> Settings</button>
+        <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" data-go="close">Close</button>
       </div>
-    `;
-
-    // Wire edit toggles
-    content.querySelectorAll("[data-edit-section]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const sec = btn.dataset.editSection;
-        editingSection = (editingSection === sec) ? null : sec;
-        renderModal();
-        // Focus first input in section
-        const secEl = modal.querySelector(`#uset-sec-${sec} input, #uset-sec-${sec} select`);
-        if (secEl) secEl.focus();
-      });
-    });
-
-    // Wire channel toggles
-    content.querySelectorAll(".uset-channel-toggle").forEach((cb) => {
-      cb.addEventListener("change", () => {
-        if (!prefs.channels) prefs.channels = {};
-        prefs.channels[cb.dataset.channel] = cb.checked;
-        autoSave();
-      });
-    });
-
-    // Wire everything toggle
-    const everythingCb = content.querySelector("#uset-everything");
-    if (everythingCb) {
-      everythingCb.addEventListener("change", () => {
-        prefs.everything = everythingCb.checked;
-        const areasList = content.querySelector("#uset-areas-list");
-        if (areasList) { areasList.style.opacity = everythingCb.checked ? ".4" : ""; areasList.style.pointerEvents = everythingCb.checked ? "none" : ""; }
-        autoSave();
-      });
-    }
-
-    // Wire area checkboxes
-    content.querySelectorAll(".uset-area-cb").forEach((cb) => {
-      cb.addEventListener("change", () => {
-        if (!prefs.areas) prefs.areas = [];
-        if (cb.checked) { if (!prefs.areas.includes(cb.dataset.area)) prefs.areas.push(cb.dataset.area); }
-        else { prefs.areas = prefs.areas.filter((a) => a !== cb.dataset.area); }
-        autoSave();
-      });
-    });
-
-    // Wire delivery radio
-    content.querySelectorAll("[name='uset-delivery']").forEach((r) => {
-      r.addEventListener("change", () => {
-        if (!prefs.documents) prefs.documents = {};
-        prefs.documents.delivery = r.value;
-        autoSave();
-      });
-    });
-
-    // Full settings link
-    const fullLink = content.querySelector("#uset-full-settings");
-    if (fullLink) {
-      fullLink.addEventListener("click", (e) => {
-        e.preventDefault();
-        closeModal();
-        if (typeof navigate === "function") navigate("notification-settings");
-      });
-    }
-  }
-
-  const modal = openModal(`
-    <div class="aewttr-modal-head">
-      <h3>Settings</h3>
-      <div class="uset-save-status" id="uset-save-status"></div>
-      <button class="aewttr-modal-close">&times;</button>
     </div>
-    <div class="aewttr-modal-body uset-modal-body">
-      <div class="uset-content"></div>
-    </div>
-  `, { wide: true });
+  `, { className: "acct-menu-modal" });
 
-  $(".aewttr-modal-close", modal).addEventListener("click", closeModal);
-  renderModal();
+  modal.querySelectorAll("[data-go]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.go;
+      closeModal();
+      if (target === "settings" && typeof navigate === "function") navigate("settings");
+    });
+  });
+  const closeBtn = modal.querySelector(".aewttr-modal-close");
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+
+  modal.querySelectorAll("#acct-theme-row .acct-theme-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const next = btn.dataset.theme;
+      if (typeof setCurrentThemeValue === "function") setCurrentThemeValue(next);
+      if (typeof persistThemePreference === "function") persistThemePreference(next);
+      modal.querySelectorAll("#acct-theme-row .acct-theme-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    });
+  });
 }
 
 /* ---------- safe localStorage wrapper ---------- */

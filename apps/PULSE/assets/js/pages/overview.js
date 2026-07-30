@@ -1199,7 +1199,7 @@ PAGE_RENDERERS.overview = function () {
       </div>`;
     }
     function projectDetailHtml(row) {
-      const names = [...row.people].map((name) => `<div class="resource-detail-person"><span>${userAvatarHtml(name, "", 24)}</span>${escapeHtml(name)}</div>`).join("");
+      const names = [...row.people].map((name) => `<div class="resource-detail-person"><span>${userAvatarHtml(name, "", 30)}</span>${escapeHtml(name)}</div>`).join("");
       return `<div class="resource-detail-inline">
         <div class="resource-detail-metrics"><span><b>${row.tasks}</b> active tasks</span><span><b>${row.people.size}</b> assigned</span></div>
         <h4>Assigned people</h4><div class="resource-detail-people">${names || `<div class="empty-state">No assignments yet.</div>`}</div>
@@ -1210,7 +1210,7 @@ PAGE_RENDERERS.overview = function () {
       const open = !!state.expanded[key];
       return `<div class="resource-row-wrap">
         <button type="button" class="resource-person-row${open ? " is-expanded" : ""}" data-resource-toggle="${escapeHtml(key)}">
-          ${userAvatarHtml(row.name, "", 32)}<span class="resource-row-copy"><strong>${escapeHtml(row.name)}</strong><small>${row.tasks} active · ${row.projects.size} project${row.projects.size === 1 ? "" : "s"}</small></span>
+          ${userAvatarHtml(row.name, "", 40)}<span class="resource-row-copy"><strong>${escapeHtml(row.name)}</strong><small>${row.tasks} active · ${row.projects.size} project${row.projects.size === 1 ? "" : "s"}</small></span>
           <span class="resource-row-projects">${[...row.projects].slice(0, 3).map((id) => `<em>${escapeHtml((projectIndex.get(id) || {}).name || id)}</em>`).join("")}</span>
           <i class="bx bx-chevron-${open ? "up" : "right"}"></i>
         </button>
@@ -1223,7 +1223,7 @@ PAGE_RENDERERS.overview = function () {
       return `<div class="resource-row-wrap">
         <button type="button" class="resource-project-row${open ? " is-expanded" : ""}" data-resource-toggle="${escapeHtml(key)}">
           <span class="resource-project-mark"></span><span class="resource-row-copy"><strong>${escapeHtml(row.name)}</strong><small>${row.people.size} assigned · ${row.tasks} active</small></span>
-          <span class="resource-avatar-stack">${[...row.people].slice(0, 4).map((name) => userAvatarHtml(name, "", 22)).join("")}</span>
+          <span class="resource-avatar-stack">${[...row.people].slice(0, 4).map((name) => userAvatarHtml(name, "", 28)).join("")}</span>
           <i class="bx bx-chevron-${open ? "up" : "right"}"></i>
         </button>
         ${open ? projectDetailHtml(row) : ""}
@@ -1232,9 +1232,14 @@ PAGE_RENDERERS.overview = function () {
     const PROJ_COLORS = ["#3b6bcc","#e05f2b","#2b9e6a","#9b59b6","#c0392b","#16a085","#d35400","#2980b9","#8e44ad","#27ae60","#e74c3c","#1abc9c","#f39c12","#6c5ce7","#00b894"];
     const projColorMap = {};
     projectList.forEach((row, i) => { projColorMap[row.id] = PROJ_COLORS[i % PROJ_COLORS.length]; });
-    const PERSON_H = 54; const PROJ_H = 46; const LEFT_W = 210; const RIGHT_W = 210; const MID_GAP = 200; const PAD_Y = 28;
+    // A wide, generous design canvas — the <svg> below has no fixed pixel
+    // width/height of its own, so this coordinate space just sets the
+    // aspect ratio; CSS stretches it to fill whatever room the card
+    // actually has (previously a hardcoded 620px canvas sat inside an
+    // ~1100px+ container, wasting most of the width and reading tiny).
+    const PERSON_H = 64; const PROJ_H = 56; const LEFT_W = 260; const RIGHT_W = 260; const MID_GAP = 320; const PAD_Y = 32;
     const svgW = LEFT_W + MID_GAP + RIGHT_W;
-    const svgH = Math.max(personList.length * PERSON_H, projectList.length * PROJ_H, 120) + PAD_Y * 2;
+    const svgH = Math.max(personList.length * PERSON_H, projectList.length * PROJ_H, 140) + PAD_Y * 2;
     const pY = (i) => PAD_Y + i * PERSON_H + PERSON_H / 2;
     const rY = (i) => PAD_Y + i * PROJ_H + PROJ_H / 2;
     const curves = [];
@@ -1244,33 +1249,33 @@ PAGE_RENDERERS.overview = function () {
         if (ri < 0) return;
         const x1 = LEFT_W, x2 = LEFT_W + MID_GAP, mx = (x1 + x2) / 2;
         const color = projColorMap[projId] || "#3b6bcc";
-        curves.push(`<path d="M${x1},${pY(pi)} C${mx},${pY(pi)} ${mx},${rY(ri)} ${x2},${rY(ri)}" fill="none" stroke="${color}" stroke-width="1.8" opacity="0.4"/>`);
+        curves.push(`<path d="M${x1},${pY(pi)} C${mx},${pY(pi)} ${mx},${rY(ri)} ${x2},${rY(ri)}" fill="none" stroke="${color}" stroke-width="2" opacity="0.4"/>`);
       });
     });
     const personNodes = personList.map((row, i) => {
       const cy = pY(i);
       const initials = row.name.split(" ").map(w => w[0]||"").slice(0,2).join("").toUpperCase();
       return `<g class="ov-res-person-node" data-resource-person="${escapeHtml(row.name)}" style="cursor:pointer;">
-        <circle cx="22" cy="${cy}" r="17" fill="var(--aewttr-blue)" opacity="0.12"/>
-        <text x="22" y="${cy+5}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--aewttr-blue)">${escapeHtml(initials)}</text>
-        <text x="46" y="${cy-4}" font-size="12" font-weight="600" fill="var(--aewttr-text)">${escapeHtml(row.name.length > 18 ? row.name.slice(0,17)+"…" : row.name)}</text>
-        <text x="46" y="${cy+10}" font-size="10" fill="var(--aewttr-muted)">${row.projects.size} project${row.projects.size!==1?"s":""} · ${row.tasks} task${row.tasks!==1?"s":""}</text>
+        <circle cx="26" cy="${cy}" r="21" fill="var(--aewttr-blue)" opacity="0.12"/>
+        <text x="26" y="${cy+5}" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--aewttr-blue)">${escapeHtml(initials)}</text>
+        <text x="58" y="${cy-5}" font-size="14.5" font-weight="600" fill="var(--aewttr-text)">${escapeHtml(row.name.length > 26 ? row.name.slice(0,25)+"…" : row.name)}</text>
+        <text x="58" y="${cy+13}" font-size="12" fill="var(--aewttr-muted)">${row.projects.size} project${row.projects.size!==1?"s":""} · ${row.tasks} task${row.tasks!==1?"s":""}</text>
       </g>`;
     });
     const projNodes = projectList.map((row, i) => {
       const cy = rY(i); const color = projColorMap[row.id]; const x = LEFT_W + MID_GAP;
       return `<g class="ov-res-proj-node" data-resource-project="${escapeHtml(row.id)}" style="cursor:pointer;">
-        <rect x="${x}" y="${cy-14}" width="8" height="28" rx="3" fill="${color}" opacity="0.85"/>
-        <text x="${x+16}" y="${cy-3}" font-size="12" font-weight="600" fill="var(--aewttr-text)">${escapeHtml((row.name||row.id).slice(0,26))}</text>
-        <text x="${x+16}" y="${cy+11}" font-size="10" fill="var(--aewttr-muted)">${row.people.size} assigned · ${row.tasks} active</text>
+        <rect x="${x}" y="${cy-17}" width="10" height="34" rx="3" fill="${color}" opacity="0.85"/>
+        <text x="${x+20}" y="${cy-4}" font-size="14.5" font-weight="600" fill="var(--aewttr-text)">${escapeHtml((row.name||row.id).slice(0,34))}</text>
+        <text x="${x+20}" y="${cy+14}" font-size="12" fill="var(--aewttr-muted)">${row.people.size} assigned · ${row.tasks} active</text>
       </g>`;
     });
     const legendHtml = projectList.map(row => `<span class="ov-res-legend-item"><span class="ov-res-legend-dot" style="background:${projColorMap[row.id]}"></span>${escapeHtml(row.name||row.id)}</span>`).join("");
     const mapHtml = `<div class="ov-resources-graph-wrap">
       ${legendHtml ? `<div class="ov-resources-legend">${legendHtml}</div>` : ""}
       <div class="ov-resources-labels"><span>Team Members</span><span>Projects</span></div>
-      <div class="ov-resources-svg-wrap" style="overflow-x:auto;">
-        <svg viewBox="0 0 ${svgW} ${svgH}" width="${Math.min(svgW, 700)}" height="${svgH}" xmlns="http://www.w3.org/2000/svg" class="ov-resources-svg" style="min-width:${svgW}px;">
+      <div class="ov-resources-svg-wrap">
+        <svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" class="ov-resources-svg">
           ${curves.join("")}${personNodes.join("")}${projNodes.join("")}
         </svg>
       </div>

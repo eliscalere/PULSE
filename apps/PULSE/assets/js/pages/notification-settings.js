@@ -1,3 +1,10 @@
+/* Registered under both routes. It was only ever reachable as
+   "Notification Settings", which is why nobody found the landing-page
+   preference living inside it — that is a startup setting, not a notification
+   one. The page is now Settings, and the old route still resolves so existing
+   links and the digest button keep working. */
+PAGE_RENDERERS["settings"] = function () { return PAGE_RENDERERS["notification-settings"](); };
+
 PAGE_RENDERERS["notification-settings"] = function () {
   const db = window.AEWTTR.db;
   // Live state, not a draft — every toggle/tone change saves itself
@@ -9,7 +16,7 @@ PAGE_RENDERERS["notification-settings"] = function () {
   const AREA_LABELS = NOTIFICATION_AREA_META;
   let saveTimer = null;
 
-  setTopbar("Notification Settings", "Channels, areas, Document Review delivery, and tone. Changes save automatically.", "");
+  setTopbar("Settings", "Where PULSE opens, how it looks, and how it reaches you. Changes save automatically.", "");
 
   function setSaveStatus(text, isError) {
     const el = $("#notif-save-status");
@@ -85,6 +92,18 @@ PAGE_RENDERERS["notification-settings"] = function () {
     });
   }
 
+  /* Spell out what "Automatic" actually resolves to, so the choice is not a
+     guess. Mirrors pulseComputeDefaultRoute's role order. */
+  function roleDefaultPageLabel() {
+    const user = db.user || {};
+    const route = user.isAdmin ? "overview"
+      : user.isFinanceAdmin ? "travel/finance"
+      : user.isDocAdmin ? "docreview"
+      : "dashboard";
+    const match = DEFAULT_PAGE_OPTIONS.find((opt) => opt.route === route);
+    return match ? match.label : "Dashboard";
+  }
+
   function toneCardHtml(t) {
     const active = current.tone === t.key;
     // Funny doesn't have one fixed sample — it draws from a pool of
@@ -103,6 +122,17 @@ PAGE_RENDERERS["notification-settings"] = function () {
     `;
   }
 
+  function wireTheme() {
+    $all("#notif-theme-row .notif-theme-card").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const next = btn.dataset.theme;
+        if (typeof setCurrentThemeValue === "function") setCurrentThemeValue(next);
+        if (typeof persistThemePreference === "function") persistThemePreference(next);
+        $all("#notif-theme-row .notif-theme-card").forEach((b) => b.classList.toggle("active", b === btn));
+      });
+    });
+  }
+
   function render() {
     const docsOn = documentsAreaOn();
     const digestOn = current.documents.delivery === "digest";
@@ -115,6 +145,33 @@ PAGE_RENDERERS["notification-settings"] = function () {
         </div>
 
         <div class="notif-settings-grid">
+          <section class="notif-panel notif-panel--landing notif-panel--lead">
+            <header class="notif-panel-head">
+              <h3 class="notif-panel-title">Start-up page</h3>
+              <p class="notif-panel-sub">Where PULSE opens when you sign in. Your choice overrides the default for your role.</p>
+            </header>
+            <label class="notif-field">
+              <span class="notif-field-label">Open PULSE on</span>
+              <select id="notif-default-page" class="select-aewttr">
+                ${defaultPageOptionsForCurrentUser().map((opt) => `<option value="${escapeHtml(opt.route)}" ${current.defaultPage === opt.route ? "selected" : ""}>${escapeHtml(opt.label)}</option>`).join("")}
+              </select>
+            </label>
+            <p class="notif-settings-note notif-settings-note--inline">Leaving this on <strong>Automatic</strong> uses the default for your role — currently <strong>${escapeHtml(roleDefaultPageLabel())}</strong>.</p>
+          </section>
+
+          <section class="notif-panel notif-panel--appearance">
+            <header class="notif-panel-head">
+              <h3 class="notif-panel-title">Appearance</h3>
+              <p class="notif-panel-sub">Applies to this account on every device.</p>
+            </header>
+            <div class="notif-theme-row" id="notif-theme-row">
+              ${[{ key: "light", label: "Light", icon: "bx-sun" }, { key: "dark", label: "Dark", icon: "bx-moon" }].map((t) => `
+                <button type="button" class="notif-theme-card${(typeof getCurrentTheme === "function" ? getCurrentTheme() : "light") === t.key ? " active" : ""}" data-theme="${t.key}">
+                  <i class="bx ${t.icon}"></i><span>${t.label}</span>
+                </button>`).join("")}
+            </div>
+          </section>
+
           <section class="notif-panel notif-panel--channels">
             <header class="notif-panel-head">
               <h3 class="notif-panel-title">Channels</h3>
@@ -130,20 +187,6 @@ PAGE_RENDERERS["notification-settings"] = function () {
                 <span class="aewttr-switch"><input type="checkbox" id="notif-ch-teams" ${current.channels.teams ? "checked" : ""}><span class="aewttr-switch-track"></span></span>
               </label>
             </div>
-          </section>
-
-          <section class="notif-panel notif-panel--landing">
-            <header class="notif-panel-head">
-              <h3 class="notif-panel-title">Landing Page</h3>
-              <p class="notif-panel-sub">Where PULSE opens when you log in.</p>
-            </header>
-            <label class="notif-field">
-              <span class="notif-field-label">Default page</span>
-              <select id="notif-default-page" class="select-aewttr">
-                ${defaultPageOptionsForCurrentUser().map((opt) => `<option value="${escapeHtml(opt.route)}" ${current.defaultPage === opt.route ? "selected" : ""}>${escapeHtml(opt.label)}</option>`).join("")}
-              </select>
-            </label>
-            <p class="notif-settings-note notif-settings-note--inline">"Automatic" uses PULSE's normal role-based default (Team Overview for Admins, Awaiting Finance for Finance Admins, Document Review for Document Admins, Dashboard otherwise).</p>
           </section>
 
           <section class="notif-panel notif-panel--docreview">
@@ -261,6 +304,8 @@ PAGE_RENDERERS["notification-settings"] = function () {
         </div>
       </div>
     `;
+
+    wireTheme();
 
     $("#notif-ch-email").addEventListener("change", (e) => { current.channels.email = e.target.checked; persistPrefs(); });
     $("#notif-ch-teams").addEventListener("change", (e) => { current.channels.teams = e.target.checked; persistPrefs(); });
