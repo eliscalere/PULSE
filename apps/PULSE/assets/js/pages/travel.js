@@ -1356,11 +1356,16 @@ function wirePrimaryTravelerPicker(body, travelers, onChange) {
    Leave numbering doesn't skip around Travel's. */
 function nextTrId(formMode) {
   const db = window.AEWTTR.db;
-  const prefix = formMode === "Leave" ? "LE" : "TR";
+  const prefix = formMode === "Leave" ? "LE" : formMode === "Contractor" ? "CTR-TR" : "TR";
+  /* Contractor's prefix has a dash in it, so splitting on "-" and comparing
+     parts[0] would compare "CTR" against "TR" and never match its own
+     numbering — every contractor request would restart at 0001. Match the
+     whole prefix anchored against the id instead, so each prefix keeps its
+     own counter regardless of how many dashes it contains. */
+  const re = new RegExp("^" + prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "-(\\d+)$");
   const max = db.travelRequests.reduce((m, r) => {
-    const parts = String(r.id || "").split("-");
-    if (parts[0] !== prefix) return m;
-    return Math.max(m, parseInt(parts[1], 10) || 0);
+    const match = re.exec(String(r.id || ""));
+    return match ? Math.max(m, parseInt(match[1], 10) || 0) : m;
   }, 0);
   return `${prefix}-${String(max + 1).padStart(4, "0")}`;
 }
@@ -3605,6 +3610,7 @@ function drawSubmitRequest(body, initialMode, editId) {
           </div>
           <div class="travel-wizard-actions-right">
             ${editing ? `<button type="button" class="btn-aewttr-outline" id="tw-cancel"${tip("Discard changes and return to My Travel")}>Cancel</button>` : ""}
+            ${editing ? `<button type="button" class="btn-aewttr-outline" id="tw-save-now"${tip(editing.chargeObjectStatus === "Assigned" ? "Save now from this step — generates a new document revision" : "Save now from this step")}><i class="bx bx-save"></i> Save</button>` : ""}
             <button type="button" class="btn-aewttr" id="tw-next"${tip("Continue to the next step")}>Continue</button>
           </div>
         </div>
@@ -3759,6 +3765,31 @@ function drawSubmitRequest(body, initialMode, editId) {
 
   if (editing) $("#tw-cancel", body).addEventListener("click", () => navigate("travel/mine"));
 
+  /* Reaching the Review step (and only the Review step) used to be the one
+     path that could ever call submitTravelRequest. An edit to an
+     already-submitted request — the case that generates a new document
+     revision — needs that same call, but making a small correction and then
+     leaving without clicking through every remaining step lost the edit
+     entirely: nothing had been saved yet, so there was nothing to revise.
+     This runs the same validation and the same submit call; the Review-step
+     button and the persistent Save button (added below, for edits) both
+     call it. */
+  async function trySubmit(triggerBtn) {
+    const finalCheck = validateTravelWizardStep(formMode === "Engineering" ? "basics" : "trip", body, formMode, travelers);
+    if (!finalCheck.ok) { toast(finalCheck.message, "error"); return; }
+    if (formMode === "Standard" && !travelWizardReadValue(body, "tr-purpose")) {
+      toast("Event purpose is required.", "error");
+      return;
+    }
+    travelerPicker.refresh();
+    if (triggerBtn) triggerBtn.disabled = true;
+    try {
+      await submitTravelRequest(body, formMode, travelers, db, editing);
+    } finally {
+      if (triggerBtn) triggerBtn.disabled = false;
+    }
+  }
+
   $("#tw-next", body).addEventListener("click", async () => {
     const step = steps[stepIndex];
     if (step.id === "type" && !formMode) {
@@ -3772,21 +3803,11 @@ function drawSubmitRequest(body, initialMode, editId) {
       renderWizard();
       return;
     }
-    const finalCheck = validateTravelWizardStep(formMode === "Engineering" ? "basics" : "trip", body, formMode, travelers);
-    if (!finalCheck.ok) { toast(finalCheck.message, "error"); return; }
-    if (formMode === "Standard" && !travelWizardReadValue(body, "tr-purpose")) {
-      toast("Event purpose is required.", "error");
-      return;
-    }
-    travelerPicker.refresh();
-    const nextBtn = $("#tw-next", body);
-    nextBtn.disabled = true;
-    try {
-      await submitTravelRequest(body, formMode, travelers, db, editing);
-    } finally {
-      nextBtn.disabled = false;
-    }
+    await trySubmit($("#tw-next", body));
   });
+
+  const saveNowBtn = $("#tw-save-now", body);
+  if (saveNowBtn) saveNowBtn.addEventListener("click", () => trySubmit(saveNowBtn));
 
   if (skipType || editing) syncTypeCards();
   renderWizard();
@@ -4657,6 +4678,9 @@ function openTeamEventModal(eventId, onDone) {
   `);
 
   function close() { modal.closest(".aewttr-modal-backdrop")?.remove(); }
+
+  const closeXBtn = $(".aewttr-modal-close", modal);
+  if (closeXBtn) closeXBtn.addEventListener("click", close);
 
   const cancelBtn = $("#te-cancel", modal);
   if (cancelBtn) cancelBtn.addEventListener("click", close);

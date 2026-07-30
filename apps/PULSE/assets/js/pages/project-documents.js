@@ -112,6 +112,8 @@ function openAddLinkedDocModal(proj, onDone) {
 
   function close() { modal.closest(".aewttr-modal-backdrop")?.remove(); }
 
+  const closeXBtn = $(".aewttr-modal-close", modal);
+  if (closeXBtn) closeXBtn.addEventListener("click", close);
   if (cancelBtn) cancelBtn.addEventListener("click", close);
   if (saveBtn) saveBtn.addEventListener("click", async () => {
     const url = (urlInput ? urlInput.value.trim() : "");

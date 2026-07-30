@@ -5031,6 +5031,8 @@ function openProjectContractorModal(proj, existing, onDone) {
   `);
 
   function close() { modal.closest(".aewttr-modal-backdrop")?.remove(); }
+  const closeXBtn = $(".aewttr-modal-close", modal);
+  if (closeXBtn) closeXBtn.addEventListener("click", close);
   const cancelBtn = $("#pc-cancel", modal);
   if (cancelBtn) cancelBtn.addEventListener("click", close);
 
@@ -7547,6 +7549,9 @@ function openTaskExpandModal(task, tasks, proj, onSave, opts) {
       </div>
     </div>
   `, { className: "task-expand-modal" });
+
+  const closeXBtn = $(".aewttr-modal-close", modal);
+  if (closeXBtn) closeXBtn.addEventListener("click", closeModal);
 
   const chatBody = $("#tex-notes-body", modal);
   const input = $("#tex-notes-input", modal);

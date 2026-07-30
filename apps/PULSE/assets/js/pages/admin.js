@@ -918,7 +918,7 @@ function drawListsConfig(body) {
 
   const SECTIONS = [
     { id: "portfolios",      title: "Portfolios",         hint: "Shown in the Portfolio picker on projects.",              icon: "bx-briefcase",      list: () => cfg.portfolios      || (cfg.portfolios      = []) },
-    { id: "contractors",     title: "Contractors",        hint: "Contractor company picker on projects.",                  icon: "bx-buildings",      list: () => cfg.contractors     || (cfg.contractors     = []) },
+    { id: "contractors",     title: "Contractors",        hint: "Contractor company picker on projects and contractor travel.", icon: "bx-buildings",      list: () => cfg.contractors     || (cfg.contractors     = []), useKnown: typeof getKnownContractorNames === "function" ? getKnownContractorNames : null },
     { id: "contracts",       title: "Contracts",          hint: "Contract number/name picker on the funding tab.",         icon: "bx-file-blank",     list: () => cfg.contracts       || (cfg.contracts       = []) },
     { id: "endItems",        title: "End Item Configs",   hint: "Config End Item picker on projects.",                     icon: "bx-chip",           list: () => cfg.configEndItems  || (cfg.configEndItems  = []) },
     { id: "programs",        title: "Program Offices",    hint: "Program Office picker on the funding tab.",               icon: "bx-buildings",      list: () => cfg.programs        || (cfg.programs        = []), useKnown: typeof getKnownProgramNames === "function" ? getKnownProgramNames : null },
@@ -947,14 +947,61 @@ function drawListsConfig(body) {
   });
 
   let activeSection = window.AEWTTR.state && window.AEWTTR.state.adminListsSection || SECTIONS[0].id;
+  /* Which contractor rows currently show their employee sub-list. Kept on
+     window.AEWTTR.state (like adminListsSection above) rather than a plain
+     local Set, so adding or renaming an employee — which redraws the whole
+     page through saveAndRefresh — doesn't close the row the admin is looking
+     at. */
+  if (!window.AEWTTR.state.adminExpandedContractors) window.AEWTTR.state.adminExpandedContractors = [];
+  const expandedContractors = new Set(window.AEWTTR.state.adminExpandedContractors);
 
   function getItems(s) {
     return s.useKnown ? s.useKnown() : (s.list() || []);
   }
 
+  /* useKnown sections display the union of the stored catalog and whatever is
+     actually in use on live records, so an item can appear here without being
+     in the raw stored array — e.g. a contractor typed directly onto a project
+     that nobody has ever added from this page. Rename/Remove only make sense
+     against something this page actually stores, so this decides which a row
+     gets: the stored index if there is one to act on, else a note that it
+     comes from live data and reappears on its own while still referenced. */
+  function storedIndex(s, name) {
+    const key = normalizeContractorName ? normalizeContractorName(name).toLowerCase() : String(name).trim().toLowerCase();
+    return s.list().findIndex((n) => String(n).trim().toLowerCase() === key);
+  }
+
+  function contractorRowExtra(company) {
+    if (!getKnownContractorPeople) return "";
+    const isOpen = expandedContractors.has(company);
+    const key = typeof contractorPeopleKey === "function" ? contractorPeopleKey(company) : company.toLowerCase();
+    const people = getKnownContractorPeople(company);
+    const storedPeople = (cfg.contractorPeople && cfg.contractorPeople[key]) || [];
+    const findStored = (name) => storedPeople.findIndex((p) => normalizeContractorName(p.name).toLowerCase() === name.toLowerCase());
+    return `
+      <button type="button" class="al-row-expand${isOpen ? " is-open" : ""}" data-people-toggle="${escapeHtml(company)}" aria-label="${isOpen ? "Hide" : "Show"} employees">
+        <i class="bx bx-chevron-${isOpen ? "down" : "right"}"></i> ${people.length} ${people.length === 1 ? "employee" : "employees"}
+      </button>
+      ${isOpen ? `
+      <div class="al-subpanel">
+        ${people.length ? people.map((p) => {
+          const idx = findStored(p.name);
+          return `<div class="al-subrow">
+            <span class="al-subrow-name">${escapeHtml(p.name)}${p.email ? ` <small>${escapeHtml(p.email)}</small>` : ""}</span>
+            ${idx >= 0 ? `<div class="al-row-actions">
+              <button class="btn-aewttr-ghost btn-aewttr-sm" data-people-rename="${escapeHtml(company)}" data-people-idx="${idx}"><i class="bx bx-pencil"></i></button>
+              <button class="btn-danger-outline btn-aewttr-sm" data-people-remove="${escapeHtml(company)}" data-people-idx="${idx}"><i class="bx bx-trash"></i></button>
+            </div>` : `<span class="al-subrow-derived">from project or travel data</span>`}
+          </div>`;
+        }).join("") : `<div class="al-subrow al-subrow-empty">No employees on file yet.</div>`}
+        <button type="button" class="btn-aewttr-outline btn-aewttr-sm" data-people-add="${escapeHtml(company)}" style="margin-top:8px;"><i class="bx bx-plus"></i> Add Employee</button>
+      </div>` : ""}`;
+  }
+
   function renderPanel(sectionId) {
     const s = SECTIONS.find(x => x.id === sectionId) || SECTIONS[0];
     const items = getItems(s);
+    const isContractors = s.id === "contractors";
     return `
       <div class="al-panel-header">
         <div>
@@ -964,15 +1011,26 @@ function drawListsConfig(body) {
         <button class="btn-aewttr btn-aewttr-sm" data-lists-add="${escapeHtml(s.id)}"><i class="bx bx-plus"></i> Add ${escapeHtml(SINGULAR[s.id] || s.title)}</button>
       </div>
       <div class="al-panel-list">
-        ${items.length ? items.map((item, i) => `
-          <div class="al-row">
-            <div class="al-row-icon"><i class="bx bx-tag-alt"></i></div>
-            <span class="al-row-name">${escapeHtml(item)}</span>
-            <div class="al-row-actions">
-              <button class="btn-aewttr-ghost btn-aewttr-sm" data-lists-rename="${escapeHtml(s.id)}" data-lists-idx="${i}"><i class="bx bx-pencil"></i> Rename</button>
-              <button class="btn-danger-outline btn-aewttr-sm" data-lists-remove="${escapeHtml(s.id)}" data-lists-idx="${i}"><i class="bx bx-trash"></i></button>
+        ${items.length ? items.map((item) => {
+          const idx = storedIndex(s, item);
+          /* Each contractor's row and its (possibly open) employee sub-panel
+             share one wrapper, so they stay stacked together in source order
+             — sibling <div>s here would all lay out at the .al-panel-list
+             flex level and the sub-panels would end up grouped at the bottom
+             instead of under their own row. */
+          return `
+          <div class="al-item">
+            <div class="al-row${isContractors ? " al-row--expandable" : ""}">
+              <div class="al-row-icon"><i class="bx bx-tag-alt"></i></div>
+              <span class="al-row-name">${escapeHtml(item)}</span>
+              ${idx >= 0 ? `<div class="al-row-actions">
+                <button class="btn-aewttr-ghost btn-aewttr-sm" data-lists-rename="${escapeHtml(s.id)}" data-lists-idx="${idx}"><i class="bx bx-pencil"></i> Rename</button>
+                <button class="btn-danger-outline btn-aewttr-sm" data-lists-remove="${escapeHtml(s.id)}" data-lists-idx="${idx}"><i class="bx bx-trash"></i></button>
+              </div>` : `<span class="al-subrow-derived">from project${isContractors ? " or travel" : ""} data</span>`}
             </div>
-          </div>`).join("") : `
+            ${isContractors ? contractorRowExtra(item) : ""}
+          </div>`;
+        }).join("") : `
           <div class="al-empty-state">
             <i class="bx bx-inbox" style="font-size:28px;color:var(--aewttr-muted);"></i>
             <p>No ${escapeHtml(s.title.toLowerCase())} yet.</p>
@@ -1063,6 +1121,78 @@ function drawListsConfig(body) {
         const ok = await confirmDialog({ title: `Remove ${meta.singular}`, message: `Remove "${item}" from the selectable list? Projects that already use it keep it until edited.`, confirmLabel: "Remove", danger: true });
         if (!ok) return;
         list.splice(idx, 1);
+        await saveAndRefresh();
+        toast("Removed", "success");
+      });
+    });
+
+    $all("[data-people-toggle]", body).forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const company = btn.dataset.peopleToggle;
+        if (expandedContractors.has(company)) expandedContractors.delete(company);
+        else expandedContractors.add(company);
+        window.AEWTTR.state.adminExpandedContractors = [...expandedContractors];
+        const panel = $("#al-panel", body);
+        if (panel) panel.innerHTML = renderPanel(activeSection);
+        wireListEvents();
+      });
+    });
+
+    function contractorPeopleStore(company) {
+      const key = typeof contractorPeopleKey === "function" ? contractorPeopleKey(company) : company.toLowerCase();
+      if (!cfg.contractorPeople || typeof cfg.contractorPeople !== "object") cfg.contractorPeople = {};
+      if (!Array.isArray(cfg.contractorPeople[key])) cfg.contractorPeople[key] = [];
+      return cfg.contractorPeople[key];
+    }
+
+    $all("[data-people-add]", body).forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const company = btn.dataset.peopleAdd;
+        const name = (await promptDialog({ title: "Add Employee", label: "Full name", placeholder: "e.g. Dana Reyes" }) || "").trim();
+        if (!name) return;
+        const store = contractorPeopleStore(company);
+        if (store.some((p) => p.name.toLowerCase() === name.toLowerCase())) { toast("That employee already exists.", "error"); return; }
+        const email = (await promptDialog({ title: "Email", label: "Email (optional)", placeholder: "name@company.com" }) || "").trim();
+        store.push({ name, email });
+        store.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+        expandedContractors.add(company);
+        window.AEWTTR.state.adminExpandedContractors = [...expandedContractors];
+        await saveAndRefresh();
+        toast("Employee added", "success");
+      });
+    });
+
+    $all("[data-people-rename]", body).forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const company = btn.dataset.peopleRename;
+        const idx = Number(btn.dataset.peopleIdx);
+        const store = contractorPeopleStore(company);
+        const current = store[idx];
+        if (!current) return;
+        const name = (await promptDialog({ title: "Rename Employee", label: "Full name", value: current.name }) || "").trim();
+        if (!name) return;
+        if (store.some((p, i) => i !== idx && p.name.toLowerCase() === name.toLowerCase())) { toast("That employee already exists.", "error"); return; }
+        current.name = name;
+        store.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+        expandedContractors.add(company);
+        window.AEWTTR.state.adminExpandedContractors = [...expandedContractors];
+        await saveAndRefresh();
+        toast("Renamed", "success");
+      });
+    });
+
+    $all("[data-people-remove]", body).forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const company = btn.dataset.peopleRemove;
+        const idx = Number(btn.dataset.peopleIdx);
+        const store = contractorPeopleStore(company);
+        const person = store[idx];
+        if (!person) return;
+        const ok = await confirmDialog({ title: "Remove Employee", message: `Remove "${person.name}" from ${company}'s employee list? Travel requests that already used them keep their name.`, confirmLabel: "Remove", danger: true });
+        if (!ok) return;
+        store.splice(idx, 1);
+        expandedContractors.add(company);
+        window.AEWTTR.state.adminExpandedContractors = [...expandedContractors];
         await saveAndRefresh();
         toast("Removed", "success");
       });

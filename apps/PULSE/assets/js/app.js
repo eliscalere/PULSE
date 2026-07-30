@@ -697,6 +697,16 @@ function getKnownContractorNames() {
   ((db && db.documents) || []).forEach((doc) => {
     parseContractorList(doc.contractorName).forEach((n) => names.add(n));
   });
+  /* Submitting contractor travel already calls rememberContractorNames, which
+     writes straight into cfg.contractors — so in the normal case this scan is
+     redundant with the first line above. It is here anyway so this list is
+     never missing a name just because some other write path (an import, a
+     seeded record, a future feature) put a company on a travel request
+     without going through that call, the same reasoning that has every other
+     source below scanned live rather than trusted to have remembered itself. */
+  ((db && db.travelRequests) || []).forEach((r) => {
+    parseContractorList(r.contractorCompany).forEach((n) => names.add(n));
+  });
   return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 function rememberContractorNames(names) {

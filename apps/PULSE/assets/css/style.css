@@ -1146,6 +1146,19 @@ a.btn-travel-action {
 .al-row-name { flex: 1; font-size: 13px; color: var(--aewttr-text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .al-row-actions { display: flex; gap: 4px; opacity: 0; flex-shrink: 0; }
 .al-row:hover .al-row-actions { opacity: 1; }
+/* A name pulled live from a project or travel record rather than the stored
+   catalog — there's nothing here to rename or remove, since it will just
+   reappear from that record next render. */
+.al-subrow-derived { font-size: 11px; color: var(--aewttr-muted); font-style: italic; flex-shrink: 0; }
+.al-item { display: flex; flex-direction: column; }
+.al-row-expand { width: 100%; margin: 0 0 0 26px; padding: 2px 0; border: 0; background: transparent; color: var(--aewttr-muted); font-size: 11.5px; text-align: left; cursor: pointer; }
+.al-row-expand:hover { color: var(--aewttr-text); }
+.al-subpanel { margin: 4px 0 6px 26px; padding: 8px 10px; border: 1px solid var(--aewttr-border); border-radius: var(--aewttr-radius-sm); background: var(--aewttr-surface-2); }
+.al-subrow { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 12.5px; }
+.al-subrow .al-row-actions { opacity: 1; }
+.al-subrow-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.al-subrow-name small { color: var(--aewttr-muted); font-weight: 400; margin-left: 4px; }
+.al-subrow-empty { color: var(--aewttr-muted); font-style: italic; }
 .al-empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 20px; color: var(--aewttr-muted); font-size: 13px; text-align: center; }
 /* legacy — kept for safety */
 .al-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
