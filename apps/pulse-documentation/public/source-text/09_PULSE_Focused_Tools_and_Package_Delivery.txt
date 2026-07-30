@@ -1,3 +1,5 @@
+                                            UNCLASSIFIED
+
 INTERNAL TECHNICAL GUIDE
 
 
@@ -18,7 +20,11 @@ Scope      Set by PULSE_PORT_CONFIG
 Proof      A write visible in the full app
 
                                             PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 01
-PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
 
 
 01 / THE DELIVERED PACKAGE SET
@@ -46,7 +52,11 @@ Firepit package folder and the releases folder and fails the whole run if any pa
 • node apps/PULSE/scripts/build-travel-packages.js
 
                                             PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 02
-PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
 
 
 02 / HOW A FOCUSED TOOL IS BUILT
@@ -74,7 +84,11 @@ WHAT THIS MEANS IN PRACTICE
   rebuilt together.
 
                                             PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 03
-PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
 
 
 03 / MY TRAVEL
@@ -104,7 +118,11 @@ An empty Upcoming tab means the signed-in user has no forthcoming trips. It is n
 the team has none; use All Travel or the travel calendar for that question.
 
                                             PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 04
-PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
 
 
 04 / TRAVEL CALENDAR AND EVENTS
@@ -128,7 +146,11 @@ The calendar is a planning view over existing records. Changing a trip is done o
 request, and the calendar reflects it after refresh.
 
                                             PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 05
-PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
 
 
 05 / TICKETS AND ISSUE INTAKE
@@ -158,7 +180,11 @@ result, the actual result, and the time. Post updates on the ticket record rathe
 message, so the history stays complete and the resolution is auditable.
 
                                             PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 06
-PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
 
 
 06 / PULSE CODE
@@ -186,7 +212,11 @@ Treat an edit made in PULSE CODE as a source change subject to the same release 
 any other, including rebuilding the affected packages.
 
                                             PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 07
-PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
 
 
 07 / SITE RESOLUTION IN WEB PARTS
@@ -218,7 +248,11 @@ reload the tool, which lets the cached-address step succeed. Persistent failure 
 ticket with the page address attached.
 
                                             PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 08
-PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                           FOCUSED TOOLS & PACKAGE DELIVERY
 
 
 08 / PUBLISHING AND VERIFYING A TOOL PAGE
@@ -247,3 +281,5 @@ permissions, notification delivery, or administrator-only control. Those require
 transaction on an approved site.
 
                                             PULSE FOCUSED TOOLS | VERSION 1.0 | JULY 2026 | 09
+
+                                            UNCLASSIFIED

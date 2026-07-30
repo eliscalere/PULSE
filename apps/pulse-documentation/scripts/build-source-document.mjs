@@ -29,6 +29,10 @@ const DOCUMENTS_DIR = path.join(ROOT, "documents");
 const PDF_OUT = path.join(ROOT, "public", "source-pdfs");
 const TEXT_OUT = path.join(ROOT, "public", "source-text");
 
+/* Classification marking carried on every page, top and bottom, as required for
+   a controlled document. Change here and regenerate every document. */
+const CLASSIFICATION = "UNCLASSIFIED";
+
 const PAGE_WIDTH = 96; // characters of usable width in the text extraction
 const FOOTER_INDENT = 44; // >= 40 so the reader treats the footer as furniture
 
@@ -142,7 +146,14 @@ function coverToText(doc, pageNumber) {
   if (cover.spine?.length) {
     lines.push("", ...textTable(cover.spine));
   }
-  return [...lines, "", footerLine(meta, pageNumber)];
+  return [centered(CLASSIFICATION), "", ...lines, "", footerLine(meta, pageNumber), "", centered(CLASSIFICATION)];
+}
+
+/* Centred and uppercase, so the reader's furniture filter drops it from the
+   on-screen view the same way it drops running headers. */
+function centered(text) {
+  const pad = Math.max(44, Math.floor((PAGE_WIDTH - text.length) / 2));
+  return `${" ".repeat(pad)}${text}`;
 }
 
 function footerLine(meta, pageNumber) {
@@ -155,12 +166,12 @@ function runningHeader(meta) {
 }
 
 function pageToText(doc, page, pageNumber) {
-  const lines = [runningHeader(doc.meta), "", "", page.title, ""];
+  const lines = [centered(CLASSIFICATION), "", runningHeader(doc.meta), "", "", page.title, ""];
   page.blocks.forEach((block, index) => {
     if (index) lines.push("");
     lines.push(...blockToText(block));
   });
-  lines.push("", footerLine(doc.meta, pageNumber));
+  lines.push("", footerLine(doc.meta, pageNumber), "", centered(CLASSIFICATION));
   return lines;
 }
 
@@ -209,6 +220,7 @@ function buildHtml(doc) {
   const { meta, cover, pages } = doc;
   const coverHtml = `
     <section class="sheet cover">
+      <div class="classification classification--top">${escapeHtml(CLASSIFICATION)}</div>
       <div class="cover-body">
         <div class="kicker">${escapeHtml(cover.kicker)}</div>
         <h1>${escapeHtml(cover.title)}</h1>
@@ -217,11 +229,13 @@ function buildHtml(doc) {
       </div>
       ${cover.spine?.length ? `<dl class="spine">${cover.spine.map(([term, value]) => `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>` : ""}
       <footer class="sheet-foot"><span>${escapeHtml(meta.footer)}</span><b>01</b></footer>
+      <div class="classification classification--bottom">${escapeHtml(CLASSIFICATION)}</div>
     </section>`;
 
   const pageHtml = pages
     .map((page, index) => `
     <section class="sheet">
+      <div class="classification classification--top">${escapeHtml(CLASSIFICATION)}</div>
       <header class="sheet-head"><span class="mark">PULSE</span><span>${escapeHtml(meta.runningHeader)}</span></header>
       <div class="sheet-body">
         <div class="kicker">${escapeHtml(page.kicker)}</div>
@@ -229,6 +243,7 @@ function buildHtml(doc) {
         ${page.blocks.map(blockToHtml).join("\n")}
       </div>
       <footer class="sheet-foot"><span>${escapeHtml(meta.footer)}</span><b>${String(index + 2).padStart(2, "0")}</b></footer>
+      <div class="classification classification--bottom">${escapeHtml(CLASSIFICATION)}</div>
     </section>`)
     .join("\n");
 
@@ -237,13 +252,17 @@ function buildHtml(doc) {
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body { font-family: Inter, -apple-system, "Helvetica Neue", Arial, sans-serif; color: ${BRAND.ink}; background: ${BRAND.field}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .sheet { position: relative; width: 8.5in; height: 11in; padding: 0.72in 0.78in 0.62in; display: flex; flex-direction: column; break-after: page; page-break-after: always; overflow: hidden; }
+  .sheet { position: relative; width: 8.5in; height: 11in; padding: 0.56in 0.78in 0.5in; display: flex; flex-direction: column; break-after: page; page-break-after: always; overflow: hidden; }
   .sheet:last-child { break-after: auto; page-break-after: auto; }
   .sheet-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 9px; border-bottom: 1px solid ${BRAND.line}; font-size: 7.5pt; letter-spacing: 1.1px; text-transform: uppercase; color: ${BRAND.graphite}; }
   .sheet-head .mark { color: ${BRAND.ink}; font-weight: 800; letter-spacing: 3.4px; }
   .sheet-body { flex: 1; padding-top: 26px; }
   .sheet-foot { display: flex; justify-content: space-between; align-items: baseline; padding-top: 9px; border-top: 1px solid ${BRAND.line}; font-size: 7pt; letter-spacing: 1px; text-transform: uppercase; color: ${BRAND.graphite}; }
   .sheet-foot b { color: ${BRAND.ink}; font-size: 8pt; }
+  .classification { position: absolute; left: 0; right: 0; text-align: center; font-size: 8.5pt; font-weight: 800; letter-spacing: 2.4px; color: ${BRAND.ink}; }
+  .classification--top { top: 0.24in; }
+  .classification--bottom { bottom: 0.2in; }
+  .cover .classification { color: ${BRAND.field}; }
   .kicker { color: ${BRAND.blue}; font-size: 7.5pt; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; }
   h1 { margin: 16px 0 14px; font-size: 34pt; line-height: 1.02; letter-spacing: -1.4px; }
   h2 { margin: 9px 0 18px; font-size: 17pt; line-height: 1.16; letter-spacing: -0.5px; }

@@ -132,6 +132,24 @@ function getAssetUrl(url: string): string {
    Anything that links to one has to check first, or it renders a dead link that
    resolves against the SharePoint page and returns the site's own HTML. On the
    dev server, where assets are served normally, they are always available. */
+/* A data: URI opened in a tab has no filename and no way back. Converting it to
+   a Blob lets the browser save it as the controlled document's own name. */
+function downloadPdf(doc: Document) {
+  const uri = getAssetUrl(`/source-pdfs/${doc.pdfFile}`);
+  if (!uri.startsWith("data:")) { window.open(uri, "_blank", "noreferrer"); return; }
+  const base64 = uri.slice(uri.indexOf(",") + 1);
+  const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+  const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = doc.pdfFile;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  /* Revoke on the next tick; revoking synchronously cancels the download. */
+  window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
 function hasAsset(url: string): boolean {
   if (typeof window === "undefined") return false;
   const assets = (window as unknown as { __PULSE_ASSETS__?: Record<string, string> }).__PULSE_ASSETS__;
@@ -368,7 +386,7 @@ export default function Home() {
       <button className={view === "brand" ? "brand-button active" : "brand-button"} onClick={openBrand}><img suppressHydrationWarning src={getAssetUrl("/brand-assets/PULSE_Dot_Mark_White_Transparent.png")} alt="" /><span><b>Brand guidelines</b><small>Identity & assets</small></span><strong>→</strong></button>
     </aside>
     <section className="content" id="top">
-      <header className="topbar"><button className="menu" aria-label="Open documentation navigation" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><div className="crumb">PULSE / <span>{isSearching ? "Search" : view === "brand" ? "Brand guidelines" : `${selected.title}${currentSection ? ` / ${currentSection.title.replace(/^\d+(?:\.\d+)?\s*\/\s*/, "")}` : ""}`}</span></div>{view === "brand" ? <a suppressHydrationWarning className="source-link" href={getAssetUrl("/brand-assets/PULSE_Brand_Identity_Guide_v1.3.pdf")} download>Download guide PDF ↓</a> : <button type="button" className="source-link source-link--action" onClick={() => window.print()}>Save as PDF ↓</button>}</header>
+      <header className="topbar"><button className="menu" aria-label="Open documentation navigation" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><div className="crumb">PULSE / <span>{isSearching ? "Search" : view === "brand" ? "Brand guidelines" : `${selected.title}${currentSection ? ` / ${currentSection.title.replace(/^\d+(?:\.\d+)?\s*\/\s*/, "")}` : ""}`}</span></div>{view === "brand" ? <a suppressHydrationWarning className="source-link" href={getAssetUrl("/brand-assets/PULSE_Brand_Identity_Guide_v1.3.pdf")} download>Download guide PDF ↓</a> : <button type="button" className="source-link source-link--action" onClick={() => (pdfsBundled ? downloadPdf(selected) : window.print())}>{pdfsBundled ? "Download PDF ↓" : "Print ↓"}</button>}</header>
       <div className="hero"><div className="eyebrow">PULSE KNOWLEDGE BASE <i /></div><h1>Search PULSE documentation.</h1><p>Ask a plain-language question, find the relevant section, and verify it against the exact source page.</p>
         <label className="search"><span>⌕</span><input ref={searchInputRef} value={query} onChange={(event) => search(event.target.value)} placeholder="Ask anything: How do I submit travel? What lists does PULSE use?" aria-label="Search the PULSE documentation source library" />{query ? <button type="button" className="search-clear" onClick={() => search("")} aria-label="Clear search">✕</button> : <kbd>⌘ K</kbd>}</label>
         <div className="quick">Try: <button onClick={() => search("document review")}>document review</button><button onClick={() => search("project tracker")}>project tracker</button><button onClick={() => search("Firepit package")}>Firepit package</button></div>
@@ -387,8 +405,10 @@ export default function Home() {
         </div>)}</div>
       </section> : view === "brand" ? <BrandPage /> : <>
         <section className="document-header"><div><div className="section-kicker">DOCUMENT {selected.number} · {selected.type}</div><h2>{selected.title}</h2><p>{selected.description}</p><div className="meta"><span>{selected.pages} pages</span><span>{selected.audience}</span></div></div><div className="doc-actions">
-            <button type="button" className="doc-action doc-action--primary" onClick={() => window.print()}><span>PDF</span><b>Save this document</b><small>Prints the full document, figures included</small></button>
-            {pdfsBundled && <a suppressHydrationWarning className="doc-action" href={getAssetUrl(`/source-pdfs/${selected.pdfFile}`)} target="_blank" rel="noreferrer"><span>SRC</span><b>Controlled source</b><small>Original portfolio PDF ↗</small></a>}
+            {pdfsBundled
+              ? <button type="button" className="doc-action doc-action--primary" onClick={() => downloadPdf(selected)}><span>PDF</span><b>Download this document</b><small>Controlled PDF · UNCLASSIFIED on every page</small></button>
+              : <button type="button" className="doc-action doc-action--primary" onClick={() => window.print()}><span>PRINT</span><b>Print this document</b><small>Full document with figures · marked UNCLASSIFIED</small></button>}
+            <button type="button" className="doc-action" onClick={() => window.print()}><span>PRINT</span><b>Print or save a copy</b><small>Uses the browser print dialog</small></button>
           </div></section>
         <section className="reader" id="reader-top">
           <div className="reader-heading"><div><span className="reading-position">{selectedPages.length || selected.pages} sections · continuous</span><h3>Read straight through, or jump from the sidebar</h3></div><div className="topics">{selected.topics.map((topic) => <span key={topic}>{topic}</span>)}</div></div>

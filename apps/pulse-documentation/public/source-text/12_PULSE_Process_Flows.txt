@@ -1,3 +1,5 @@
+                                            UNCLASSIFIED
+
 HOW WORK MOVES
 
 
@@ -19,7 +21,11 @@ Exceptions   Shown, not hidden
 Authority    SOPs, not this document
 
                                             PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 01
-PULSE                                                                              PROCESS FLOWS
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                              PROCESS FLOWS
 
 
 01 / HOW TO READ A FLOW
@@ -42,7 +48,11 @@ to move the record there; role boundaries are defined in the procedures and enfo
 application.
 
                                             PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 02
-PULSE                                                                              PROCESS FLOWS
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                              PROCESS FLOWS
 
 
 02 / TRAVEL REQUEST
@@ -66,7 +76,11 @@ Approval is not the end of the record. A trip stays flagged in My Travel until e
 has filed a debrief, which is why the closed state here is the debrief rather than the approval.
 
                                             PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 03
-PULSE                                                                              PROCESS FLOWS
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                              PROCESS FLOWS
 
 
 03 / DOCUMENT REVIEW
@@ -90,7 +104,11 @@ never overwritten. A file stored under a project has not been through this loop 
 review evidence.
 
                                             PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 04
-PULSE                                                                              PROCESS FLOWS
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                              PROCESS FLOWS
 
 
 04 / SUPPORT TICKET
@@ -111,7 +129,11 @@ standalone Tickets package is the one the full application shows, so the same pr
 be opened twice.
 
                                             PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 05
-PULSE                                                                              PROCESS FLOWS
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                              PROCESS FLOWS
 
 
 05 / SITE RESOLUTION IN A WEB PART
@@ -141,3 +163,5 @@ reload the tool; that lets the cached-address step succeed. Persistent failure i
 the page address attached.
 
                                             PULSE PROCESS FLOWS | VERSION 1.0 | JULY 2026 | 06
+
+                                            UNCLASSIFIED

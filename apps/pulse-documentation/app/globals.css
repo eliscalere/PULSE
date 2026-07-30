@@ -337,13 +337,29 @@ main { display:flex; min-height:100vh; }.sidebar { position:fixed; z-index:10; i
   .reader-pagination span { display:none; }
 }
 
+.print-classification { display:none; }
+
 /* ---------- print / save as PDF ----------
    The delivered package carries no controlled PDFs, so "Save as PDF" prints the
    rendered document. That has to produce a real document, not a screenshot of an
    app: the shell, search, and navigation come out, the document comes through at
    print scale, and sections break on page boundaries with figures kept whole. */
 @media print {
-  @page { size: Letter portrait; margin: 0.7in 0.75in; }
+  @page { size: Letter portrait; margin: 0.6in 0.75in 0.55in; }
+  /* The marking rides in the section header and footer rows, which are real
+     content and therefore cannot collide with anything. Chrome's print engine
+     places fixed elements unpredictably relative to the page box (negative
+     offsets move them down, not up), and generated content on a block cannot
+     repeat across a page break — so neither of those is used here. The
+     controlled PDFs carry a true per-page marking; this marks the printed copy
+     at the top and bottom of every section. */
+  .formatted-page-header::after, .document-header::after {
+    content:"UNCLASSIFIED"; align-self:flex-start;
+    font-size:8pt; font-weight:800; letter-spacing:2.2px; color:#070708; white-space:nowrap;
+  }
+  .document-header { display:flex !important; justify-content:space-between; align-items:flex-start; gap:24px; }
+  .formatted-page > footer::after { content:"  ·  UNCLASSIFIED"; font-weight:800; letter-spacing:2.2px; }
+  .document-header { break-after:page; }
   html, body { background:#fff !important; }
   .sidebar, .topbar, .hero, .reader-end, .search-view, .pulse-doc-loader,
   .doc-actions, .menu, .reader-heading .topics { display:none !important; }
@@ -360,7 +376,6 @@ main { display:flex; min-height:100vh; }.sidebar { position:fixed; z-index:10; i
   /* One source section per printed page, so the printed document paginates like
      the controlled document rather than running continuously. */
   .formatted-page { break-before:page; border:0 !important; background:#fff !important; box-shadow:none !important; }
-  .reader-section:first-child .formatted-page { break-before:avoid; }
   .formatted-page-header { padding:0 0 10px !important; min-height:0 !important; border-bottom:1px solid #d5d7dc !important; background:#fff !important; }
   .formatted-page-header span { font-size:8pt !important; letter-spacing:1px; text-transform:uppercase; color:#51545a !important; }
   .formatted-page-header h2, .formatted-page-header b { font-size:13pt !important; }
@@ -417,3 +432,4 @@ main { display:flex; min-height:100vh; }.sidebar { position:fixed; z-index:10; i
   .doc-figure-zoom { opacity:1; }
 }
 @media print { .figure-lightbox { display:none !important; } .doc-figure-zoom { display:none !important; } .doc-figure-open { border-color:var(--line) !important; } }
+

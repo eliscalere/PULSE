@@ -1,3 +1,5 @@
+                                            UNCLASSIFIED
+
 VISUAL REFERENCE
 
 
@@ -19,7 +21,11 @@ Data       Synthetic, example.mil
 Captured   July 2026
 
                                             PULSE INTERFACE REFERENCE | VERSION 1.0 | JULY 2026 | 01
-PULSE                                                                        INTERFACE REFERENCE
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                        INTERFACE REFERENCE
 
 
 01 / SITUATIONAL AWARENESS
@@ -35,7 +41,11 @@ FIGURE  Overview — portfolio
 Team and portfolio roll-up for status, workload, and approvals.
 
                                             PULSE INTERFACE REFERENCE | VERSION 1.0 | JULY 2026 | 02
-PULSE                                                                        INTERFACE REFERENCE
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                        INTERFACE REFERENCE
 
 
 02 / PROJECT WORKSPACES
@@ -68,7 +78,11 @@ FIGURE  People
 Assigned members and roles for the workspace.
 
                                             PULSE INTERFACE REFERENCE | VERSION 1.0 | JULY 2026 | 03
-PULSE                                                                        INTERFACE REFERENCE
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                        INTERFACE REFERENCE
 
 
 03 / RECURRING OPERATIONS
@@ -84,7 +98,11 @@ FIGURE  Document review
 Review packages moving through concurrence and signature.
 
                                             PULSE INTERFACE REFERENCE | VERSION 1.0 | JULY 2026 | 04
-PULSE                                                                        INTERFACE REFERENCE
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                        INTERFACE REFERENCE
 
 
 04 / TRAVEL
@@ -108,7 +126,11 @@ FIGURE  Travel debrief
 Post-trip debrief capture against an approved request.
 
                                             PULSE INTERFACE REFERENCE | VERSION 1.0 | JULY 2026 | 05
-PULSE                                                                        INTERFACE REFERENCE
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                        INTERFACE REFERENCE
 
 
 05 / SUPPORT AND ADMINISTRATION
@@ -132,7 +154,11 @@ FIGURE  Activity log
 Audit record of actions by actor, area, and time.
 
                                             PULSE INTERFACE REFERENCE | VERSION 1.0 | JULY 2026 | 06
-PULSE                                                                        INTERFACE REFERENCE
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                                        INTERFACE REFERENCE
 
 
 06 / HOW TO USE THIS REFERENCE
@@ -163,3 +189,5 @@ RELATED MATERIAL
 • Screenshot Manifest in the documentation source, for the per-file capture record.
 
                                             PULSE INTERFACE REFERENCE | VERSION 1.0 | JULY 2026 | 07
+
+                                            UNCLASSIFIED

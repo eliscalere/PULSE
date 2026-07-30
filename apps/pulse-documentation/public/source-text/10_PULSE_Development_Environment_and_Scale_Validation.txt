@@ -1,3 +1,5 @@
+                                            UNCLASSIFIED
+
 FOLLOW-ON WORK
 
 
@@ -19,7 +21,11 @@ Blocks   Confident scale claims
 Output   A written decision record
 
                                             PULSE DEV & SCALE | VERSION 1.0 | JULY 2026 | 01
-PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
 
 
 01 / THERE IS NO DEVELOPMENT ENVIRONMENT
@@ -50,7 +56,11 @@ cannot substitute for a SharePoint site, because it exercises none of the REST t
 provisioning, permission, paging, or identity behaviour that carries the real risk.
 
                                             PULSE DEV & SCALE | VERSION 1.0 | JULY 2026 | 02
-PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
 
 
 02 / STAND UP A DEVELOPMENT SITE
@@ -83,7 +93,11 @@ volumes needed for scale testing are far larger than anything worth copying, and
 real personal and project information into a site with weaker controls.
 
                                             PULSE DEV & SCALE | VERSION 1.0 | JULY 2026 | 03
-PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
 
 
 03 / SCALE CEILINGS ALREADY IN THE CODE
@@ -121,7 +135,11 @@ unindexed column fails rather than degrading. Adding the right indexed columns i
 prerequisite, not an optimisation.
 
                                             PULSE DEV & SCALE | VERSION 1.0 | JULY 2026 | 04
-PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
 
 
 04 / THE REFRESH AND MEMORY MODEL
@@ -149,7 +167,11 @@ different store is exactly what this evaluation should decide. It should not be 
 intuition, which is the current situation.
 
                                             PULSE DEV & SCALE | VERSION 1.0 | JULY 2026 | 05
-PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
 
 
 05 / BUILD A LARGE DATA SET
@@ -183,7 +205,11 @@ or stale configuration value is a realistic accident; require the target site to
 explicitly rather than defaulted.
 
                                             PULSE DEV & SCALE | VERSION 1.0 | JULY 2026 | 06
-PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
 
 
 06 / WHAT TO MEASURE AND PROVOKE
@@ -221,7 +247,11 @@ Record the numbers, the site state, and the package version with every result. A
 claim without those three is not reproducible and will not survive the next change.
 
                                             PULSE DEV & SCALE | VERSION 1.0 | JULY 2026 | 07
-PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
 
 
 07 / EVALUATING DATAVERSE
@@ -255,7 +285,11 @@ separate sign-in, and its simplicity follows from that. Introducing Dataverse tr
 simplicity for capability, and the evaluation should state the cost as clearly as the benefit.
 
                                             PULSE DEV & SCALE | VERSION 1.0 | JULY 2026 | 08
-PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
+
+                                            UNCLASSIFIED
+                                            UNCLASSIFIED
+
+PULSE                                                 DEVELOPMENT ENVIRONMENT & SCALE VALIDATION
 
 
 08 / WHAT A FINISHED EVALUATION PRODUCES
@@ -287,3 +321,5 @@ RELATED MATERIAL
   layer and inherits these ceilings.
 
                                             PULSE DEV & SCALE | VERSION 1.0 | JULY 2026 | 09
+
+                                            UNCLASSIFIED
