@@ -1,6 +1,19 @@
+/* Admins and Finance Admins open Travel to work the queue, not to look at their
+   own trips, so the tab lands them on All Travel. This only seeds the initial
+   value — switching the view is remembered for the rest of the session, and an
+   explicit route ("travel/mine") still forces its own view. */
+function defaultTravelListViewForUser() {
+  const canApprove = typeof canApproveTravelRequests === "function" && canApproveTravelRequests();
+  const canFinance = typeof canAssignTravelCo === "function" && canAssignTravelCo();
+  return (canApprove || canFinance) ? "All Travel" : "My Travel";
+}
+
 PAGE_RENDERERS.travel = function (parts) {
   if (!parts || !parts.length) {
-    navigate("travel/mine");
+    /* The Travel tab lands here. Approvers and Finance Admins open Travel to
+       work the queue, not to look at their own trips, so they go to All Travel;
+       everyone else keeps My Travel. */
+    navigate(defaultTravelListViewForUser() === "All Travel" ? "travel/all" : "travel/mine");
     return;
   }
   renderTravelPage(parts);
@@ -222,7 +235,10 @@ function renderTravelPage(parts) {
 
   const tool = TRAVEL_TOOLS.find((t) => t.key === sub);
   if (!tool) {
-    navigate("travel/mine");
+    /* The Travel tab lands here. It used to redirect everyone to travel/mine,
+       which forces the My Travel view — so an approver always started on their
+       own trips rather than the queue they came to work. */
+    navigate(defaultTravelListViewForUser() === "All Travel" ? "travel/all" : "travel/mine");
     return;
   }
 
@@ -415,7 +431,7 @@ async function revokeTravelRequest(trId, onDone) {
    on every future visit to the plain "travel/list" route. */
 function drawTravelList(body, forcedView) {
   if (!window.AEWTTR.state.travelListView) {
-    window.AEWTTR.state.travelListView = "My Travel";
+    window.AEWTTR.state.travelListView = defaultTravelListViewForUser();
   }
   if (forcedView) window.AEWTTR.state.travelListView = forcedView;
   if (!window.AEWTTR.state.travelApproveFilter) window.AEWTTR.state.travelApproveFilter = "Upcoming";
