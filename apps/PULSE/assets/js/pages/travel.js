@@ -39,6 +39,7 @@ const TRAVEL_APPROVE_FILTER_TIPS = {
   All: "Show all travel requests",
   Upcoming: "Active requests and upcoming trips",
   Submitted: "Submitted and awaiting administrative actions",
+  "Awaiting Finance": "Submitted travel still needing a charge object (C/O) number assigned",
   Withdrawn: "Withdrawn by the requester",
   Cancelled: "Cancelled by requester or admin",
   Completed: "Travel completed"
@@ -170,17 +171,24 @@ function renderTravelPage(parts) {
   // Back-compat: these three used to be separate pages. Now they're all
   // the unified "list" page with a view forced to match what the old link
   // meant — "approve" also jumps the status filter to Pending, matching
-  // the old Approvals queue's default.
-  if (sub === "mine" || sub === "all" || sub === "approve") {
+  // the old Approvals queue's default. "finance" is the Finance Admin
+  // landing route — All Travel pre-filtered to requests awaiting a C/O.
+  if (sub === "mine" || sub === "all" || sub === "approve" || sub === "finance") {
     if (sub === "approve" && !canAccessTravelApprovals()) {
       navigate("travel/mine");
       toast("Travel approvals are only available to Admins and Finance Admins.", "error");
+      return;
+    }
+    if (sub === "finance" && !canAssignTravelCo()) {
+      navigate("travel/mine");
+      toast("Awaiting Finance is only available to Admins and Finance Admins.", "error");
       return;
     }
     const listTool = TRAVEL_TOOLS.find((t) => t.key === "list");
     return renderTravelShell("list", (body) => {
       setTopbar(listTool.title, listTool.sub, "");
       if (sub === "approve") window.AEWTTR.state.travelApproveFilter = "Submitted";
+      if (sub === "finance") window.AEWTTR.state.travelApproveFilter = "Awaiting Finance";
       drawTravelList(body, sub === "mine" ? "My Travel" : "All Travel");
     });
   }
@@ -408,7 +416,7 @@ function drawTravelList(body, forcedView) {
   if (!window.AEWTTR.state.travelListSearch) window.AEWTTR.state.travelListSearch = "";
 
   const VIEWS = ["My Travel", "All Travel"];
-  const STATUS_FILTERS = ["All", "Upcoming", "Submitted", "Withdrawn", "Cancelled", "Completed"];
+  const STATUS_FILTERS = ["All", "Upcoming", "Submitted", "Awaiting Finance", "Withdrawn", "Cancelled", "Completed"];
 
   function render() {
     const db = window.AEWTTR.db;
@@ -418,6 +426,9 @@ function drawTravelList(body, forcedView) {
     const filterCounts = {
       Submitted: isAll && canAccessTravelApprovals()
         ? requests.filter((r) => r.status === "Submitted" && doesTravelNeedCurrentUserAction(r)).length
+        : 0,
+      "Awaiting Finance": isAll && canAssignTravelCo()
+        ? requests.filter((r) => r.status === "Submitted" && r.chargeObjectStatus === "Pending" && travelCategory(r) !== "Leave").length
         : 0
     };
 
@@ -567,6 +578,7 @@ function applyTravelListFilter(list, statusFilt) {
   const filt = statusFilt || "Upcoming";
   return (list || []).filter((r) => {
     if (filt === "Upcoming") return isUpcomingOrCurrentTravel(r);
+    if (filt === "Awaiting Finance") return r.status === "Submitted" && r.chargeObjectStatus === "Pending" && travelCategory(r) !== "Leave";
     if (filt !== "All" && r.status !== filt) return false;
     return true;
   });

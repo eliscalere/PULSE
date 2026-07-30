@@ -15928,7 +15928,11 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
   .proj-list-row { flex-wrap: wrap; }
   .proj-list-meta, .proj-list-date { flex: 0 0 auto; }
 }
-.pgroup-workspace { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 590px; background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 28px rgba(21, 38, 64, .07); }
+/* The content column scrolls inside this panel, so the panel needs a bounded
+   height for that to work. Without one it grew past its own clipped box and the
+   last stretch of a long tab — the Reporting tab's milestone table especially —
+   was cut off with no way to reach it. */
+.pgroup-workspace { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 590px; max-height: calc(100vh - 178px); background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 28px rgba(21, 38, 64, .07); }
 .pgroup-workspace-sidebar { display: flex; flex-direction: column; gap: 18px; padding: 20px 14px; background: var(--aewttr-surface-2); border-right: 1px solid var(--aewttr-border); }
 .pgroup-workspace-identity { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 0 6px; }
 .pgroup-workspace-identity .pgroup-kicker { margin: 0; }
@@ -15946,12 +15950,17 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .pgroup-workspace-nav-btn:hover { background: rgba(16, 88, 180, .08); color: var(--aewttr-blue); }
 .pgroup-workspace-nav-btn.active { background: var(--aewttr-blue); color: #fff; box-shadow: 0 3px 8px rgba(16, 88, 180, .2); }
 .pgroup-workspace-nav-btn.active span { color: var(--aewttr-blue); }
-.pgroup-workspace-main { min-width: 0; display: flex; flex-direction: column; background: var(--aewttr-surface); }
+/* The flex/grid item's automatic minimum size is its content, which pushed this
+   column past the panel and let overflow:hidden clip the end of long tabs.
+   min-height:0 lets it shrink so the inner content region can scroll. */
+.pgroup-workspace-main { min-width: 0; display: flex; flex-direction: column; background: var(--aewttr-surface); min-height: 0; }
 .pgroup-workspace-head { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 20px 22px 16px; border-bottom: 1px solid var(--aewttr-border); }
 .pgroup-workspace-head .pgroup-kicker { margin-bottom: 3px; }
 .pgroup-workspace-head h3 { margin: 0; color: var(--aewttr-text); font-size: 18px; }
 .pgroup-workspace-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.pgroup-workspace-content { flex: 1; min-width: 0; padding: 20px 22px 26px; overflow: auto; }
+/* min-height:0 is what actually lets a grid item scroll; without it the item's
+   automatic minimum size is its content, so overflow:auto never engages. */
+.pgroup-workspace-content { flex: 1; min-width: 0; min-height: 0; padding: 20px 22px 26px; overflow: auto; }
 .pgroup-people-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 10px; }
 .pgroup-person-row { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 12px; background: var(--aewttr-surface); border: 1px solid var(--aewttr-border); border-radius: 9px; text-align: left; color: var(--aewttr-text); }
 .pgroup-person-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
@@ -16060,7 +16069,8 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
   .grp-rep-briefing, .grp-rep-export-sect-head { align-items: flex-start; flex-direction: column; }
   .grp-rep-briefing-stats, .grp-rep-export-action { justify-content: flex-start; }
   .grp-rep-mode-grid, .grp-rep-builder-grid { grid-template-columns: 1fr; }
-  .pgroup-workspace { grid-template-columns: 1fr; min-height: 0; overflow: visible; }
+  .pgroup-workspace { grid-template-columns: 1fr; min-height: 0; max-height: none; overflow: visible; }
+  .pgroup-workspace-content { overflow: visible; }
   .pgroup-workspace-sidebar { gap: 12px; border-right: 0; border-bottom: 1px solid var(--aewttr-border); }
   .pgroup-workspace-summary { grid-template-columns: repeat(3, max-content); gap: 14px; }
   .pgroup-workspace-nav { flex-direction: row; overflow-x: auto; padding-bottom: 2px; }
@@ -16086,7 +16096,7 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
   min-height: 0 !important;
 }
 
-.grp-rep-root { display: flex; flex-direction: column; gap: 16px; min-height: 600px; padding: 16px; }
+.grp-rep-root { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
 
 /* ── Summary card: what the deck contains + Generate button. Everything
    else that used to live here (Output/Slide layout/Include toggles,

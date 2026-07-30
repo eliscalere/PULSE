@@ -2013,6 +2013,29 @@ async function ensureTicketFields(siteUrl) {
   return ensureIssueFields(siteUrl);
 }
 
+/* Group reporting had no ensure step, so on any site whose "PULSE Group Reporting"
+   list predates a column — or was never provisioned — filterItemPayloadForExistingFields
+   dropped the payload silently and every save on the group Reporting tab looked
+   like it worked until the page was reopened. Same class of bug as the action-item
+   columns below. */
+let _groupReportFieldsReady = false;
+async function ensureGroupReportFields(siteUrl) {
+  if (_groupReportFieldsReady || !siteUrl || typeof sharePointAdapter === "undefined" || !sharePointAdapter.ensureField) return;
+  const schema = typeof SHAREPOINT_SCHEMA !== "undefined" && SHAREPOINT_SCHEMA[SP_LISTS.groupReportConfig];
+  if (schema && typeof sharePointAdapter.ensureListSchema === "function") {
+    const results = await sharePointAdapter.ensureListSchema(siteUrl, { [SP_LISTS.groupReportConfig]: schema });
+    const result = results && results[0];
+    const failed = result && (result.errors || []).find((entry) => entry && entry.error);
+    if (failed) throw failed.error;
+    _groupReportFieldsReady = true;
+    return;
+  }
+  for (const field of (schema && schema.fields) || []) {
+    await sharePointAdapter.ensureField(siteUrl, SP_LISTS.groupReportConfig, field);
+  }
+  _groupReportFieldsReady = true;
+}
+
 let _appSettingsFieldsReady = false;
 async function ensureAppSettingsFields(siteUrl) {
   if (_appSettingsFieldsReady || !siteUrl || typeof sharePointAdapter === "undefined" || !sharePointAdapter.ensureField) return;
@@ -2077,6 +2100,9 @@ async function writeRecord(kind, obj) {
   }
   if (kind === "appSettings") {
     await ensureAppSettingsFields(siteUrl);
+  }
+  if (kind === "groupReportConfig") {
+    await ensureGroupReportFields(siteUrl);
   }
   if (kind === "meetingSession") {
     await ensureMeetingAgendaField(siteUrl);

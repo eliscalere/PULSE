@@ -36,7 +36,8 @@ PAGE_RENDERERS["notification-settings"] = function () {
         digestFrequency: current.documents.digestFrequency
       },
       digest: { ...current.digest },
-      actionItemDigest: { ...current.actionItemDigest }
+      actionItemDigest: { ...current.actionItemDigest },
+      defaultPage: current.defaultPage || ""
     };
   }
 
@@ -72,6 +73,16 @@ PAGE_RENDERERS["notification-settings"] = function () {
 
   function documentsAreaOn() {
     return current.everything || current.areas.includes("Documents");
+  }
+
+  function defaultPageOptionsForCurrentUser() {
+    const canAdmin = typeof canCurrentUserAccessAdmin === "function" ? canCurrentUserAccessAdmin() : false;
+    const canFinance = typeof canAssignTravelCo === "function" ? canAssignTravelCo() : false;
+    return DEFAULT_PAGE_OPTIONS.filter((opt) => {
+      if (opt.route === "admin") return canAdmin;
+      if (opt.route === "travel/finance") return canFinance;
+      return true;
+    });
   }
 
   function toneCardHtml(t) {
@@ -119,6 +130,20 @@ PAGE_RENDERERS["notification-settings"] = function () {
                 <span class="aewttr-switch"><input type="checkbox" id="notif-ch-teams" ${current.channels.teams ? "checked" : ""}><span class="aewttr-switch-track"></span></span>
               </label>
             </div>
+          </section>
+
+          <section class="notif-panel notif-panel--landing">
+            <header class="notif-panel-head">
+              <h3 class="notif-panel-title">Landing Page</h3>
+              <p class="notif-panel-sub">Where PULSE opens when you log in.</p>
+            </header>
+            <label class="notif-field">
+              <span class="notif-field-label">Default page</span>
+              <select id="notif-default-page" class="select-aewttr">
+                ${defaultPageOptionsForCurrentUser().map((opt) => `<option value="${escapeHtml(opt.route)}" ${current.defaultPage === opt.route ? "selected" : ""}>${escapeHtml(opt.label)}</option>`).join("")}
+              </select>
+            </label>
+            <p class="notif-settings-note notif-settings-note--inline">"Automatic" uses PULSE's normal role-based default (Team Overview for Admins, Awaiting Finance for Finance Admins, Dashboard otherwise).</p>
           </section>
 
           <section class="notif-panel notif-panel--docreview">
@@ -239,6 +264,11 @@ PAGE_RENDERERS["notification-settings"] = function () {
 
     $("#notif-ch-email").addEventListener("change", (e) => { current.channels.email = e.target.checked; persistPrefs(); });
     $("#notif-ch-teams").addEventListener("change", (e) => { current.channels.teams = e.target.checked; persistPrefs(); });
+
+    $("#notif-default-page").addEventListener("change", (e) => {
+      current.defaultPage = e.target.value || "";
+      persistPrefs();
+    });
 
     $("#notif-everything").addEventListener("change", (e) => {
       current.everything = e.target.checked;

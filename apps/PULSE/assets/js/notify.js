@@ -154,6 +154,24 @@ const DEFAULT_DOC_REVIEW_DIGEST_FREQUENCY = "daily";
 
 const DIGEST_FREQUENCIES = ["daily", "weekly"];
 
+// Routable pages a user can pick as their personal landing page (Settings →
+// Notifications → Default page). Mirrors app.js's NAV_ITEMS plus the two
+// Travel sub-views that matter most for that role — kept as a flat string
+// list (not the NAV_ITEMS objects) so notify.js doesn't need to depend on
+// app.js's load order.
+const DEFAULT_PAGE_OPTIONS = [
+  { route: "", label: "Automatic (based on your role)" },
+  { route: "dashboard", label: "Dashboard" },
+  { route: "overview", label: "Overview" },
+  { route: "projects", label: "Projects" },
+  { route: "weekly", label: "Weekly Meeting" },
+  { route: "travel/mine", label: "Travel — My Travel" },
+  { route: "travel/all", label: "Travel — All Travel" },
+  { route: "travel/finance", label: "Travel — Awaiting Finance" },
+  { route: "docreview", label: "Document Review" },
+  { route: "admin", label: "Admin" }
+];
+
 function defaultNotificationPrefs() {
   return {
     areas: NOTIFICATION_AREAS.slice(),
@@ -169,7 +187,11 @@ function defaultNotificationPrefs() {
     // predates any real send). Defaults to true so the daily action-item
     // email/Teams digest reaches everyone without requiring anyone to visit
     // Settings first — people who don't want it can turn it off here.
-    actionItemDigest: { enabled: true }
+    actionItemDigest: { enabled: true },
+    // Empty string means "no personal override" — pulseComputeDefaultRoute
+    // falls back to the existing role-based defaults (Admin/Finance Admin/
+    // everyone else).
+    defaultPage: ""
   };
 }
 
@@ -201,7 +223,8 @@ function normalizeNotificationPrefs(prefs) {
   const actionItemDigest = {
     enabled: actionItemDigestRaw.enabled === false ? false : true
   };
-  return { areas, tone, channels, everything, documents, digest, actionItemDigest };
+  const defaultPage = DEFAULT_PAGE_OPTIONS.some((opt) => opt.route === prefs.defaultPage) ? prefs.defaultPage : "";
+  return { areas, tone, channels, everything, documents, digest, actionItemDigest, defaultPage };
 }
 
 function isNotificationAreaEnabledForMember(member, area) {
@@ -1141,6 +1164,7 @@ window.DOC_REVIEW_DELIVERY_MODES = DOC_REVIEW_DELIVERY_MODES;
 window.DOC_REVIEW_DIGEST_FREQUENCIES = DOC_REVIEW_DIGEST_FREQUENCIES;
 window.defaultNotificationPrefs = defaultNotificationPrefs;
 window.normalizeNotificationPrefs = normalizeNotificationPrefs;
+window.DEFAULT_PAGE_OPTIONS = DEFAULT_PAGE_OPTIONS;
 window.randomFunnySampleText = randomFunnySampleText;
 window.notifyUsers = notifyUsers;
 window.isTeamsNotificationsEnabled = isTeamsNotificationsEnabled;

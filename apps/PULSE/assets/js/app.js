@@ -87,15 +87,24 @@ function pulseBrandLockup(opts) {
   `;
 }
 
-/* Admins land on Team Overview by default (instead of Dashboard) since
-   that's the page they open first in practice — everyone else keeps the
-   existing Dashboard default. A port config's explicit defaultRoute (e.g.
-   a Travel-only deployment) always wins over this. */
+/* Admins land on Team Overview and Finance Admins land on the Awaiting
+   Finance travel queue by default (instead of Dashboard) since those are
+   the pages they open first in practice — everyone else keeps the
+   existing Dashboard default. Priority, highest first: a port config's
+   explicit defaultRoute (e.g. a Travel-only deployment) always wins;
+   otherwise the user's own saved "Default page" preference (Settings →
+   Notifications) wins over either role-based default, since that's an
+   explicit personal choice. */
 function pulseComputeDefaultRoute() {
   if (window.PULSE_PORT_CONFIG && window.PULSE_PORT_CONFIG.defaultRoute) {
     return window.PULSE_PORT_CONFIG.defaultRoute;
   }
   const user = window.AEWTTR && window.AEWTTR.db && window.AEWTTR.db.user;
+  const savedDefault = user && typeof normalizeNotificationPrefs === "function"
+    ? normalizeNotificationPrefs(user.notificationPrefs).defaultPage
+    : "";
+  if (savedDefault) return savedDefault;
+  if (user && user.isFinanceAdmin) return "travel/finance";
   if (user && user.isAdmin) {
     if (window.AEWTTR) {
       window.AEWTTR.state = window.AEWTTR.state || {};

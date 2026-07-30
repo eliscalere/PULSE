@@ -772,8 +772,20 @@ function renderGroupDetail(groupName, groupType, projects) {
     // which member projects are currently included in the export deck — both
     // persist on the same groupReportConfig record so a PM's choices are
     // remembered next time this page is opened, for every group type.
-    const groupCfg = ensureGroupReportConfig(groupType, groupName);
+    let groupCfg = ensureGroupReportConfig(groupType, groupName);
     function saveGroupCfg() {
+      /* Background refresh replaces window.AEWTTR.db wholesale every few
+         seconds, which detaches the config captured when this tab rendered.
+         Editing after a refresh would then mutate an orphan and save it against
+         a stale row. Re-resolve the live record, carry the edits onto it, and
+         keep the live SharePoint id so the update targets the right item. */
+      const live = ensureGroupReportConfig(groupType, groupName);
+      if (live !== groupCfg) {
+        const liveSpId = live._spId;
+        Object.assign(live, groupCfg);
+        if (liveSpId) live._spId = liveSpId;
+        groupCfg = live;
+      }
       if (typeof Repo !== "undefined" && Repo && typeof Repo.save === "function") Repo.save("groupReportConfig", groupCfg);
     }
     function includedIds() {
