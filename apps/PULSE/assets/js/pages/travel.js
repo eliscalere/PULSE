@@ -585,15 +585,27 @@ function sortTravelRequests(list) {
   });
 }
 
+/* Records disagree on the field name depending on where they were created. */
+function travelEndDate(request) {
+  if (!request) return "";
+  return String(request.end || request.endDate || request.tdyReturnDate || "");
+}
+
+/* Upcoming means "still going to happen": not finished, and the end date has not
+   passed.
+
+   The previous version had this backwards. It returned false for Approved —
+   an approved future trip, which is the most upcoming a request can be — and
+   true for Completed trips whose end date was still ahead. So the Upcoming tab
+   and every count built on it under-reported real travel and included trips that
+   were already closed out. */
 function isUpcomingOrCurrentTravel(request) {
   if (!request) return false;
   const status = request.status || "";
-  if (status === "Withdrawn" || status === "Cancelled") return false;
-  if (status === "Submitted") return true;
-  if (status !== "Completed") return false;
-  const today = new Date().toISOString().slice(0, 10);
-  const end = String(request.end || "");
-  return !!end && end >= today;
+  if (["Withdrawn", "Cancelled", "Denied", "Completed"].includes(status)) return false;
+  const end = travelEndDate(request);
+  if (!end) return true; // no dates entered yet, so it is still ahead
+  return end >= new Date().toISOString().slice(0, 10);
 }
 
 /* A request that was withdrawn or cancelled is finished with, the same as one

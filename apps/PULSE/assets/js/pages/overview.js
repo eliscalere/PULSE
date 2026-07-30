@@ -398,7 +398,12 @@ PAGE_RENDERERS.overview = function () {
     const allTasks = getAllTasksFlat();
     const docs = typeof getAllDocReviewRecords === "function" ? getAllDocReviewRecords() : [];
     const docsInReview = docs.filter(d => !d.isArchived && !["Review Complete", "Signed", "Archived"].includes(d._column || ""));
-    const pendingTravel = (db.travelRequests || []).filter(r => r.status === "Pending" || r.status === "Submitted");
+    /* Matches the Travel page's Awaiting Finance filter, so the tile and the
+       queue it links to always report the same number. The old filter tested a
+       "Pending" status that does not exist. */
+    const pendingTravel = (db.travelRequests || []).filter(r =>
+      r.status === "Submitted" && r.chargeObjectStatus === "Pending"
+      && (typeof travelCategory !== "function" || travelCategory(r) !== "Leave"));
     const totalRisks = projects.reduce((sum, p) => sum + projectRiskCount(p.id), 0);
     const criticalRisks = projects.reduce((sum, p) => sum + projectCriticalRiskCount(p.id), 0);
     const totalFunded = projects.reduce((sum, p) => sum + (parseFloat(p.fundedOnContractAmount) || 0), 0);
@@ -469,8 +474,8 @@ PAGE_RENDERERS.overview = function () {
         <div class="ov-team-stat" ${tip("Document review records not yet complete")}>
           <strong>${metrics.docsInReview}</strong><span>Docs in review</span>
         </div>
-        <div class="ov-team-stat" ${tip("Travel requests pending action or approval")}>
-          <strong>${metrics.pendingTravel}</strong><span>Pending travel</span><small>$${(metrics.totalTravelCost / 1000).toFixed(1)}K est</small>
+        <div class="ov-team-stat" ${tip("Submitted travel requests still waiting on a charge object from finance")}>
+          <strong>${metrics.pendingTravel}</strong><span>Awaiting C/O</span><small>$${(metrics.totalTravelCost / 1000).toFixed(1)}K est</small>
         </div>
         <div class="ov-team-stats-actions">
           <button class="btn-aewttr-outline btn-aewttr-sm" data-route="projects"><i class="bx bx-briefcase"></i> All Projects</button>
@@ -543,7 +548,20 @@ PAGE_RENDERERS.overview = function () {
       const col = d._column || "";
       return !["Review Complete", "Signed", "Archived"].includes(col);
     }).length;
-    const pendingTravel = (db.travelRequests || []).filter(r => r.status === "Pending" || r.status === "Submitted").length;
+    /* "Pending" is not a travel status in this app — the real ones are
+       Submitted / Approved / Denied / Completed / Withdrawn / Cancelled — so the
+       old count silently matched only Submitted and called it "pending", which
+       told a lead nothing about what actually needed doing. These three are the
+       questions the Team Overview is asked: what is stuck with finance, who is
+       about to travel, and who is about to be out. Definitions match the Travel
+       page's own filters so the numbers agree with the queue they link to. */
+    const allTravel = db.travelRequests || [];
+    const isLeaveReq = (r) => (typeof travelCategory === "function" ? travelCategory(r) === "Leave" : false);
+    const isUpcoming = (r) => (typeof isUpcomingOrCurrentTravel === "function" ? isUpcomingOrCurrentTravel(r) : false);
+    const travelAwaitingCo = allTravel.filter(r =>
+      r.status === "Submitted" && r.chargeObjectStatus === "Pending" && !isLeaveReq(r)).length;
+    const travelUpcoming = allTravel.filter(r => isUpcoming(r) && !isLeaveReq(r)).length;
+    const leaveUpcoming = allTravel.filter(r => isUpcoming(r) && isLeaveReq(r)).length;
 
     // Per-project health — measured by open/completed tasks + risks
     const projectHealth = projects.map(proj => {
@@ -619,11 +637,21 @@ PAGE_RENDERERS.overview = function () {
         items: [{ title: `${docsNeedingAction} document${docsNeedingAction !== 1 ? "s" : ""} awaiting review`, sub: "Open Document Review →", route: "docreview" }]
       });
     }
-    if (pendingTravel) {
-      groups.push({
-        icon: "bx-navigation", label: "Travel Pending", color: "var(--aewttr-muted)",
-        items: [{ title: `${pendingTravel} travel request${pendingTravel !== 1 ? "s" : ""} pending`, sub: "Open Travel →", route: "travel" }]
-      });
+    const travelItems = [];
+    if (travelAwaitingCo) {
+      travelItems.push({ title: `${travelAwaitingCo} request${travelAwaitingCo !== 1 ? "s" : ""} awaiting a charge object`,
+        sub: "Blocked with finance — open Operations →", tab: "operations" });
+    }
+    if (travelUpcoming) {
+      travelItems.push({ title: `${travelUpcoming} trip${travelUpcoming !== 1 ? "s" : ""} upcoming`,
+        sub: "Approved or submitted, still ahead →", tab: "operations" });
+    }
+    if (leaveUpcoming) {
+      travelItems.push({ title: `${leaveUpcoming} leave request${leaveUpcoming !== 1 ? "s" : ""} upcoming`,
+        sub: "Team members out soon →", tab: "operations" });
+    }
+    if (travelItems.length) {
+      groups.push({ icon: "bx-navigation", label: "Travel & Leave", color: "var(--aewttr-muted)", items: travelItems });
     }
 
     const healthCounts = { attention: 0, active: 0, complete: 0, inactive: 0 };
@@ -638,7 +666,7 @@ PAGE_RENDERERS.overview = function () {
     const escalationHtml = groups.length
       ? groups.map(g => `<div class="ov-dash-escalation-group">
           <div class="ov-dash-escalation-head"><i class="bx ${g.icon}" style="color:${g.color}"></i><strong>${escapeHtml(g.label)}</strong><span class="ov-queue-count">${g.items.length}</span></div>
-          ${g.items.map(item => `<button class="overview-spotlight-row" data-route="${escapeHtml(item.route)}">
+          ${g.items.map(item => `<button class="overview-spotlight-row" ${item.tab ? `data-ov-team-tab="${escapeHtml(item.tab)}"` : `data-route="${escapeHtml(item.route)}"`}>
             <div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.sub)}</span></div>
             <i class="bx bx-chevron-right" style="color:var(--aewttr-muted);font-size:18px;"></i>
           </button>`).join("")}
@@ -1149,6 +1177,92 @@ PAGE_RENDERERS.overview = function () {
       </div>`;
   }
 
+  /* Per-person activity outside the project graph: trips taken, leave taken,
+     requests raised, and documents actually reviewed. The graph above answers
+     "who is on what"; this answers "what has each person been doing".
+
+     Matching is by email where both sides have one and by name otherwise —
+     travel records carry a traveler list with optional emails, and reviewer
+     records carry name and email, so neither key is reliably present. */
+  function renderTeamActivityTable(people) {
+    /* Rows here come from project assignments and task assignees, which carry a
+       display name only. Travel and reviewer records may key on either, so look
+       up an email from the member list where one exists. */
+    const members = db.members || [];
+    const withEmail = (people || []).map((row) => {
+      const match = members.find((m) => String(m.name || "").trim().toLowerCase() === String(row.name || "").trim().toLowerCase());
+      return { name: row.name, email: (match && match.email) || row.email || "" };
+    });
+    people = withEmail;
+    const travel = db.travelRequests || [];
+    const docs = typeof getAllDocReviewRecords === "function" ? getAllDocReviewRecords() : [];
+    const key = (value) => String(value || "").trim().toLowerCase();
+
+    function matchesPerson(person, name, email) {
+      const personEmail = key(person.email);
+      if (personEmail && key(email) === personEmail) return true;
+      return key(name) === key(person.name);
+    }
+
+    /* A person "went on" a trip if they are listed as a traveller. The
+       requester is counted separately, since raising a request for someone else
+       is not the same as travelling. */
+    function isTravellerOn(request, person) {
+      const travellers = request.travelers && request.travelers.length
+        ? request.travelers
+        : [{ name: request.requester, email: request.requesterEmail }];
+      return travellers.some((t) => t && matchesPerson(person, t.name, t.email));
+    }
+
+    const COUNTED_AS_TAKEN = ["Approved", "Completed"];
+
+    const rows = people.map((person) => {
+      const mine = travel.filter((r) => isTravellerOn(r, person));
+      const isLeave = (r) => (typeof travelCategory === "function" ? travelCategory(r) === "Leave" : false);
+      const taken = (r) => COUNTED_AS_TAKEN.includes(r.status);
+      return {
+        name: person.name,
+        trips: mine.filter((r) => !isLeave(r) && taken(r)).length,
+        leave: mine.filter((r) => isLeave(r) && taken(r)).length,
+        submitted: travel.filter((r) => matchesPerson(person, r.requester, r.requesterEmail)).length,
+        reviewed: docs.reduce((sum, doc) => sum + ((doc.reviewers || []).some((rv) =>
+          matchesPerson(person, rv.name, rv.email) && rv.decision && rv.decision !== "Pending") ? 1 : 0), 0),
+      };
+    }).sort((a, b) => (b.trips + b.leave + b.submitted + b.reviewed) - (a.trips + a.leave + a.submitted + a.reviewed)
+      || a.name.localeCompare(b.name));
+
+    const body = rows.length
+      ? rows.map((r) => `<tr data-person-name="${escapeHtml(r.name)}">
+          <td><strong>${escapeHtml(r.name)}</strong></td>
+          <td class="ov-activity-num">${r.trips || "—"}</td>
+          <td class="ov-activity-num">${r.leave || "—"}</td>
+          <td class="ov-activity-num">${r.submitted || "—"}</td>
+          <td class="ov-activity-num">${r.reviewed || "—"}</td>
+        </tr>`).join("")
+      : `<tr><td colspan="5"><div class="empty-state">No team members yet.</div></td></tr>`;
+
+    return `<div class="ov-section-head" style="margin:26px 0 12px;">
+        <div>
+          <div class="side-panel-title">Activity by person</div>
+          <div class="overview-panel-sub">Trips and leave counted once approved or completed. Requests counts what each person raised, including for others. Reviews counts documents they have actually decided on, not ones still awaiting them.</div>
+        </div>
+      </div>
+      <div class="ov-activity-scroll">
+        <table class="aewttr-table ov-activity-tbl">
+          <thead>
+            <tr>
+              <th>Person</th>
+              <th class="ov-activity-num">Trips</th>
+              <th class="ov-activity-num">Leave</th>
+              <th class="ov-activity-num">Requests raised</th>
+              <th class="ov-activity-num">Docs reviewed</th>
+            </tr>
+          </thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>`;
+  }
+
   function renderTeamResourcesHub(projects) {
     const activeTasks = getAllTasksFlat().filter(taskIsActive);
     const state = window.AEWTTR.state.teamResources || { view: "people", query: "", expanded: {} };
@@ -1283,7 +1397,8 @@ PAGE_RENDERERS.overview = function () {
     const content = state.view === "projects" ? projectsHtml : state.view === "map" ? mapHtml : peopleHtml;
     return `<section class="resource-hub"><header class="resource-hub-head"><div><h3>Team Resources</h3><p>Browse staffing, active workload, and project assignments.</p></div><div class="resource-summary"><span><b>${peopleRows.length}</b> people</span><span><b>${projectRows.length}</b> projects</span><span><b>${activeTasks.length}</b> active tasks</span></div></header>
       <div class="resource-controls"><div class="resource-view-tabs">${[["people","People","bx-user"],["projects","Projects","bx-briefcase"],["map","Connections","bx-share-alt"]].map(([key,label,icon]) => `<button type="button" class="${state.view === key ? "is-active" : ""}" data-resource-view="${key}"><i class="bx ${icon}"></i>${label}</button>`).join("")}</div><label class="resource-search"><i class="bx bx-search"></i><input id="resource-search" value="${escapeHtml(state.query || "")}" placeholder="Search people or projects"></label></div>
-      <div class="resource-scroll-list">${content}</div></section>`;
+      <div class="resource-scroll-list">${content}</div>
+      ${renderTeamActivityTable(peopleRows)}</section>`;
   }
 
   function renderAllProjectsTable(projects) {
@@ -1767,7 +1882,7 @@ PAGE_RENDERERS.overview = function () {
         { label: "Completed Tasks", value: metrics.completedTasks, tone: "accent" },
         { label: "Open Risks", value: metrics.openRisks, tone: metrics.openRisks ? "warning" : "" },
         { label: "Docs in Review", value: metrics.docsInReview },
-        { label: "Pending Travel", value: metrics.pendingTravel }
+        { label: "Travel awaiting C/O", value: metrics.pendingTravel }
       ],
       sections
     };
@@ -1811,6 +1926,14 @@ PAGE_RENDERERS.overview = function () {
     });
     $all("[data-route]", $("#page-content")).forEach(btn => {
       btn.addEventListener("click", () => navigate(btn.dataset.route));
+    });
+    /* Needs Attention rows that point at a Team Overview tab switch in place
+       rather than navigating away — the detail is already on this page. */
+    $all("[data-ov-team-tab]", $("#page-content")).forEach(btn => {
+      btn.addEventListener("click", () => {
+        window.AEWTTR.state.overviewTeamTab = btn.dataset.ovTeamTab;
+        render();
+      });
     });
     $all("[data-person-id]", $("#page-content")).forEach(row => {
       row.addEventListener("click", () => navigate(`people/${row.dataset.personId}`));

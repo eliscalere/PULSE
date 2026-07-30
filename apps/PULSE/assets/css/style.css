@@ -18386,3 +18386,14 @@ html[data-theme="dark"] .proj-notes-bubble-row.mine .proj-notes-bubble { backgro
 .rep-qcard-bd--miles .rep-mt-date { width: 100%; min-width: 108px; padding: 4px 5px; font-size: 11px; }
 .rep-qcard-bd--miles .rep-mt-td--include { width: 44px; }
 .rep-qcard-bd--miles .rep-grp-mt-tbl td:nth-child(2) { min-width: 96px; }
+
+/* Per-person activity table under the Resources graph. */
+.ov-activity-scroll { width: 100%; overflow-x: auto; }
+.ov-activity-tbl { width: 100%; min-width: 560px; border-collapse: collapse; }
+.ov-activity-tbl th { padding: 0 12px 9px 0; border-bottom: 1px solid var(--aewttr-text); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--aewttr-text); text-align: left; }
+.ov-activity-tbl td { padding: 11px 12px 11px 0; border-bottom: 1px solid var(--aewttr-border); font-size: 13px; color: var(--aewttr-text); }
+.ov-activity-tbl tbody tr:last-child td { border-bottom: 0; }
+.ov-activity-tbl tbody tr[data-person-name] { cursor: pointer; }
+.ov-activity-tbl tbody tr[data-person-name]:hover td { background: var(--aewttr-surface-2, #f7f8fa); }
+.ov-activity-num { text-align: right; padding-right: 0 !important; font-variant-numeric: tabular-nums; }
+th.ov-activity-num { text-align: right; }
