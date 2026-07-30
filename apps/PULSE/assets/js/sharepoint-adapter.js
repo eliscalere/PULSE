@@ -2447,10 +2447,25 @@ const sharePointAdapter = (function () {
     const extMatch = String(file.name || "").match(/\.([a-z0-9]+)$/i);
     const ext = extMatch ? extMatch[1].toLowerCase() : "jpg";
     const coverName = `cover.${ext}`;
+    const bytes = await file.arrayBuffer();
     const uploadFile = (file.name && file.name.toLowerCase() === coverName.toLowerCase())
       ? file
-      : new File([await file.arrayBuffer()], coverName, { type: file.type || "image/jpeg" });
-    return uploadPulseDocumentsFile(siteUrl, coverFolder.serverRelativeUrl, uploadFile);
+      : new File([bytes], coverName, { type: file.type || "image/jpeg" });
+    const uploaded = await uploadPulseDocumentsFile(siteUrl, coverFolder.serverRelativeUrl, uploadFile);
+    /* The cover also belongs in _photos: everything that shows a project's
+       photos — the Photos tab, the End Item Config picker — lists that folder,
+       and a picture the user uploaded is a picture they expect to find there.
+       _cover/cover.ext stays the canonical cover so nothing that resolves the
+       cover by path changes; this is an additional copy under its original
+       name. A failure here must not fail the cover upload itself. */
+    try {
+      const photosFolder = await createPulseDocumentsSubfolder(siteUrl, projectFolderUrl, "_photos");
+      const photoName = file.name && file.name.toLowerCase() !== coverName.toLowerCase() ? file.name : `cover-${Date.now()}.${ext}`;
+      await uploadPulseDocumentsFile(siteUrl, photosFolder.serverRelativeUrl, new File([bytes], photoName, { type: file.type || "image/jpeg" }));
+    } catch (e) {
+      console.warn("Cover uploaded, but copying it into the photo gallery failed:", e);
+    }
+    return uploaded;
   }
 
   /* ---------- app roles ---------- */

@@ -1421,12 +1421,12 @@ PAGE_RENDERERS.overview = function () {
         cardOf: (n) => ({ title: n.name, sub: `${n.projects.size} project${n.projects.size !== 1 ? "s" : ""}` }) }
     ];
 
-    const COL_W = 208, COL_GAP = 108, ROW_H = 58, PAD_Y = 44, PAD_X = 24;
+    const COL_W = 264, COL_GAP = 140, ROW_H = 74, PAD_Y = 52, PAD_X = 32;
     const nodePos = new Map();
     COLS.forEach((col, ci) => {
       const x = PAD_X + ci * (COL_W + COL_GAP);
       col.nodes.forEach((n, i) => {
-        nodePos.set(col.idOf(n), { x, y: PAD_Y + i * ROW_H, w: COL_W, h: ROW_H - 12 });
+        nodePos.set(col.idOf(n), { x, y: PAD_Y + i * ROW_H, w: COL_W, h: ROW_H - 16 });
       });
     });
     const maxRows = Math.max(1, ...COLS.map((c) => c.nodes.length));
@@ -1453,16 +1453,22 @@ PAGE_RENDERERS.overview = function () {
       }
     }
 
+    // Kept alongside the HTML/SVG markup (not recomputed) so the PNG export
+    // button paints exactly what's on screen, dimmed state and all.
+    const exportEdges = [];
     const edgePaths = edges.map((e, idx) => {
       const a = nodePos.get(e.from), b = nodePos.get(e.to);
       if (!a || !b) return "";
       const x1 = a.x + a.w, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y + b.h / 2, mx = (x1 + x2) / 2;
       const projId = e.from.startsWith("proj:") ? e.from.slice(5) : e.to.startsWith("proj:") ? e.to.slice(5) : null;
       const color = projId ? (projColorMap[projId] || "var(--aewttr-border-strong)") : "var(--aewttr-border-strong)";
+      const isDim = activeNodes ? !activeEdges.has(idx) : false;
+      exportEdges.push({ x1, y1, x2, y2, mx, color, isDim });
       const cls = activeNodes ? (activeEdges.has(idx) ? "ov-flow-edge is-active" : "ov-flow-edge is-dim") : "ov-flow-edge";
       return `<path class="${cls}" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="${color}"></path>`;
     }).join("");
 
+    const exportNodes = [];
     const nodeCards = [];
     COLS.forEach((col) => {
       col.nodes.forEach((n) => {
@@ -1472,25 +1478,27 @@ PAGE_RENDERERS.overview = function () {
         const isSelected = id === selectedId;
         const isDim = activeNodes ? !activeNodes.has(id) : false;
         const barColor = card.color || "var(--aewttr-border-strong)";
+        exportNodes.push({ x: pos.x, y: pos.y, w: pos.w, h: pos.h, kind: col.label, title: String(card.title), sub: card.sub, barColor, isDim });
         const openLink = card.projId ? `<button type="button" class="ov-flow-open-link" data-proj-id="${escapeHtml(card.projId)}" title="Open project workspace"><i class="bx bx-link-external"></i></button>` : "";
         nodeCards.push(`<div class="ov-flow-node${isSelected ? " is-selected" : ""}${isDim ? " is-dim" : ""}" data-flow-id="${escapeHtml(id)}" style="left:${pos.x}px;top:${pos.y}px;width:${pos.w}px;height:${pos.h}px;border-left-color:${barColor};" tabindex="0" role="button">
           <span class="ov-flow-kind">${escapeHtml(col.label)}</span>
-          <span class="ov-flow-title">${escapeHtml(String(card.title).slice(0, 30))}</span>
+          <span class="ov-flow-title">${escapeHtml(String(card.title).slice(0, 42))}</span>
           <span class="ov-flow-sub">${escapeHtml(card.sub)}</span>
           ${openLink}
         </div>`);
       });
     });
 
-    const headers = COLS.map((col, ci) => {
-      const x = PAD_X + ci * (COL_W + COL_GAP);
-      return `<div class="ov-flow-col-header" style="left:${x}px;width:${COL_W}px;">${escapeHtml(col.label)}<small>${col.nodes.length}</small></div>`;
-    }).join("");
+    const headerPositions = COLS.map((col, ci) => ({ label: col.label, x: PAD_X + ci * (COL_W + COL_GAP), w: COL_W }));
+    const headers = headerPositions.map((h) => `<div class="ov-flow-col-header" style="left:${h.x}px;width:${h.w}px;">${escapeHtml(h.label)}<small>${COLS[headerPositions.indexOf(h)].nodes.length}</small></div>`).join("");
 
-    const legendHtml = projectList.map((row) => `<span class="ov-res-legend-item"><span class="ov-res-legend-dot" style="background:${projColorMap[row.id]}"></span>${escapeHtml(row.name || row.id)}</span>`).join("");
+    window.AEWTTR.state.teamResources._flowExport = { canvasW, canvasH, headers: headerPositions, nodes: exportNodes, edges: exportEdges };
 
     return `<div class="ov-flow-wrap">
-      ${legendHtml ? `<div class="ov-resources-legend">${legendHtml}</div>` : ""}
+      <div class="ov-flow-toolbar">
+        <p class="ov-flow-hint">Click any node to trace its chain from Program down to the people staffed on it. Drag to pan.</p>
+        <button type="button" class="btn-aewttr-outline btn-aewttr-sm" data-flow-export><i class="bx bx-image"></i> Export PNG</button>
+      </div>
       <div class="ov-flow-scroll" id="ov-flow-scroll">
         <div class="ov-flow-canvas" style="width:${canvasW}px;height:${canvasH}px;">
           ${headers}
@@ -1498,8 +1506,110 @@ PAGE_RENDERERS.overview = function () {
           ${nodeCards.join("")}
         </div>
       </div>
-      <p class="ov-flow-hint">Click any node to trace its chain from Program down to the people staffed on it. Drag to pan.</p>
     </div>`;
+  }
+
+  /* Canvas re-paint of the flow diagram for "Export PNG" — the on-screen
+     view is HTML+SVG (crisp text, real click targets), but that can't be
+     serialized to an image directly, so this redraws the same layout data
+     (stashed by renderProgramFlow) onto an offscreen <canvas> and downloads
+     it. CSS custom properties don't resolve inside a canvas fillStyle, so
+     colors are read from the live page via getComputedStyle first. */
+  function resolveThemeColor(value) {
+    if (!value) return "#8a8f98";
+    if (!value.startsWith("var(")) return value;
+    const name = value.slice(4, -1).trim();
+    const resolved = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return resolved || "#8a8f98";
+  }
+  function flowCanvasRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function flowCanvasTruncate(ctx, str, maxWidth) {
+    str = String(str || "");
+    if (ctx.measureText(str).width <= maxWidth) return str;
+    let lo = 0, hi = str.length;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      if (ctx.measureText(str.slice(0, mid) + "…").width <= maxWidth) lo = mid; else hi = mid - 1;
+    }
+    return str.slice(0, lo) + "…";
+  }
+  function exportProgramFlowPng() {
+    const data = window.AEWTTR.state.teamResources && window.AEWTTR.state.teamResources._flowExport;
+    if (!data || !data.canvasW) return;
+    const FONT = "Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif";
+    const HEAD_H = 40;
+    const scale = Math.min(2, window.devicePixelRatio || 1) * 1.5;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(data.canvasW * scale);
+    canvas.height = Math.round((data.canvasH + HEAD_H) * scale);
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+
+    const bg = resolveThemeColor("var(--aewttr-surface-2)");
+    const surface = resolveThemeColor("var(--aewttr-surface)");
+    const border = resolveThemeColor("var(--aewttr-border)");
+    const text = resolveThemeColor("var(--aewttr-text)");
+    const muted = resolveThemeColor("var(--aewttr-muted)");
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, data.canvasW, data.canvasH + HEAD_H);
+
+    ctx.fillStyle = muted;
+    ctx.font = `800 11px ${FONT}`;
+    ctx.textBaseline = "alphabetic";
+    (data.headers || []).forEach((h) => ctx.fillText(h.label.toUpperCase(), h.x + 2, HEAD_H - 13));
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, HEAD_H - 5); ctx.lineTo(data.canvasW, HEAD_H - 5); ctx.stroke();
+
+    (data.edges || []).forEach((e) => {
+      ctx.beginPath();
+      ctx.moveTo(e.x1, e.y1 + HEAD_H);
+      ctx.bezierCurveTo(e.mx, e.y1 + HEAD_H, e.mx, e.y2 + HEAD_H, e.x2, e.y2 + HEAD_H);
+      ctx.strokeStyle = resolveThemeColor(e.color);
+      ctx.globalAlpha = e.isDim ? 0.1 : 0.5;
+      ctx.lineWidth = e.isDim ? 1.25 : 2;
+      ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+
+    (data.nodes || []).forEach((n) => {
+      const x = n.x, y = n.y + HEAD_H, w = n.w, h = n.h;
+      ctx.globalAlpha = n.isDim ? 0.35 : 1;
+      flowCanvasRoundRect(ctx, x, y, w, h, 6);
+      ctx.fillStyle = surface;
+      ctx.fill();
+      ctx.strokeStyle = border;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = resolveThemeColor(n.barColor);
+      ctx.fillRect(x, y, 3, h);
+      ctx.fillStyle = muted;
+      ctx.font = `800 9px ${FONT}`;
+      ctx.fillText(n.kind.toUpperCase(), x + 13, y + 18);
+      ctx.fillStyle = text;
+      ctx.font = `650 13.5px ${FONT}`;
+      ctx.fillText(flowCanvasTruncate(ctx, n.title, w - 26), x + 13, y + 36);
+      ctx.fillStyle = muted;
+      ctx.font = `400 11.5px ${FONT}`;
+      ctx.fillText(flowCanvasTruncate(ctx, n.sub, w - 26), x + 13, y + 53);
+    });
+    ctx.globalAlpha = 1;
+
+    const link = document.createElement("a");
+    link.download = "pulse-connections-flow.png";
+    link.href = canvas.toDataURL("image/png");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   }
 
   function renderAllProjectsTable(projects) {
@@ -2142,6 +2252,8 @@ PAGE_RENDERERS.overview = function () {
       e.stopPropagation();
       navigate(`projects/${projectRouteKeyById(link.dataset.projId)}/workspace`);
     }));
+    const flowExportBtn = $("[data-flow-export]", $("#page-content"));
+    if (flowExportBtn) flowExportBtn.addEventListener("click", () => exportProgramFlowPng());
     const flowScroll = $("#ov-flow-scroll", $("#page-content"));
     if (flowScroll) {
       const savedPos = window.AEWTTR.state.teamResources._flowScrollPos;

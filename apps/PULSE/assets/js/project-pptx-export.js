@@ -89,9 +89,13 @@
   function techBulletTextOf(bullet) {
     return String((bullet && typeof bullet === "object" ? bullet.text : bullet) || "");
   }
+  /* Clamped to the editor's depth cap rather than to 1 — collapsing every
+     sub-level onto one indent would flatten a nested outline in the deck while
+     the app showed it nested. */
   function techBulletLevelOf(bullet) {
+    const max = typeof TECH_BULLET_MAX_LEVEL === "number" ? TECH_BULLET_MAX_LEVEL : 4;
     const level = bullet && typeof bullet === "object" ? parseInt(bullet.level, 10) : 0;
-    return level > 0 ? 1 : 0;
+    return Math.min(max, Math.max(0, level || 0));
   }
 
   /* fitBulletsToBox measures strings, so callers pass text and keep the levels

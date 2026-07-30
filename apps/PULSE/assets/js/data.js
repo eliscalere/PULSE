@@ -614,10 +614,13 @@ function aewttrResetStore() {
 /* ---------- technical-status bullets ----------
 
    Bullets were plain strings. Sub-bullets need an indent level, so they are now
-   { text, level } with level 0 or 1. Existing saved data is all strings, and a
-   string is simply a level-0 bullet — normalising on read means no migration and
-   no risk of losing someone's saved slide content. */
-const TECH_BULLET_MAX_LEVEL = 1;
+   { text, level }. Existing saved data is all strings, and a string is simply a
+   level-0 bullet — normalising on read means no migration and no risk of losing
+   someone's saved slide content.
+
+   The depth cap is 4 because that is what a slide can carry legibly; PowerPoint
+   itself allows more, but a fifth indent on a quadrant card is unreadable. */
+const TECH_BULLET_MAX_LEVEL = 4;
 
 function normalizeTechBullet(bullet) {
   if (bullet && typeof bullet === "object") {
@@ -627,8 +630,19 @@ function normalizeTechBullet(bullet) {
   return { text: String(bullet == null ? "" : bullet), level: 0 };
 }
 
+/* Levels are per-item, so nothing stops a list from jumping 0 → 2 — which is an
+   orphan with no parent to hang off, and renders as a stray deep indent on the
+   slide. Outdenting a parent is the easy way to create one. Clamping each bullet
+   to at most one deeper than the bullet above heals that on read, so the outline
+   is always well-formed no matter how it was edited. */
 function normalizeTechBullets(list) {
-  return (Array.isArray(list) ? list : []).map(normalizeTechBullet);
+  let ceiling = 0;
+  return (Array.isArray(list) ? list : []).map((item) => {
+    const bullet = normalizeTechBullet(item);
+    if (bullet.level > ceiling) bullet.level = ceiling;
+    ceiling = Math.min(TECH_BULLET_MAX_LEVEL, bullet.level + 1);
+    return bullet;
+  });
 }
 
 /* Flat text, for anywhere that wants the bullet without its indent. */

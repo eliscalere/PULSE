@@ -17,6 +17,31 @@ async function resolveProjectPhotosFolder(proj) {
   return { siteUrl, folderUrl: folder.serverRelativeUrl };
 }
 
+/* The one way to ask "what photos does this project have".
+
+   Cover images upload to _cover/ and project photos to _photos/, so a cover
+   picked in project settings was invisible everywhere that showed photos —
+   the Photos tab and the End Item Config picker both listed _photos alone.
+   New cover uploads now also land in _photos, but covers uploaded before that
+   only exist under _cover, so the cover is folded in here whenever the folder
+   listing does not already contain it. That fixes existing projects with no
+   migration and no duplicate entry once the file is in both places. */
+async function listProjectPhotos(proj) {
+  const { siteUrl, folderUrl } = await resolveProjectPhotosFolder(proj);
+  const listing = await sharePointAdapter.listPulseDocumentsFolder(siteUrl, folderUrl);
+  const photos = (listing.files || []).filter((file) => isPhotoFile(file.name));
+  const cover = proj && proj.coverImage;
+  if (cover && !photos.some((photo) => photo.fileUrl === cover)) {
+    photos.unshift({
+      name: String(cover).split("/").pop() || "cover",
+      fileUrl: cover,
+      serverRelativeUrl: "",
+      isCover: true
+    });
+  }
+  return photos;
+}
+
 function photoCardHtml(photo, selectedUrls) {
   const selected = Array.isArray(selectedUrls) && selectedUrls.includes(photo.fileUrl);
   return `
@@ -30,7 +55,11 @@ function photoCardHtml(photo, selectedUrls) {
           <button type="button" class="btn-aewttr-ghost btn-aewttr-sm project-photos-export-toggle${selected ? " is-on" : ""}" data-photo-export="${escapeHtml(photo.fileUrl)}"${tip(selected ? "Remove from status export" : "Include in status PowerPoint")}>
             <i class="bx ${selected ? "bxs-check-square" : "bx-square"}" aria-hidden="true"></i>
           </button>
-          <button type="button" class="btn-aewttr-ghost btn-aewttr-sm" data-photo-delete="${escapeHtml(photo.serverRelativeUrl)}"${tip("Delete this photo")}><i class="bx bx-trash"></i></button>
+          ${photo.serverRelativeUrl
+            ? `<button type="button" class="btn-aewttr-ghost btn-aewttr-sm" data-photo-delete="${escapeHtml(photo.serverRelativeUrl)}"${tip("Delete this photo")}><i class="bx bx-trash"></i></button>`
+            /* A cover folded in from _cover/ has no file in this folder to
+               delete — it is removed from project settings instead. */
+            : `<span class="project-photos-cover-tag"${tip("This is the project cover image — change it in Project settings")}>Cover</span>`}
         </div>
       </div>
     </div>`;
@@ -112,9 +141,7 @@ function drawProjectPhotos(body, proj) {
       return;
     }
     try {
-      const { siteUrl, folderUrl } = await resolveProjectPhotosFolder(proj);
-      const listing = await sharePointAdapter.listPulseDocumentsFolder(siteUrl, folderUrl);
-      photos = (listing.files || []).filter((file) => isPhotoFile(file.name));
+      photos = await listProjectPhotos(proj);
       renderGrid();
     } catch (e) {
       if (grid) grid.innerHTML = `<div class="empty-state">Could not load photos. ${escapeHtml((e && e.friendly) || (e && e.message) || String(e))}</div>`;

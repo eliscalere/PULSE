@@ -88,19 +88,152 @@ function projectRouteKeyById(projectId) {
   return proj ? projectRouteKey(proj) : String(projectId || "");
 }
 
-/* One row of the bullet editor. Shared by the project and group editors so an
-   indent looks and behaves the same in both. */
+/* ---------- technical-status bullet editor ----------
+
+   Two copies of this used to live in the project and group reporting tabs, and
+   they had already drifted apart. It is one editor now, wired from both, so a
+   bullet behaves identically wherever it is edited.
+
+   The interaction is the tracker's: rows you add, and a right-click menu on any
+   row to add a sub-item under it, indent, outdent, or delete. Tab / Shift+Tab do
+   the same indenting from the keyboard. */
+const TECH_BULLET_DOTS = ["\u2022", "\u2013", "\u25aa", "\u2023", "\u00b7"];
+
 function techBulletRowHtml(bullet, index) {
-  var b = normalizeTechBullet(bullet);
-  return '<div class="rep-tb-item' + (b.level ? ' rep-tb-item--sub' : '') + '">' +
-    '<button type="button" class="rep-tb-indent" data-bidx="' + index + '" title="' +
-      (b.level ? 'Outdent to a main bullet' : 'Indent as a sub-bullet') + '" aria-label="' +
-      (b.level ? 'Outdent' : 'Indent') + '"><i class="bx ' + (b.level ? 'bx-chevron-left' : 'bx-chevron-right') + '"></i></button>' +
-    '<span class="rep-tb-dot">' + (b.level ? '–' : '•') + '</span>' +
+  const b = normalizeTechBullet(bullet);
+  const dot = TECH_BULLET_DOTS[Math.min(b.level, TECH_BULLET_DOTS.length - 1)];
+  return '<div class="rep-tb-item' + (b.level ? ' rep-tb-item--sub' : '') + '" data-bidx="' + index +
+      '" style="--tb-lvl:' + b.level + ';">' +
+    '<span class="rep-tb-dot">' + dot + '</span>' +
     '<input type="text" class="input-aewttr rep-tb-inp" data-bidx="' + index + '" value="' + escapeHtml(b.text) + '" placeholder="' +
-      (b.level ? 'Sub-bullet text…' : 'Bullet text…') + '">' +
+      (b.level ? 'Sub-bullet text\u2026' : 'Bullet text\u2026') + '">' +
+    '<button type="button" class="rep-tb-menu" data-bidx="' + index + '" title="Bullet options" aria-label="Bullet options"><i class="bx bx-dots-vertical-rounded"></i></button>' +
     '<button type="button" class="rep-tb-del" data-bidx="' + index + '" title="Remove"><i class="bx bx-x"></i></button>' +
     '</div>';
+}
+
+/* opts.read()  -> the live bullet array
+   opts.write(list) -> put a rebuilt array back on the config
+   opts.save()  -> persist, and refresh anything showing the bullets */
+function renderTechBulletEditor(wrap, opts) {
+  if (!wrap) return;
+  const list = normalizeTechBullets(opts.read());
+  opts.write(list);
+
+  wrap.innerHTML = '<div class="rep-tb-list">' +
+    list.map(techBulletRowHtml).join("") +
+    '<button type="button" class="rep-tb-add"><i class="bx bx-plus"></i> Add bullet</button>' +
+    '</div>';
+
+  const redraw = (focusIndex) => {
+    opts.save();
+    renderTechBulletEditor(wrap, opts);
+    if (focusIndex == null) return;
+    const again = wrap.querySelectorAll(".rep-tb-inp")[focusIndex];
+    if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
+  };
+
+  /* A bullet may sit at most one level deeper than the one above it, so the
+     first row can never be indented and no row can skip a level. */
+  const maxLevelAt = (i) => (i === 0 ? 0 : Math.min(TECH_BULLET_MAX_LEVEL, list[i - 1].level + 1));
+  const indent = (i) => {
+    const cap = maxLevelAt(i);
+    if (list[i].level >= cap) return;
+    list[i].level += 1;
+    redraw(i);
+  };
+  const outdent = (i) => {
+    if (!list[i].level) return;
+    list[i].level -= 1;
+    redraw(i);
+  };
+  /* A new row lands directly below the one it came from. Plain "add" matches
+     that row's level so a run of siblings needs no re-indenting; "add sub"
+     goes one deeper. */
+  const insertAfter = (i, level) => {
+    list.splice(i + 1, 0, { text: "", level: Math.min(level, maxLevelAt(i + 1)) });
+    redraw(i + 1);
+  };
+  const remove = (i) => { list.splice(i, 1); redraw(null); };
+
+  wrap.querySelectorAll(".rep-tb-inp").forEach((inp) => {
+    let dt = null;
+    inp.addEventListener("input", () => {
+      list[parseInt(inp.dataset.bidx, 10)].text = inp.value;
+      clearTimeout(dt);
+      dt = setTimeout(opts.save, 200);
+    });
+    inp.addEventListener("keydown", (ev) => {
+      const idx = parseInt(inp.dataset.bidx, 10);
+      if (ev.key === "Tab") {
+        /* Only swallow Tab when it has somewhere to go, so at the edges it
+           still moves focus the way Tab is supposed to. */
+        if (ev.shiftKey ? list[idx].level > 0 : list[idx].level < maxLevelAt(idx)) {
+          ev.preventDefault();
+          (ev.shiftKey ? outdent : indent)(idx);
+        }
+        return;
+      }
+      if (ev.key === "Enter") { ev.preventDefault(); insertAfter(idx, list[idx].level); return; }
+      /* Backspace in an empty row removes it and puts the caret at the end of
+         the previous one — the outliner behaviour people expect. */
+      if (ev.key === "Backspace" && !inp.value && list.length > 1) {
+        ev.preventDefault();
+        list.splice(idx, 1);
+        opts.save();
+        renderTechBulletEditor(wrap, opts);
+        const prev = wrap.querySelectorAll(".rep-tb-inp")[Math.max(0, idx - 1)];
+        if (prev) { prev.focus(); prev.setSelectionRange(prev.value.length, prev.value.length); }
+      }
+    });
+  });
+
+  const openMenu = (idx, x, y) => {
+    if (typeof showContextMenu !== "function") return;
+    const items = [
+      { label: "Add bullet below", icon: "bx-plus", action: () => insertAfter(idx, list[idx].level) },
+    ];
+    if (list[idx].level < TECH_BULLET_MAX_LEVEL) {
+      items.push({ label: "Add sub-bullet", icon: "bx-list-plus", action: () => insertAfter(idx, list[idx].level + 1) });
+    }
+    const canIndent = list[idx].level < maxLevelAt(idx);
+    const canOutdent = list[idx].level > 0;
+    if (canIndent || canOutdent) {
+      items.push({ separator: true });
+      if (canIndent) items.push({ label: "Indent", icon: "bx-chevron-right", action: () => indent(idx) });
+      if (canOutdent) items.push({ label: "Outdent", icon: "bx-chevron-left", action: () => outdent(idx) });
+    }
+    items.push({ separator: true });
+    items.push({ label: "Delete bullet", icon: "bx-trash", danger: true, action: () => remove(idx) });
+    showContextMenu(x, y, items);
+  };
+
+  wrap.querySelectorAll(".rep-tb-item").forEach((row) => {
+    row.addEventListener("contextmenu", (ev) => {
+      ev.preventDefault();
+      openMenu(parseInt(row.dataset.bidx, 10), ev.clientX, ev.clientY);
+    });
+  });
+  /* Right-click is the tracker idiom, but it is invisible and unavailable on a
+     touch device, so every row carries the same menu behind a button. */
+  wrap.querySelectorAll(".rep-tb-menu").forEach((btn) => {
+    btn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const r = btn.getBoundingClientRect();
+      openMenu(parseInt(btn.dataset.bidx, 10), r.left, r.bottom + 4);
+    });
+  });
+  wrap.querySelectorAll(".rep-tb-del").forEach((btn) => {
+    btn.addEventListener("click", () => remove(parseInt(btn.dataset.bidx, 10)));
+  });
+  const addBtn = wrap.querySelector(".rep-tb-add");
+  if (addBtn) {
+    addBtn.addEventListener("click", () => {
+      const prev = list[list.length - 1];
+      list.push({ text: "", level: prev ? prev.level : 0 });
+      redraw(list.length - 1);
+    });
+  }
 }
 
 /* Accepts a slug, a code, or a record id, so links of any vintage resolve. */
@@ -982,63 +1115,11 @@ function renderGroupDetail(groupName, groupType, projects) {
 
     // Slide-content editor (combined End Item Config slide only)
     function renderGroupBullets() {
-      const wrap = mount.querySelector("#grp-rep-tb-wrap");
-      if (!wrap) return;
-      groupCfg.techBullets = normalizeTechBullets(groupCfg.techBullets);
-      const bullets = groupCfg.techBullets;
-      wrap.innerHTML = '<div class="rep-tb-list">' +
-        bullets.map(function(b, i) { return techBulletRowHtml(b, i); }).join("") +
-        '<button type="button" class="rep-tb-add" id="grp-rep-tb-add"><i class="bx bx-plus"></i> Add bullet</button>' +
-        '</div>';
-      let dt = null;
-      mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-inp").forEach(function(inp) {
-        inp.addEventListener("input", function() {
-          const idx = parseInt(inp.dataset.bidx, 10);
-          groupCfg.techBullets[idx].text = inp.value;
-          clearTimeout(dt);
-          dt = setTimeout(saveGroupCfg, 200);
-        });
-        inp.addEventListener("keydown", function(ev) {
-          if (ev.key !== "Tab") return;
-          const idx = parseInt(inp.dataset.bidx, 10);
-          const next = ev.shiftKey ? 0 : 1;
-          if (groupCfg.techBullets[idx].level === next) return;
-          ev.preventDefault();
-          groupCfg.techBullets[idx].level = next;
-          saveGroupCfg();
-          renderGroupBullets();
-          const again = mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-inp")[idx];
-          if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
-        });
+      renderTechBulletEditor(mount.querySelector("#grp-rep-tb-wrap"), {
+        read: function() { return groupCfg.techBullets; },
+        write: function(list) { groupCfg.techBullets = list; },
+        save: saveGroupCfg
       });
-      mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-indent").forEach(function(btn) {
-        btn.addEventListener("click", function() {
-          const idx = parseInt(btn.dataset.bidx, 10);
-          groupCfg.techBullets[idx].level = groupCfg.techBullets[idx].level ? 0 : 1;
-          saveGroupCfg();
-          renderGroupBullets();
-        });
-      });
-      mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-del").forEach(function(btn) {
-        btn.addEventListener("click", function() {
-          const idx = parseInt(btn.dataset.bidx, 10);
-          groupCfg.techBullets.splice(idx, 1);
-          saveGroupCfg();
-          renderGroupBullets();
-        });
-      });
-      const addBtn = mount.querySelector("#grp-rep-tb-add");
-      if (addBtn) {
-        addBtn.addEventListener("click", function() {
-          groupCfg.techBullets = normalizeTechBullets(groupCfg.techBullets);
-          const prevB = groupCfg.techBullets[groupCfg.techBullets.length - 1];
-          groupCfg.techBullets.push({ text: "", level: prevB ? prevB.level : 0 });
-          saveGroupCfg();
-          renderGroupBullets();
-          const inputs = mount.querySelectorAll("#grp-rep-tb-wrap .rep-tb-inp");
-          if (inputs.length) inputs[inputs.length - 1].focus();
-        });
-      }
     }
     // Photo picker: lets a PM pick one photo — from any project in this End
     // Item Config — to represent the whole config on its combined slide.
@@ -1117,8 +1198,8 @@ function renderGroupDetail(groupName, groupType, projects) {
       `, { xwide: true });
       $(".aewttr-modal-close", modal).addEventListener("click", closeModal);
 
-      function wirePicks() {
-        $all(".grp-photo-modal-thumb-btn", modal).forEach(function(btn) {
+      function wirePicks(scope) {
+        $all(".grp-photo-modal-thumb-btn", scope || modal).forEach(function(btn) {
           btn.addEventListener("click", function() {
             groupCfg.photoProjectId = btn.dataset.projId;
             groupCfg.photoUrl = btn.dataset.photoUrl;
@@ -1136,15 +1217,16 @@ function renderGroupDetail(groupName, groupType, projects) {
         const grid = modal.querySelector(`.grp-photo-modal-grid[data-grid-proj-id="${CSS.escape(proj.id)}"]`);
         if (!grid) return;
         Promise.resolve()
-          .then(function() { return resolveProjectPhotosFolder(proj); })
-          .then(function(res) { return sharePointAdapter.listPulseDocumentsFolder(res.siteUrl, res.folderUrl); })
-          .then(function(listing) {
+          /* Same list the Photos tab shows, cover included — a picker that
+             disagreed with the gallery it points at is why this looked
+             broken. */
+          .then(function() { return listProjectPhotos(proj); })
+          .then(function(photos) {
             if (!grid.isConnected) return;
-            const photos = (listing.files || []).filter(function(f) { return isPhotoFile(f.name); });
             grid.innerHTML = photos.length
               ? photos.map(function(photo) { return groupPhotoThumbHtml(proj, photo); }).join("")
-              : `<div class="empty-state">No photos in this project yet.</div>`;
-            wirePicks();
+              : `<div class="empty-state">No photos in this project yet — add them in the project's Photos tab.</div>`;
+            wirePicks(grid);
           })
           .catch(function(e) {
             if (!grid.isConnected) return;
@@ -9249,7 +9331,7 @@ function drawProjectReporting(body, proj) {
             (techBullets.length
               ? techBullets.map(function(b) {
                   var nb = normalizeTechBullet(b);
-                  return '<li' + (nb.level ? ' class="rep-slide-sub"' : '') + '>' + escapeHtml(nb.text) + '</li>';
+                  return '<li' + (nb.level ? ' class="rep-slide-sub" style="--tb-lvl:' + nb.level + ';"' : '') + '>' + escapeHtml(nb.text) + '</li>';
                 }).join("")
               : '<li class="rep-sld-hint">Add bullets below</li>'
             ) +
@@ -9287,74 +9369,11 @@ function drawProjectReporting(body, proj) {
   }
 
   function renderTechBullets() {
-    var wrap = $("#rep-tech-bullets-wrap", body);
-    if (!wrap) return;
-    cfg.techBullets = normalizeTechBullets(cfg.techBullets);
-    var bullets = cfg.techBullets;
-    wrap.innerHTML =
-      '<div class="rep-tb-list">' +
-      bullets.map(function(b, i) {
-        return techBulletRowHtml(b, i);
-      }).join("") +
-      '<button type="button" class="rep-tb-add" id="rep-tb-add"><i class="bx bx-plus"></i> Add bullet</button>' +
-      '</div>';
-    $all(".rep-tb-inp", wrap).forEach(function(inp) {
-      var dt = null;
-      inp.addEventListener("input", function() {
-        var idx = parseInt(inp.dataset.bidx, 10);
-        cfg.techBullets[idx].text = inp.value;
-        clearTimeout(dt);
-        dt = setTimeout(function() { saveConfig(); renderSlidePreview(); }, 25);
-      });
-      /* Tab indents, Shift+Tab outdents — the same keys as every other outliner,
-         so the buttons are a discoverable fallback rather than the only route. */
-      inp.addEventListener("keydown", function(ev) {
-        if (ev.key !== "Tab") return;
-        var idx = parseInt(inp.dataset.bidx, 10);
-        var next = ev.shiftKey ? 0 : 1;
-        if (cfg.techBullets[idx].level === next) return;
-        ev.preventDefault();
-        cfg.techBullets[idx].level = next;
-        saveConfig();
-        renderTechBullets();
-        renderSlidePreview();
-        var again = $all(".rep-tb-inp", wrap)[idx];
-        if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
-      });
+    renderTechBulletEditor($("#rep-tech-bullets-wrap", body), {
+      read: function() { return cfg.techBullets; },
+      write: function(list) { cfg.techBullets = list; },
+      save: function() { saveConfig(); renderSlidePreview(); }
     });
-    $all(".rep-tb-indent", wrap).forEach(function(btn) {
-      btn.addEventListener("click", function() {
-        var idx = parseInt(btn.dataset.bidx, 10);
-        cfg.techBullets[idx].level = cfg.techBullets[idx].level ? 0 : 1;
-        saveConfig();
-        renderTechBullets();
-        renderSlidePreview();
-      });
-    });
-    $all(".rep-tb-del", wrap).forEach(function(btn) {
-      btn.addEventListener("click", function() {
-        var idx = parseInt(btn.dataset.bidx, 10);
-        cfg.techBullets.splice(idx, 1);
-        saveConfig();
-        renderTechBullets();
-        renderSlidePreview();
-      });
-    });
-    var addBtn = $("#rep-tb-add", wrap);
-    if (addBtn) {
-      addBtn.addEventListener("click", function() {
-        cfg.techBullets = normalizeTechBullets(cfg.techBullets);
-        /* A new bullet inherits the previous one's level, so adding several
-           sub-points in a row does not mean re-indenting each time. */
-        var prev = cfg.techBullets[cfg.techBullets.length - 1];
-        cfg.techBullets.push({ text: "", level: prev ? prev.level : 0 });
-        saveConfig();
-        renderTechBullets();
-        renderSlidePreview();
-        var inputs = $all(".rep-tb-inp", wrap);
-        if (inputs.length) inputs[inputs.length - 1].focus();
-      });
-    }
   }
 
   // RAG palette shared between the editor pills and the preview table
